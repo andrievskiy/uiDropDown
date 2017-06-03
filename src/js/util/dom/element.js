@@ -53,7 +53,9 @@
     };
 
     _UiElement.prototype.clientRight = function () {
-        return this.offsetWidth() - this.clientLeft() - this.clientWidth();
+        // @TODO: Поправить на корректную работу в случае скрола
+        var clientRight =  this.offsetWidth() - this.clientLeft() - this.scrollWidth();
+        return clientRight;
     };
 
     _UiElement.prototype.clientTop = function () {
@@ -66,6 +68,10 @@
 
     _UiElement.prototype.clientWidth = function () {
         return this.element.clientWidth;
+    };
+
+    _UiElement.prototype.scrollWidth = function () {
+        return this.element.scrollWidth;
     };
 
     _UiElement.prototype.addClass = function (cls) {
@@ -84,6 +90,14 @@
             parent.appendChild(wrapper.element);
         }
         wrapper.element.appendChild(this.element);
+    };
+
+    _UiElement.prototype.val = function () {
+        return this.element.value;
+    };
+
+    _UiElement.prototype.on = function (eventKey, callback) {
+        this.element.addEventListener(eventKey, callback);
     };
 
     window.UiElement = UiElement;
