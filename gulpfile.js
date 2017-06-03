@@ -1,14 +1,15 @@
 /**
  * Created by andrievskiy on 03.06.17.
  */
-var NODE_MODULES_PATH = 'node_modules/';
 var DIST_PATH = 'dist/';
+
 
 var gulp = require('gulp');
 var concat = require('gulp-concat');
 var sass = require('gulp-sass');
 var sourcemaps = require('gulp-sourcemaps');
 var livereload = require('gulp-livereload');
+
 
 var PATCHES = {
     'js': [
@@ -18,6 +19,7 @@ var PATCHES = {
     'style': 'src/style/**/*.scss'
 };
 
+
 var jsDistPath = function () {
     return DIST_PATH + 'js';
 };
@@ -25,6 +27,7 @@ var jsDistPath = function () {
 var styleDistPath = function () {
     return DIST_PATH + 'css'
 };
+
 
 function makeBundle(src, targetFileName, targetDir) {
     return gulp.src(src)
@@ -35,10 +38,10 @@ function makeBundle(src, targetFileName, targetDir) {
         .pipe(livereload());
 }
 
+
 gulp.task('buildJs', function () {
     return makeBundle(PATCHES.js, 'ui-drop-down.js', jsDistPath());
 });
-
 
 gulp.task('buildStyle', function () {
     return gulp.src(PATCHES.style)
@@ -46,7 +49,6 @@ gulp.task('buildStyle', function () {
         .pipe(gulp.dest(styleDistPath()))
         .pipe(livereload());
 });
-
 
 gulp.task('build', ['buildJs', 'buildStyle']);
 

@@ -4,12 +4,6 @@
   "description": "Widget for create drop down controls",
   "license": "MIT",
   "author": "Mikhail Andrievskiy",
-  "licenses": [
-    {
-      "type": "MIT",
-      "url": "https://github.com/angular/material/blob/master/LICENSE"
-    }
-  ],
   "private": true,
   "devDependencies": {
     "gulp": "^3.9.1",
