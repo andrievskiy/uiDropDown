@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <link type="text/css" rel="stylesheet" href="dist/css/ui-drop-down.css">
+</head>
+<body>
+<div>
+    <input type="text" id="test">
+    <p style="height: 900px">
+    </p>
+    <input type="text" id="test2">
+</div>
+
+<script src="dist/js/ui-drop-down.js"></script>
+<script>
+    var suggestions = [];
+    var suggestions2 = [];
+    for(var i=0; i < 100000; i++){
+        suggestions.push({
+            name: i + 'Test ' + i + 'User',
+            uid: '' + i
+        });
+        suggestions2.push({
+            name: i + 'Test2 ' + i + 'User',
+            uid: '' + i
+        })
+    }
+
+    var widget1 = new UiDropDown('#test', {
+        suggestions: suggestions,
+        limit: 10
+    });
+    var widget2 = new UiDropDown('#test2', {
+        suggestions: suggestions,
+        limit: 20
+    })
+</script>
+</body>
+</html>

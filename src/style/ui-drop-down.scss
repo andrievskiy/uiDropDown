@@ -1,0 +1,15 @@
+.ui-drop-down-autocomplete-suggestions{
+  position: absolute;
+  height: 200px;
+  display: none;
+  border: 1px solid #ccc;
+  overflow-y: hidden;
+  span{
+    display: block;
+    height: 500px;
+  }
+}
+
+.ui-drop-down-autocomplete-suggestions.show{
+  display: block;
+}
