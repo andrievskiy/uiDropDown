@@ -1,0 +1,21 @@
+{
+  "name": "uiDropDownWidget",
+  "version": "0.1.0",
+  "description": "Widget for create drop down controls",
+  "license": "MIT",
+  "author": "Mikhail Andrievskiy",
+  "licenses": [
+    {
+      "type": "MIT",
+      "url": "https://github.com/angular/material/blob/master/LICENSE"
+    }
+  ],
+  "private": true,
+  "devDependencies": {
+    "gulp": "^3.9.1",
+    "gulp-concat": "^2.6.1",
+    "gulp-livereload": "^3.8.1",
+    "gulp-sass": "^3.1.0",
+    "gulp-sourcemaps": "^2.6.0"
+  }
+}
