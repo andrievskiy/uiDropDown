@@ -23,10 +23,10 @@
         this.suggestions = options.suggestions || [];
         this.options = options;
         this.matcher = options.matcher || defaultMatcher;
+        this.options.itemTemplate = '<div class="ui-item" id="{uid}"><span>{name}</span></div>';
 
         this.matchedSuggestions = [];
         this.selectedItems = {};
-
 
         this._dropDownInputWrapper = createDropDownInputWrapper();
         this._suggestionsWrapper = createSuggestionWrapper();
@@ -35,28 +35,32 @@
 
         this._dropDownInputWrapper.element.appendChild(this._suggestionsWrapper.element);
 
-        this.element.on('focus', function () {
+        // Handlers
+        this.element.on('focus', onFocusHandler);
+        this.element.on('keyup', onKeyUpHandler);
+
+
+        function onFocusHandler() {
             lookup();
             showSuggestionList();
             renderMatchedItems();
-        });
+        }
 
-        this.element.on('keyup', function () {
+        function onKeyUpHandler() {
             lookup();
             renderMatchedItems();
-        });
+        }
+
+        // Logic
 
         function createSuggestionWrapper() {
-            var element = UiElement(document.createElement('div'));
-            var span = document.createElement('span');
-            element.element.appendChild(span);
-
+            var element = UiElement.create('div');
             element.addClass('ui-drop-down-autocomplete-suggestions');
             return element;
         }
 
         function createDropDownInputWrapper() {
-            var element = UiElement(document.createElement('div'));
+            var element = UiElement.create('div');
             element.addClass('ui-drop-down-input-wrapper');
             return element;
         }
@@ -72,23 +76,27 @@
             self._suggestionsWrapper.removeClass('show');
         }
 
+        /**
+         * Прозводит позиционирование блока предложений относительно эелемента
+         */
         function positionSuggestionList() {
             var inputWrapperCoordinates = self._dropDownInputWrapper.getCoordinates();
 
-            self._suggestionsWrapper.element.style.top =
+            self._suggestionsWrapper.style.top =
                 inputWrapperCoordinates.bottom + self._dropDownInputWrapper.clientTop() + 'px';
 
-            self._suggestionsWrapper.element.style.left = inputWrapperCoordinates.left + 'px';
+            self._suggestionsWrapper.style.left = inputWrapperCoordinates.left + 'px';
 
-            self._suggestionsWrapper.element.style.width =
+            self._suggestionsWrapper.style.width =
                 self.element.offsetWidth() - self._suggestionsWrapper.clientLeft()
                 - self._suggestionsWrapper.clientRight() + 'px';
         }
 
         function renderMatchedItems() {
             var children = Array.prototype.slice.apply(self._suggestionsWrapper.element.children);
+
             children.forEach(function (childNode) {
-                self._suggestionsWrapper.element.removeChild(childNode);
+                self._suggestionsWrapper.removeChild(childNode);
             });
 
             self.matchedSuggestions.forEach(function (item) {
@@ -97,19 +105,20 @@
         }
 
         function renderItem(item) {
-            var element = document.createElement('div');
-            element.innerHTML = '<div class="item">' + item.name + '</div>';
-            element.id = item.uid;
+            var element = DropDownItem(self.options.itemTemplate, item);
+            element.render();
 
             // TODO: разобрать на методы. Добавить setter val на uiElement
-            element.addEventListener('click', function () {
+            element.element.on('click', function () {
                 self.selectedItems[item.uid] = item;
                 this.parentNode.removeChild(this);
-                self.element.element.value = '';
+                self.element.val('');
                 hideSuggestionList();
             });
-            return element;
+            // @TODO:  Fix it.
+            return element.element.element;
         }
+
 
         function lookup() {
             // @TODO: Оптимизировать поиск при пустом запоросе
@@ -122,9 +131,7 @@
             if(val === ''){
                 self.matchedSuggestions.splice(self.options.limit);
             }
-
         }
-
     }
 
     window.UiDropDown = UiDropDown;
