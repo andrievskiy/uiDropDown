@@ -224,9 +224,11 @@
         }
 
         prefix = prefix.trim().toLowerCase();
+
         var prefixes = _getPrefixVariables(prefix);
 
         var suggestionParts = suggestion[options.byProperty].split(' ');
+        suggestionParts.unshift(suggestion[options.byProperty]);
 
         var matched = suggestionParts.some(function (part) {
             part = part.toLowerCase().trim();
