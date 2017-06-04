@@ -19,7 +19,7 @@
     function UiDropDown(selector, options) {
         var self = this;
         options = options || defaultUiDropDownOptions;
-        this.element = UiElement(selector);
+        this.inputElement = UiElement(selector);
         this.suggestions = options.suggestions || [];
         this.options = options;
         this.matcher = options.matcher || defaultMatcher;
@@ -31,22 +31,20 @@
         this._dropDownInputWrapper = createDropDownInputWrapper();
         this._suggestionsWrapper = createSuggestionWrapper();
 
-        this.element.wrap(this._dropDownInputWrapper);
+        this.inputElement.wrap(this._dropDownInputWrapper);
 
         this._dropDownInputWrapper.element.appendChild(this._suggestionsWrapper.element);
 
-        // Handlers
-        this.element.on('focus', onFocusHandler);
-        this.element.on('keyup', onKeyUpHandler);
+        this.inputElement.on('focus', onFocusInputHandler);
+        this.inputElement.on('keyup', onKeyUpInputHandler);
 
-
-        function onFocusHandler() {
+        function onFocusInputHandler() {
             lookup();
             showSuggestionList();
             renderMatchedItems();
         }
 
-        function onKeyUpHandler() {
+        function onKeyUpInputHandler() {
             lookup();
             renderMatchedItems();
         }
@@ -83,12 +81,12 @@
             var inputWrapperCoordinates = self._dropDownInputWrapper.getCoordinates();
 
             self._suggestionsWrapper.style.top =
-                inputWrapperCoordinates.bottom + self._dropDownInputWrapper.clientTop() + 'px';
+                inputWrapperCoordinates.bottom + self.inputElement.clientTop() + 'px';
 
             self._suggestionsWrapper.style.left = inputWrapperCoordinates.left + 'px';
 
             self._suggestionsWrapper.style.width =
-                self.element.offsetWidth() - self._suggestionsWrapper.clientLeft()
+                self.inputElement.offsetWidth() - self._suggestionsWrapper.clientLeft()
                 - self._suggestionsWrapper.clientRight() + 'px';
         }
 
@@ -112,7 +110,7 @@
             element.element.on('click', function () {
                 self.selectedItems[item.uid] = item;
                 this.parentNode.removeChild(this);
-                self.element.val('');
+                self.inputElement.val('');
                 hideSuggestionList();
             });
             // @TODO:  Fix it.
@@ -122,7 +120,7 @@
 
         function lookup() {
             // @TODO: Оптимизировать поиск при пустом запоросе
-            var val = self.element.val();
+            var val = self.inputElement.val();
             self.matchedSuggestions = [];
             self.matchedSuggestions = self.suggestions.filter(function (suggestion) {
                 return self.matcher(val, suggestion, self.selectedItems);

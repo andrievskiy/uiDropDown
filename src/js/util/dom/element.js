@@ -76,7 +76,7 @@
      */
     _UiElement.prototype.clientRight = function () {
         // @TODO: Поправить на корректную работу в случае скрола
-        var clientRight =  this.offsetWidth() - this.clientLeft() - this.scrollWidth();
+        var clientRight =  this.offsetWidth() - this.clientLeft() - this.clientWidth();
         return clientRight;
     };
 
@@ -175,7 +175,6 @@
     _UiElement.prototype.off = function (evenKey, callback, stage) {
         this.element.removeEventListener(evenKey, callback, stage);
     };
-
     /**
      * Удалить потомка
      * @param child
