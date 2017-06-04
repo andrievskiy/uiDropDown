@@ -11,6 +11,7 @@
 
         options = options || defaultUiDropDownOptions;
 
+        self.lastVal = null;
         self.inputElement = UiElement(selector);
         self.suggestions = options.suggestions || [];
         self.options = options;
@@ -28,7 +29,6 @@
         self.inputElement.wrap(self._dropDownInputWrapper);
         self._dropDownInputWrapper.append(self._suggestionsWrapper.element);
         self._dropDownInputWrapper.element.insertBefore(self._selectedContainer.element, self.inputElement.element);
-
 
         self.inputElement.on('focus', onFocusInputHandler);
         self.inputElement.on('keyup', onKeyUpInputHandler);
@@ -58,13 +58,13 @@
         }
 
         function onWrapperClick(event) {
-            if(event.target === this){
+            if (event.target === this) {
                 self.inputElement.element.focus();
             }
         }
 
         function onBlurInputElement() {
-            if(self._suggestionsWrapper.hovered){
+            if (self._suggestionsWrapper.hovered) {
                 return;
             }
             hideSuggestionList();
@@ -155,16 +155,34 @@
         }
 
         function lookup() {
-            // @TODO: Оптимизировать поиск при пустом запоросе
+            console.log('lookup');
             var val = self.inputElement.val();
+            if (val == self.lastVal) {
+                return;
+            }
+
+            self.lastVal = val;
             self.matchedSuggestions = [];
+
+            var counter = 0;
+            var idx = 0;
+            if (val === '') {
+                while (counter < self.options.limit) {
+                    var item = self.suggestions[idx];
+                    if (self.selectedItems[item.uid]) {
+                        idx++;
+                        continue;
+                    }
+                    self.matchedSuggestions.push(item);
+                    counter++;
+                    idx++;
+                }
+                return;
+            }
+
             self.matchedSuggestions = self.suggestions.filter(function (suggestion) {
                 return self.matcher(val, suggestion, self.selectedItems);
             });
-            // Если пустой запрос необходимо ограничить количество елементов, чтобы не происходила всавка в DOM
-            if(val === ''){
-                self.matchedSuggestions.splice(self.options.limit);
-            }
         }
 
         function onSelectSuggestion(item, element) {

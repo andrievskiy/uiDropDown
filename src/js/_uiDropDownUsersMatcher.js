@@ -1,7 +1,8 @@
 (function (window) {
     'use strict';
 
-    var latinToCyrillicKeyBoard = {
+    // @TODO: Сделать оптимизацию тормозов
+    var LATIN_TO_CYRILLIC_KEYBOARD = {
         'q': 'й',
         'w': 'ц',
         'e': 'у',
@@ -35,9 +36,15 @@
         ',': 'б',
         '.': 'ю'
     };
-    var cyrillicToLatinKeyBoard = {};
+    var CYRILLIC_TO_LATIN_KEYBOARD = {};
 
-    var latinToCyrillicFirstMap = {
+    Object.keys(LATIN_TO_CYRILLIC_KEYBOARD).map(function (key) {
+        var k = LATIN_TO_CYRILLIC_KEYBOARD[key];
+        CYRILLIC_TO_LATIN_KEYBOARD[k] = key;
+    });
+
+
+    var LATIN_TO_CYRILLIC_FIRST_REPLACE_MAP = {
         'yo': 'ё',
         'zh': 'ж',
         'kh': 'х',
@@ -52,34 +59,32 @@
         "'": 'ь'
     };
 
-    var multipleLatinChars = {
-        'z': ['ж', 'з'],
-        'c': ['ц', 'ч']
-    };
+    var CYRILLIC_TO_LATIN_FIRST_REPLACE_MAP = {};
 
-
-    Object.keys(latinToCyrillicKeyBoard).map(function (key) {
-        var k = latinToCyrillicKeyBoard[key];
-        cyrillicToLatinKeyBoard[k] = key;
+    Object.keys(LATIN_TO_CYRILLIC_FIRST_REPLACE_MAP).map(function (key) {
+        var k = LATIN_TO_CYRILLIC_FIRST_REPLACE_MAP[key];
+        CYRILLIC_TO_LATIN_FIRST_REPLACE_MAP[k] = key;
     });
 
-    function uiDropDownUsersMatcher(prefix, suggestion, selectedSuggestions) {
-        prefix = prefix.trim().toLowerCase();
-        var prefixes = _getPrefixVariables(prefix);
-        var suggestionParts = suggestion.name.split(' ');
-        var matched = suggestionParts.some(function (part) {
-            return prefixes.some(function (prefix) {
-                return part.toLowerCase().slice(0, prefix.length) === prefix;
-            });
-        });
-        return matched && !selectedSuggestions[suggestion.uid];
-    }
+    var MULTIPLE_LATIN_CHARTS = {
+        'y': ['ы', 'ё', 'ю', 'я'],
+        'z': ['ж', 'з'],
+        'k': ['х', 'к'],
+        't': ['ц', 'т'],
+        'c': ['ц', 'ч',  'щ'],
+        's': ['ш', 'щ', 'с'],
+        'e': ['е', 'э']
+    };
+
+    var LATIN_ALPHABET = 'abvgdezijklmnoprstufhcyABVGDEZIJKLMNOPRSTUFHCYёЁ';
+    var CYRILLIC_ALPHABET = 'абвгдезийклмнопрстуфхцыАБВГДЕЗИЙКЛМНОПРСТУФХЦЫеЕ';
+
 
     function _toCyrillicKeyboard(str) {
         var result = '';
         var charts = str.split('');
         charts.forEach(function (chart) {
-            result += latinToCyrillicKeyBoard[chart] || chart;
+            result += LATIN_TO_CYRILLIC_KEYBOARD[chart] || chart;
         });
 
         return result;
@@ -89,66 +94,149 @@
         var result = '';
         var charts = str.split('');
         charts.forEach(function (chart) {
-            result += cyrillicToLatinKeyBoard[chart] || chart;
+            result += CYRILLIC_TO_LATIN_KEYBOARD[chart] || chart;
         });
         return result;
     }
 
+    /**
+     * Получение всех возможных уникальных вариантов для поиска
+     *
+     * @param prefix
+     * @returns {Array}
+     * @private
+     */
     function _getPrefixVariables(prefix) {
         var variables = [];
-        variables.push(_toCyrillicKeyboard(prefix));
-        variables.push(_toLatinKeyboard(prefix));
+
+        // Получение всех кирилических вариантов по латинице
+        // За счет того, что латиница уже, то одну строку на ней
+        // Можжно представить несколькими на кирилице
+        // Например: z = ж/z = з
+        variables = variables.concat(_latinToCyrillicVariants(prefix));
+
+        // Приведение кириллицы к латинице
+        // Например: юа => yoa
+        variables.push(_cyrillicToLatinVariants(prefix));
+
+
+        // Приведение расладок
+
+        var cyrillicKeyboard = _toCyrillicKeyboard(prefix);
+        var latinKeyboard = _toLatinKeyboard(prefix);
+        variables.push(cyrillicKeyboard);
+        variables.push(latinKeyboard);
+
+        // Транслитерация для раскладок
+        // Например: кщпщя -> rogoz -> рогоз
+        variables.push(_cyrillicToLatinVariants(cyrillicKeyboard));
+        variables = variables.concat(_latinToCyrillicVariants(latinKeyboard));
+
+        // Вывод уникальных валидаторов
+        // TODO: Оптимизироввать через set
+        variables = variables.filter(function (item, idx, array) {
+            return array.indexOf(item) === idx;
+        });
 
         return variables;
     }
 
+
     function _latinToCyrillicVariants(str) {
         var variants;
-        // Replace first special "big" symbols
-        Object.keys(latinToCyrillicFirstMap).forEach(function (char) {
-           str = str.split(char).join(latinToCyrillicFirstMap[char]);
+
+        // Сначала происходит замена "букв" из нескольких символов
+        Object.keys(LATIN_TO_CYRILLIC_FIRST_REPLACE_MAP).forEach(function (char) {
+           str = str.split(char).join(LATIN_TO_CYRILLIC_FIRST_REPLACE_MAP[char]);
         });
+
         var charts = str.split('');
 
-        variants = _extendVariants([charts], 0, charts.length);
+        variants = _extendVariants(charts);
         variants = variants.map(function (variant) {
             return _replace(variant.join(''));
         });
 
         return variants;
 
-
-        function _extendVariants(variants, idx, len) {
-            if(idx == len){
-                return variants;
+        /**
+         * Производит расширение вариантов для  символов соответствующих нескольким русским буквам
+         * при условии что символ находится в конце строки (т.е. невозиожно определить к чему он приводится)
+         * @param charts
+         * @returns {*[]}
+         * @private
+         */
+        function _extendVariants(charts) {
+            var variants = [charts];
+            var lastChart = charts[charts.length - 1];
+            if(MULTIPLE_LATIN_CHARTS[lastChart]){
+                variants = [];
+                var chartVariants = MULTIPLE_LATIN_CHARTS[lastChart];
+                chartVariants.forEach(function (chartVar) {
+                    var newVariant = charts.slice(0, charts.length - 1);
+                    newVariant.push(chartVar);
+                    variants.push(newVariant);
+                });
             }
-            var extended = [];
-            variants.forEach(function (variant) {
-                var currentChart = variant[idx];
-                if(multipleLatinChars[currentChart]){
-                    multipleLatinChars[currentChart].forEach(function (chart) {
-                        var v =variant.slice();
-                        v[idx] = chart;
-                        extended.push(v);
-                    });
-                }
-            });
-            if(!extended.length){
-                extended = variants;
-            }
-            return _extendVariants(extended, idx+1, len);
+            return variants;
         }
 
         function _replace(str) {
-            var latinAlphabet = 'abvgdezijklmnoprstufhcyABVGDEZIJKLMNOPRSTUFHCYёЁ';
-            var rusAlphabet = 'абвгдезийклмнопрстуфхцыАБВГДЕЗИЙКЛМНОПРСТУФХЦЫеЕ';
-            for (var i = 0; i < latinAlphabet.length; i++) {
-                str = str.split(latinAlphabet.charAt(i)).join(rusAlphabet.charAt(i));
+            for (var i = 0; i < LATIN_ALPHABET.length; i++) {
+                str = str.split(LATIN_ALPHABET.charAt(i)).join(CYRILLIC_ALPHABET.charAt(i));
             }
             return str;
         }
     }
 
+
+    function _cyrillicToLatinVariants(str) {
+        // Сначала происходит замена "букв" из нескольких символов
+        Object.keys(CYRILLIC_TO_LATIN_FIRST_REPLACE_MAP).forEach(function (char) {
+           str = str.split(char).join(CYRILLIC_TO_LATIN_FIRST_REPLACE_MAP[char]);
+        });
+
+        function _replace(str) {
+            for (var i = 0; i < CYRILLIC_ALPHABET.length; i++) {
+                str = str.split(CYRILLIC_ALPHABET.charAt(i)).join(LATIN_ALPHABET.charAt(i));
+            }
+            return str;
+        }
+        return _replace(str);
+    }
+
+
+    /**
+     * Производит сравнение по префиксу с учетом раскладок и транслитерации
+     * @param prefix {String}
+     * @param suggestion {Object}
+     * @param selectedSuggestions {Array}
+     * @param options {Object}
+     * @param options.byProperty {String} - свойтво по которму производится сравненение
+     * @param options.uidProperty {String} - свойтво уникальный идентификатор
+     * @returns {boolean}
+     */
+    function uiDropDownUsersMatcher(prefix, suggestion, selectedSuggestions, options) {
+        options = options || { byProperty: 'name', uidProperty: 'uid' };
+
+        if(selectedSuggestions[suggestion[options.uidProperty]]){
+            return false;
+        }
+
+        prefix = prefix.trim().toLowerCase();
+        var prefixes = _getPrefixVariables(prefix);
+
+        var suggestionParts = suggestion[options.byProperty].split(' ');
+
+        var matched = suggestionParts.some(function (part) {
+            part = part.toLowerCase().trim();
+            return prefixes.some(function (prefix) {
+                return part.slice(0, prefix.length) === prefix;
+            });
+        });
+
+        return matched && !selectedSuggestions[suggestion[options.uidProperty]];
+    }
 
     window.uiDropDownUsersMatcher = uiDropDownUsersMatcher;
 })(window);
