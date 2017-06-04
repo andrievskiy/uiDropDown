@@ -29,14 +29,15 @@
         self.options.itemTemplate = '<div class="ui-item" id="{uid}"><span>{name}</span></div>';
 
         self.matchedSuggestions = [];
-        self.selectedItems = {};
+        self.selectedItems = Object.create(null); // Empty map
 
         self._dropDownInputWrapper = createDropDownInputWrapper();
         self._suggestionsWrapper = createSuggestionWrapper();
-
+        self._selectedContainer = createSelectedSuggestionsContainer();
 
         self.inputElement.wrap(self._dropDownInputWrapper);
         self._dropDownInputWrapper.append(self._suggestionsWrapper.element);
+        self._dropDownInputWrapper.element.insertBefore(self._selectedContainer.element, self.inputElement.element);
 
 
         self.inputElement.on('focus', onFocusInputHandler);
@@ -48,16 +49,22 @@
         self._suggestionsWrapper.on('mouseover', onHoverSuggestionsWrapper);
         self._suggestionsWrapper.on('mouseleave', onMouseLeaveSuggestionsWrapper);
 
+        self.getSelected = function () {
+            return Object.keys(self.selectedItems).map(function (key) {
+                return self.selectedItems[key];
+            });
+        };
+
 
         function onFocusInputHandler() {
             lookup();
             showSuggestionList();
-            renderMatchedItems();
+            renderMatchedSuggestions();
         }
 
         function onKeyUpInputHandler() {
             lookup();
-            renderMatchedItems();
+            renderMatchedSuggestions();
         }
 
         function onWrapperClick(event) {
@@ -89,8 +96,21 @@
         }
 
         function createDropDownInputWrapper() {
+            function setWidth(wrapper) {
+                wrapper.style.width = self.inputElement.clientWidth() + 'px';
+            }
+
             var element = UiElement.create('div');
             element.addClass('ui-drop-down-input-wrapper');
+            setWidth(element);
+
+            return element;
+        }
+
+        function createSelectedSuggestionsContainer() {
+            var element = UiElement.create('div');
+            element.addClass('ui-drop-down-selected-container');
+
             return element;
         }
 
@@ -120,7 +140,7 @@
         }
 
 
-        function renderMatchedItems() {
+        function renderMatchedSuggestions() {
             var children = Array.prototype.slice.apply(self._suggestionsWrapper.element.children);
 
             children.forEach(function (childNode) {
@@ -128,22 +148,17 @@
             });
 
             self.matchedSuggestions.forEach(function (item) {
-                self._suggestionsWrapper.element.appendChild(renderItem(item));
+                self._suggestionsWrapper.element.appendChild(renderSuggestion(item));
             });
         }
 
-
-        function renderItem(item) {
-            var element = DropDownItem(self.options.itemTemplate, item);
+        function renderSuggestion(suggestion) {
+            var element = DropDownItem(self.options.itemTemplate, suggestion);
             element.render();
 
             // TODO: разобрать на методы. Добавить setter val на uiElement
             element.element.on('click', function () {
-                console.log('Element clicked');
-                self.selectedItems[item.uid] = item;
-                this.parentNode.removeChild(this);
-                self.inputElement.val('');
-                hideSuggestionList();
+                onSelectSuggestion(suggestion, this);
             });
             // @TODO:  Fix it.
             return element.element.element;
@@ -160,6 +175,21 @@
             if(val === ''){
                 self.matchedSuggestions.splice(self.options.limit);
             }
+        }
+
+        function onSelectSuggestion(item, element) {
+            self.selectedItems[item.uid] = item;
+            element.parentNode.removeChild(element);
+            self.inputElement.val('');
+            hideSuggestionList();
+            renderSelectedSuggestion(item);
+        }
+
+        function renderSelectedSuggestion(suggestion) {
+            var element = UiElement.create('div');
+            element.addClass('ui-drop-down-selected-suggestion');
+            element.html(suggestion.name);
+            self._selectedContainer.append(element.element);
         }
     }
 
