@@ -6,16 +6,6 @@
         limit: 10
     };
 
-    function defaultMatcher(val, suggestion, selected) {
-        val = val.trim().toLowerCase();
-        var suggestionParts = suggestion.name.split(' ');
-
-        var matched = suggestionParts.some(function (part) {
-            return part.toLowerCase().slice(0, val.length) === val;
-        });
-        return matched && !selected[suggestion.uid];
-    }
-
     function UiDropDown(selector, options) {
         var self = this;
 
@@ -24,7 +14,7 @@
         self.inputElement = UiElement(selector);
         self.suggestions = options.suggestions || [];
         self.options = options;
-        self.matcher = options.matcher || defaultMatcher;
+        self.matcher = options.matcher || uiDropDownUsersMatcher;
         // @TODO: Добавить подсветку префиксов
         self.options.itemTemplate = '<div class="ui-item" id="{uid}"><span>{name}</span></div>';
 

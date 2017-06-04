@@ -14,7 +14,8 @@ var livereload = require('gulp-livereload');
 var PATCHES = {
     'js': [
         'src/js/util/**/*.js',
-        'src/js/uiDropDownParts.js',
+        'src/js/_uiDropDownParts.js',
+        'src/js/_uiDropDownUsersMatcher.js',
         'src/js/uiDropDownWidget.js'
     ],
     'style': 'src/style/**/*.scss'
