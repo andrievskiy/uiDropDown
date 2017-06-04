@@ -18,7 +18,7 @@
         self.options = options;
         self.matcher = options.matcher || uiDropDownUsersMatcher;
         // @TODO: Добавить подсветку префиксов
-        self.options.itemTemplate = '<div class="ui-item" id="{uid}"><span>{name}</span></div>';
+        self.options.itemTemplate = '<div class="ui-item" id="{data.id}"><p>{name}</p></div>';
 
         self.matchedSuggestions = [];
         self.selectedItems = Object.create(null);
@@ -159,7 +159,11 @@
         }
 
         function renderSuggestion(suggestion) {
-            var element = DropDownItem(self.options.itemTemplate, suggestion);
+            // TODO: fix it
+            var mathedBy = suggestion.mathedBy;
+            delete suggestion.mathedBy;
+
+            var element = DropDownItem(self.options.itemTemplate, suggestion, mathedBy);
             element.render();
 
             // TODO: разобрать на методы. Добавить setter val на uiElement
@@ -200,7 +204,10 @@
             idx = 0;
             counter = 0;
             while (counter < self.options.limit && idx < self.suggestions.length) {
-                if (self.matcher(val, self.suggestions[idx], self.selectedItems)) {
+                var matchResult = self.matcher(val, self.suggestions[idx], self.selectedItems);
+                if(matchResult.matched){
+                    // TODO: fix it correct
+                    self.suggestions[idx].mathedBy = matchResult.matchedBy;
                     self.matchedSuggestions.push(self.suggestions[idx]);
                     counter++;
                 }

@@ -214,13 +214,18 @@
      * @param options {Object}
      * @param options.byProperty {String} - свойтво по которму производится сравненение
      * @param options.uidProperty {String} - свойтво уникальный идентификатор
-     * @returns {boolean}
+     * @returns {Object}
      */
     function uiDropDownUsersMatcher(prefix, suggestion, selectedSuggestions, options) {
         options = options || { byProperty: 'name', uidProperty: 'uid' };
+        var result = {
+            matched: false,
+            matchedBy: null
+        };
+
 
         if(selectedSuggestions[suggestion[options.uidProperty]]){
-            return false;
+            return result;
         }
 
         prefix = prefix.trim().toLowerCase();
@@ -230,14 +235,20 @@
         var suggestionParts = suggestion[options.byProperty].split(' ');
         suggestionParts.unshift(suggestion[options.byProperty]);
 
+
+
         var matched = suggestionParts.some(function (part) {
             part = part.toLowerCase().trim();
             return prefixes.some(function (prefix) {
-                return part.slice(0, prefix.length) === prefix;
+                var matched =  part.slice(0, prefix.length) === prefix;
+                if(matched){
+                    result.matchedBy = prefix;
+                }
+                return matched;
             });
         });
-
-        return matched && !selectedSuggestions[suggestion[options.uidProperty]];
+        result.matched = matched && !selectedSuggestions[suggestion[options.uidProperty]];
+        return result;
     }
 
     window.uiDropDownUsersMatcher = uiDropDownUsersMatcher;
