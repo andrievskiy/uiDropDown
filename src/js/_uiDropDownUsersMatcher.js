@@ -227,7 +227,7 @@
         if(selectedSuggestions[suggestion[options.uidProperty]]){
             return result;
         }
-
+        var originalPrefix = prefix;
         prefix = prefix.trim().toLowerCase();
 
         var prefixes = _getPrefixVariables(prefix);
@@ -242,7 +242,7 @@
             return prefixes.some(function (prefix) {
                 var matched =  part.slice(0, prefix.length) === prefix;
                 if(matched){
-                    result.matchedBy = prefix;
+                    result.matchedBy = originalPrefix;
                 }
                 return matched;
             });
