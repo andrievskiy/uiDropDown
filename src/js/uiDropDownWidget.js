@@ -3,11 +3,12 @@
  */
 ;(function (window) {
     var defaultUiDropDownOptions = {
-        limit: 10
+        limit: 20
     };
 
     function UiDropDown(selector, options) {
         var self = this;
+        self.cache = {};
 
         options = options || defaultUiDropDownOptions;
 
@@ -20,7 +21,7 @@
         self.options.itemTemplate = '<div class="ui-item" id="{uid}"><span>{name}</span></div>';
 
         self.matchedSuggestions = [];
-        self.selectedItems = Object.create(null); // Empty map
+        self.selectedItems = Object.create(null);
 
         self._dropDownInputWrapper = createDropDownInputWrapper();
         self._suggestionsWrapper = createSuggestionWrapper();
@@ -31,7 +32,7 @@
         self._dropDownInputWrapper.element.insertBefore(self._selectedContainer.element, self.inputElement.element);
 
         self.inputElement.on('focus', onFocusInputHandler);
-        self.inputElement.on('keyup', onKeyUpInputHandler);
+        self.inputElement.on('keyup', debounce(onKeyUpInputHandler, 300));
         self.inputElement.on('blur', onBlurInputElement);
 
         self._dropDownInputWrapper.on('click', onWrapperClick);
@@ -44,6 +45,21 @@
                 return self.selectedItems[key];
             });
         };
+
+        function debounce(func, wait, immediate) {
+            var timeout;
+            return function () {
+                var context = this, args = arguments;
+                var later = function () {
+                    timeout = null;
+                    if (!immediate) func.apply(context, args);
+                };
+                var callNow = immediate && !timeout;
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+                if (callNow) func.apply(context, args);
+            };
+        }
 
 
         function onFocusInputHandler() {
@@ -155,19 +171,20 @@
         }
 
         function lookup() {
-            console.log('lookup');
+            console.log('LOOKUP');
+            var counter = 0;
+            var idx = 0;
             var val = self.inputElement.val();
-            if (val == self.lastVal) {
+
+            if (val == self.lastVal && val !== '') {
                 return;
             }
 
             self.lastVal = val;
             self.matchedSuggestions = [];
 
-            var counter = 0;
-            var idx = 0;
             if (val === '') {
-                while (counter < self.options.limit) {
+                while (counter < self.options.limit && idx < self.suggestions.length) {
                     var item = self.suggestions[idx];
                     if (self.selectedItems[item.uid]) {
                         idx++;
@@ -180,9 +197,15 @@
                 return;
             }
 
-            self.matchedSuggestions = self.suggestions.filter(function (suggestion) {
-                return self.matcher(val, suggestion, self.selectedItems);
-            });
+            idx = 0;
+            counter = 0;
+            while (counter < self.options.limit && idx < self.suggestions.length) {
+                if (self.matcher(val, self.suggestions[idx], self.selectedItems)) {
+                    self.matchedSuggestions.push(self.suggestions[idx]);
+                    counter++;
+                }
+                idx++;
+            }
         }
 
         function onSelectSuggestion(item, element) {
