@@ -6,25 +6,16 @@
         limit: 10
     };
 
-    function defaultMatcher(val, suggestion, selected) {
-        val = val.trim().toLowerCase();
-        var suggestionParts = suggestion.name.split(' ');
-
-        var matched = suggestionParts.some(function (part) {
-            return part.toLowerCase().slice(0, val.length) === val;
-        });
-        return matched && !selected[suggestion.uid];
-    }
-
     function UiDropDown(selector, options) {
         var self = this;
 
         options = options || defaultUiDropDownOptions;
 
+        self.lastVal = null;
         self.inputElement = UiElement(selector);
         self.suggestions = options.suggestions || [];
         self.options = options;
-        self.matcher = options.matcher || defaultMatcher;
+        self.matcher = options.matcher || uiDropDownUsersMatcher;
         // @TODO: Добавить подсветку префиксов
         self.options.itemTemplate = '<div class="ui-item" id="{uid}"><span>{name}</span></div>';
 
@@ -38,7 +29,6 @@
         self.inputElement.wrap(self._dropDownInputWrapper);
         self._dropDownInputWrapper.append(self._suggestionsWrapper.element);
         self._dropDownInputWrapper.element.insertBefore(self._selectedContainer.element, self.inputElement.element);
-
 
         self.inputElement.on('focus', onFocusInputHandler);
         self.inputElement.on('keyup', onKeyUpInputHandler);
@@ -68,13 +58,13 @@
         }
 
         function onWrapperClick(event) {
-            if(event.target === this){
+            if (event.target === this) {
                 self.inputElement.element.focus();
             }
         }
 
         function onBlurInputElement() {
-            if(self._suggestionsWrapper.hovered){
+            if (self._suggestionsWrapper.hovered) {
                 return;
             }
             hideSuggestionList();
@@ -165,16 +155,34 @@
         }
 
         function lookup() {
-            // @TODO: Оптимизировать поиск при пустом запоросе
+            console.log('lookup');
             var val = self.inputElement.val();
+            if (val == self.lastVal) {
+                return;
+            }
+
+            self.lastVal = val;
             self.matchedSuggestions = [];
+
+            var counter = 0;
+            var idx = 0;
+            if (val === '') {
+                while (counter < self.options.limit) {
+                    var item = self.suggestions[idx];
+                    if (self.selectedItems[item.uid]) {
+                        idx++;
+                        continue;
+                    }
+                    self.matchedSuggestions.push(item);
+                    counter++;
+                    idx++;
+                }
+                return;
+            }
+
             self.matchedSuggestions = self.suggestions.filter(function (suggestion) {
                 return self.matcher(val, suggestion, self.selectedItems);
             });
-            // Если пустой запрос необходимо ограничить количество елементов, чтобы не происходила всавка в DOM
-            if(val === ''){
-                self.matchedSuggestions.splice(self.options.limit);
-            }
         }
 
         function onSelectSuggestion(item, element) {
