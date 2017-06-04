@@ -9,3 +9,8 @@
 .ui-drop-down-autocomplete-suggestions.show{
   display: block;
 }
+.ui-drop-down-item-container{
+  border-bottom: 1px solid #cccccc;
+  padding: 2px;
+  cursor: pointer;
+}

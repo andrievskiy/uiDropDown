@@ -18,25 +18,36 @@
 
     function UiDropDown(selector, options) {
         var self = this;
+
         options = options || defaultUiDropDownOptions;
-        this.inputElement = UiElement(selector);
-        this.suggestions = options.suggestions || [];
-        this.options = options;
-        this.matcher = options.matcher || defaultMatcher;
-        this.options.itemTemplate = '<div class="ui-item" id="{uid}"><span>{name}</span></div>';
 
-        this.matchedSuggestions = [];
-        this.selectedItems = {};
+        self.inputElement = UiElement(selector);
+        self.suggestions = options.suggestions || [];
+        self.options = options;
+        self.matcher = options.matcher || defaultMatcher;
+        // @TODO: Добавить подсветку префиксов
+        self.options.itemTemplate = '<div class="ui-item" id="{uid}"><span>{name}</span></div>';
 
-        this._dropDownInputWrapper = createDropDownInputWrapper();
-        this._suggestionsWrapper = createSuggestionWrapper();
+        self.matchedSuggestions = [];
+        self.selectedItems = {};
 
-        this.inputElement.wrap(this._dropDownInputWrapper);
+        self._dropDownInputWrapper = createDropDownInputWrapper();
+        self._suggestionsWrapper = createSuggestionWrapper();
 
-        this._dropDownInputWrapper.element.appendChild(this._suggestionsWrapper.element);
 
-        this.inputElement.on('focus', onFocusInputHandler);
-        this.inputElement.on('keyup', onKeyUpInputHandler);
+        self.inputElement.wrap(self._dropDownInputWrapper);
+        self._dropDownInputWrapper.append(self._suggestionsWrapper.element);
+
+
+        self.inputElement.on('focus', onFocusInputHandler);
+        self.inputElement.on('keyup', onKeyUpInputHandler);
+        self.inputElement.on('blur', onBlurInputElement);
+
+        self._dropDownInputWrapper.on('click', onWrapperClick);
+
+        self._suggestionsWrapper.on('mouseover', onHoverSuggestionsWrapper);
+        self._suggestionsWrapper.on('mouseleave', onMouseLeaveSuggestionsWrapper);
+
 
         function onFocusInputHandler() {
             lookup();
@@ -49,7 +60,27 @@
             renderMatchedItems();
         }
 
-        // Logic
+        function onWrapperClick(event) {
+            if(event.target === this){
+                self.inputElement.element.focus();
+            }
+        }
+
+        function onBlurInputElement() {
+            if(self._suggestionsWrapper.hovered){
+                return;
+            }
+            hideSuggestionList();
+        }
+
+        function onHoverSuggestionsWrapper() {
+            self._suggestionsWrapper.hovered = true;
+        }
+
+        function onMouseLeaveSuggestionsWrapper() {
+            self._suggestionsWrapper.hovered = false;
+        }
+
 
         function createSuggestionWrapper() {
             var element = UiElement.create('div');
@@ -68,8 +99,6 @@
             positionSuggestionList();
         }
 
-
-        // @TODO: Сделать правильное закрытие
         function hideSuggestionList() {
             self._suggestionsWrapper.removeClass('show');
         }
@@ -90,6 +119,7 @@
                 - self._suggestionsWrapper.clientRight() + 'px';
         }
 
+
         function renderMatchedItems() {
             var children = Array.prototype.slice.apply(self._suggestionsWrapper.element.children);
 
@@ -102,12 +132,14 @@
             });
         }
 
+
         function renderItem(item) {
             var element = DropDownItem(self.options.itemTemplate, item);
             element.render();
 
             // TODO: разобрать на методы. Добавить setter val на uiElement
             element.element.on('click', function () {
+                console.log('Element clicked');
                 self.selectedItems[item.uid] = item;
                 this.parentNode.removeChild(this);
                 self.inputElement.val('');
@@ -116,7 +148,6 @@
             // @TODO:  Fix it.
             return element.element.element;
         }
-
 
         function lookup() {
             // @TODO: Оптимизировать поиск при пустом запоросе
