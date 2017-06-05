@@ -134,13 +134,22 @@
      * @param wrapper {UiElement}
      */
     _UiElement.prototype.wrap = function (wrapper) {
-        var parent = this.element.parentNode;
-        if(this.element.nextSibling){
-            parent.insertBefore(wrapper.element, this.element.nextSibling);
-        } else {
-            parent.appendChild(wrapper.element);
+        var el, parent;
+        if(wrapper instanceof _UiElement){
+            el = wrapper.element;    
+        } else{
+            el = wrapper;
         }
-        wrapper.element.appendChild(this.element);
+
+        parent = this.element.parentNode;
+
+
+        if(this.element.nextSibling){
+            parent.insertBefore(el, this.element.nextSibling);
+        } else {
+            parent.appendChild(el);
+        }
+        el.appendChild(this.element);
     };
 
     /**
@@ -190,6 +199,9 @@
      * @returns {Node}
      */
     _UiElement.prototype.append = function (child) {
+        if(child instanceof _UiElement){
+             return this.element.appendChild(child.element);
+        }
         return this.element.appendChild(child);
     };
 
@@ -239,21 +251,19 @@
 
     function _DropDownItem(template, data, matchedBy) {
         // TODO: Безопасный рендеринг
-        this.element = UiElement.create('div');
-        this.element.addClass('ui-drop-down-item-container');
-        console.log('_DropI', matchedBy);
+        this.uiElement = UiElement.create('div');
+        this.uiElement.addClass('ui-drop-down-item-container');
 
         this.template = template || dropDownItemDefaultTemplate;
         this.data = data;
         this.matchedBy = matchedBy;
-        console.log('replace', this.matchedBy);
         this.name = this.data.name.replace(this.matchedBy, '<span class="highlight">' + this.matchedBy + '</span>');
     }
     
     _DropDownItem.prototype.render = function () {
         var html = uiRenderTemplate(this.template, this);
-        this.element.html(html);
-        return this.element;
+        this.uiElement.html(html);
+        return this.uiElement;
     };
 
     window.DropDownItem = DropDownItem;
@@ -366,6 +376,8 @@
      */
     function _getPrefixVariables(prefix) {
         var variables = [];
+        var cyrillicKeyboard;
+        var latinKeyboard;
 
         // Получение всех кирилических вариантов по латинице
         // За счет того, что латиница уже, то одну строку на ней
@@ -380,8 +392,8 @@
 
         // Приведение расладок
 
-        var cyrillicKeyboard = _toCyrillicKeyboard(prefix);
-        var latinKeyboard = _toLatinKeyboard(prefix);
+        cyrillicKeyboard = _toCyrillicKeyboard(prefix);
+        latinKeyboard = _toLatinKeyboard(prefix);
         variables.push(cyrillicKeyboard);
         variables.push(latinKeyboard);
 
@@ -402,13 +414,14 @@
 
     function _latinToCyrillicVariants(str) {
         var variants;
+        var charts;
 
         // Сначала происходит замена "букв" из нескольких символов
         Object.keys(LATIN_TO_CYRILLIC_FIRST_REPLACE_MAP).forEach(function (char) {
            str = str.split(char).join(LATIN_TO_CYRILLIC_FIRST_REPLACE_MAP[char]);
         });
 
-        var charts = str.split('');
+        charts = str.split('');
 
         variants = _extendVariants(charts);
         variants = variants.map(function (variant) {
@@ -427,10 +440,13 @@
         function _extendVariants(charts) {
             var variants = [charts];
             var lastChart = charts[charts.length - 1];
+            var chartVariants;
+
             if(MULTIPLE_LATIN_CHARTS[lastChart]){
                 variants = [];
-                var chartVariants = MULTIPLE_LATIN_CHARTS[lastChart];
+                chartVariants = MULTIPLE_LATIN_CHARTS[lastChart];
                 chartVariants.forEach(function (chartVar) {
+
                     var newVariant = charts.slice(0, charts.length - 1);
                     newVariant.push(chartVar);
                     variants.push(newVariant);
@@ -475,31 +491,37 @@
      * @returns {Object}
      */
     function uiDropDownUsersMatcher(prefix, suggestion, selectedSuggestions, options) {
+        // TODO: произветси оптимизацию поиска
         options = options || { byProperty: 'name', uidProperty: 'uid' };
+
         var result = {
             matched: false,
             matchedBy: null
         };
-
+        var prefixes, suggestionParts, matched;
 
         if(selectedSuggestions[suggestion[options.uidProperty]]){
             return result;
         }
-        var originalPrefix = prefix;
+
         prefix = prefix.trim().toLowerCase();
 
-        var prefixes = _getPrefixVariables(prefix);
-        // TODO: Произвести оптимизацию (использовать map)
+        prefixes = _getPrefixVariables(prefix);
 
-        var suggestionParts = suggestion[options.byProperty].split(' ');
-        suggestionParts.unshift(suggestion[options.byProperty]);
+        suggestionParts = suggestion[options.byProperty].split(' ');
 
-        var matched = suggestionParts.some(function (part) {
+        suggestionParts.push(suggestion[options.byProperty]);
+
+        matched = suggestionParts.some(function (part) {
+            var originalPart = part;
             part = part.toLowerCase().trim();
+
             return prefixes.some(function (prefix) {
+                originalPart = originalPart.slice(0, prefix.length);
+
                 var matched =  part.slice(0, prefix.length) === prefix;
                 if(matched){
-                    result.matchedBy = originalPrefix;
+                    result.matchedBy = originalPart;
                 }
                 return matched;
             });
@@ -530,7 +552,7 @@
         self.options = options;
         self.matcher = options.matcher || uiDropDownUsersMatcher;
         // TODO: Добавить подсветку префиксов
-        self.options.itemTemplate = '<div class="ui-item" id="{data.id}"><p>{name}</p></div>';
+        self.options.itemTemplate = '<div class="ui-drop-down-multiple-item" data-user-id="{data.id}"><p>{name}</p></div>';
 
         self.matchedSuggestions = [];
         self.selectedItems = Object.create(null);
@@ -666,30 +688,30 @@
             });
 
             self.matchedSuggestions.forEach(function (item) {
-                self._suggestionsWrapper.element.appendChild(renderSuggestion(item));
+                self._suggestionsWrapper.append(renderSuggestion(item));
             });
         }
 
         function renderSuggestion(suggestion) {
             // TODO: Исправить проброс matchedBy
-            var mathedBy = suggestion.mathedBy;
+            var matchedBy = suggestion.mathedBy;
             delete suggestion.mathedBy;
 
-            var element = DropDownItem(self.options.itemTemplate, suggestion, mathedBy);
-            element.render();
+            var dropDownItem = DropDownItem(self.options.itemTemplate, suggestion, matchedBy);
+            dropDownItem.render();
 
             // TODO: разобрать на отдельные методы. Добавить setter val на uiElement
             // TODO: пернести обработчик на suggestion-list. Испрользовать делегирование,
             // TODO: чтообы избавиться от лишних обработчиков
-            element.element.on('click', function () {
+            // TODO: С ходу мешает необходимость ссылки на item(suggestion)
+            dropDownItem.uiElement.on('click', function () {
                 onSelectSuggestion(suggestion, this);
             });
-            // TODO: Сделать нормальный интрефейс для возврата элемента
-            return element.element.element;
+
+            return dropDownItem.uiElement.element;
         }
 
         function lookup() {
-            console.log('LOOKUP');
             var counter = 0;
             var idx = 0;
             var val = self.inputElement.val();
@@ -715,18 +737,20 @@
                 return;
             }
 
+            console.time('lookUp');
             idx = 0;
             counter = 0;
             while (counter < self.options.limit && idx < self.suggestions.length) {
                 var matchResult = self.matcher(val, self.suggestions[idx], self.selectedItems);
                 if(matchResult.matched){
-                    // TODO: fix it correct
+
                     self.suggestions[idx].mathedBy = matchResult.matchedBy;
                     self.matchedSuggestions.push(self.suggestions[idx]);
                     counter++;
                 }
                 idx++;
             }
+            console.timeEnd('lookUp');
         }
 
         function onSelectSuggestion(item, element) {

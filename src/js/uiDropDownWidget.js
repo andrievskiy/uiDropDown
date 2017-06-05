@@ -18,7 +18,7 @@
         self.options = options;
         self.matcher = options.matcher || uiDropDownUsersMatcher;
         // TODO: Добавить подсветку префиксов
-        self.options.itemTemplate = '<div class="ui-item" id="{data.id}"><p>{name}</p></div>';
+        self.options.itemTemplate = '<div class="ui-drop-down-multiple-item" data-user-id="{data.id}"><p>{name}</p></div>';
 
         self.matchedSuggestions = [];
         self.selectedItems = Object.create(null);
@@ -154,30 +154,30 @@
             });
 
             self.matchedSuggestions.forEach(function (item) {
-                self._suggestionsWrapper.element.appendChild(renderSuggestion(item));
+                self._suggestionsWrapper.append(renderSuggestion(item));
             });
         }
 
         function renderSuggestion(suggestion) {
             // TODO: Исправить проброс matchedBy
-            var mathedBy = suggestion.mathedBy;
+            var matchedBy = suggestion.mathedBy;
             delete suggestion.mathedBy;
 
-            var element = DropDownItem(self.options.itemTemplate, suggestion, mathedBy);
-            element.render();
+            var dropDownItem = DropDownItem(self.options.itemTemplate, suggestion, matchedBy);
+            dropDownItem.render();
 
             // TODO: разобрать на отдельные методы. Добавить setter val на uiElement
             // TODO: пернести обработчик на suggestion-list. Испрользовать делегирование,
             // TODO: чтообы избавиться от лишних обработчиков
-            element.element.on('click', function () {
+            // TODO: С ходу мешает необходимость ссылки на item(suggestion)
+            dropDownItem.uiElement.on('click', function () {
                 onSelectSuggestion(suggestion, this);
             });
-            // TODO: Сделать нормальный интрефейс для возврата элемента
-            return element.element.element;
+
+            return dropDownItem.uiElement.element;
         }
 
         function lookup() {
-            console.log('LOOKUP');
             var counter = 0;
             var idx = 0;
             var val = self.inputElement.val();
@@ -203,18 +203,20 @@
                 return;
             }
 
+            console.time('lookUp');
             idx = 0;
             counter = 0;
             while (counter < self.options.limit && idx < self.suggestions.length) {
                 var matchResult = self.matcher(val, self.suggestions[idx], self.selectedItems);
                 if(matchResult.matched){
-                    // TODO: fix it correct
+
                     self.suggestions[idx].mathedBy = matchResult.matchedBy;
                     self.matchedSuggestions.push(self.suggestions[idx]);
                     counter++;
                 }
                 idx++;
             }
+            console.timeEnd('lookUp');
         }
 
         function onSelectSuggestion(item, element) {
