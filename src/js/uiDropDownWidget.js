@@ -37,7 +37,7 @@
 
         self._dropDownInputWrapper.on('click', onWrapperClick);
 
-        self._suggestionsWrapper.on('mouseover', onHoverSuggestionsWrapper);
+        self._suggestionsWrapper.on('mouseenter', onHoverSuggestionsWrapper);
         self._suggestionsWrapper.on('mouseleave', onMouseLeaveSuggestionsWrapper);
 
         self.getSelected = function () {
