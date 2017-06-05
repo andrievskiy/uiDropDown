@@ -1,12 +1,14 @@
-/**
- * Created by andrievskiy on 03.06.17.
- */
 ;(function (window) {
     function renderTemplate(template, data) {
-          return template.replace(/{(\w+)}/g, function (match, key) {
-            return data[key] || '';
+        return template.replace(/{([\w|:]+)}/g, function (match, key) {
+
+            var isHtml = ~key.indexOf('::html');
+            if(isHtml){
+                key = key.split('::')[0];
+                return data[key] || '';
+            }
+            return uiDropDownHtmlEscaping(data[key] || '');
         })
     }
-
     window.uiRenderTemplate = renderTemplate;
 })(window);
