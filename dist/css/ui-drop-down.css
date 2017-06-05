@@ -1,0 +1,19 @@
+.ui-drop-down-autocomplete-suggestions {
+  position: absolute;
+  max-height: 200px;
+  display: none;
+  border: 1px solid #ccc;
+  overflow-y: hidden;
+  transition: 0.1s linear all;
+  background: #fff; }
+
+.ui-drop-down-autocomplete-suggestions.show {
+  display: block; }
+
+.ui-drop-down-item-container {
+  border-bottom: 1px solid #cccccc;
+  padding: 2px;
+  cursor: pointer; }
+
+.ui-drop-down-highlight {
+  color: red; }

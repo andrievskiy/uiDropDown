@@ -17,8 +17,12 @@
         self.suggestions = options.suggestions || [];
         self.options = options;
         self.matcher = options.matcher || uiDropDownUsersMatcher;
-        // @TODO: Добавить подсветку префиксов
-        self.options.itemTemplate = '<div class="ui-item" id="{uid}"><span>{name}</span></div>';
+
+        self.options.itemTemplate =
+            '<div class="ui-drop-down-multiple-item" data-user-id="{data.id}">' +
+            '   <p>{name::html}</p>' +
+            '</div>';
+
 
         self.matchedSuggestions = [];
         self.selectedItems = Object.create(null);
@@ -32,12 +36,12 @@
         self._dropDownInputWrapper.element.insertBefore(self._selectedContainer.element, self.inputElement.element);
 
         self.inputElement.on('focus', onFocusInputHandler);
-        self.inputElement.on('keyup', debounce(onKeyUpInputHandler, 300));
+        self.inputElement.on('keyup', deBounce(onKeyUpInputHandler, 300));
         self.inputElement.on('blur', onBlurInputElement);
 
         self._dropDownInputWrapper.on('click', onWrapperClick);
 
-        self._suggestionsWrapper.on('mouseover', onHoverSuggestionsWrapper);
+        self._suggestionsWrapper.on('mouseenter', onHoverSuggestionsWrapper);
         self._suggestionsWrapper.on('mouseleave', onMouseLeaveSuggestionsWrapper);
 
         self.getSelected = function () {
@@ -46,7 +50,7 @@
             });
         };
 
-        function debounce(func, wait, immediate) {
+        function deBounce(func, wait, immediate) {
             var timeout;
             return function () {
                 var context = this, args = arguments;
@@ -154,24 +158,30 @@
             });
 
             self.matchedSuggestions.forEach(function (item) {
-                self._suggestionsWrapper.element.appendChild(renderSuggestion(item));
+                self._suggestionsWrapper.append(renderSuggestion(item));
             });
         }
 
         function renderSuggestion(suggestion) {
-            var element = DropDownItem(self.options.itemTemplate, suggestion);
-            element.render();
+            // TODO: Исправить проброс matchedBy
+            var matchedBy = suggestion.mathedBy;
+            delete suggestion.mathedBy;
 
-            // TODO: разобрать на методы. Добавить setter val на uiElement
-            element.element.on('click', function () {
+            var dropDownItem = DropDownItem(self.options.itemTemplate, suggestion, matchedBy);
+            dropDownItem.render();
+
+            // TODO: разобрать на отдельные методы. Добавить setter val на uiElement
+            // TODO: пернести обработчик на suggestion-list. Испрользовать делегирование,
+            // TODO: чтообы избавиться от лишних обработчиков
+            // TODO: С ходу мешает необходимость ссылки на item(suggestion)
+            dropDownItem.uiElement.on('click', function () {
                 onSelectSuggestion(suggestion, this);
             });
-            // @TODO:  Fix it.
-            return element.element.element;
+
+            return dropDownItem.uiElement.element;
         }
 
         function lookup() {
-            console.log('LOOKUP');
             var counter = 0;
             var idx = 0;
             var val = self.inputElement.val();
@@ -197,15 +207,20 @@
                 return;
             }
 
+            console.time('lookUp');
             idx = 0;
             counter = 0;
             while (counter < self.options.limit && idx < self.suggestions.length) {
-                if (self.matcher(val, self.suggestions[idx], self.selectedItems)) {
+                var matchResult = self.matcher(val, self.suggestions[idx], self.selectedItems);
+                if(matchResult.matched){
+
+                    self.suggestions[idx].mathedBy = matchResult.matchedBy;
                     self.matchedSuggestions.push(self.suggestions[idx]);
                     counter++;
                 }
                 idx++;
             }
+            console.timeEnd('lookUp');
         }
 
         function onSelectSuggestion(item, element) {
@@ -219,7 +234,7 @@
         function renderSelectedSuggestion(suggestion) {
             var element = UiElement.create('div');
             element.addClass('ui-drop-down-selected-suggestion');
-            element.html(suggestion.name);
+            element.html(uiDropDownHtmlEscaping(suggestion.name));
             self._selectedContainer.append(element.element);
         }
     }

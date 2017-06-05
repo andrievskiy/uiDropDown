@@ -134,19 +134,28 @@
      * @param wrapper {UiElement}
      */
     _UiElement.prototype.wrap = function (wrapper) {
-        var parent = this.element.parentNode;
-        if(this.element.nextSibling){
-            parent.insertBefore(wrapper.element, this.element.nextSibling);
-        } else {
-            parent.appendChild(wrapper.element);
+        var el, parent;
+        if(wrapper instanceof _UiElement){
+            el = wrapper.element;
+        } else{
+            el = wrapper;
         }
-        wrapper.element.appendChild(this.element);
+
+        parent = this.element.parentNode;
+
+
+        if(this.element.nextSibling){
+            parent.insertBefore(el, this.element.nextSibling);
+        } else {
+            parent.appendChild(el);
+        }
+        el.appendChild(this.element);
     };
 
     /**
      *
      * @param value
-     * @returns {*|string|Number}
+     * @returns {*|string|Number|undefined}
      */
     _UiElement.prototype.val = function (value) {
         if(value != undefined){
@@ -190,6 +199,9 @@
      * @returns {Node}
      */
     _UiElement.prototype.append = function (child) {
+        if(child instanceof _UiElement){
+             return this.element.appendChild(child.element);
+        }
         return this.element.appendChild(child);
     };
 
@@ -199,6 +211,10 @@
             return;
         }
         return this.element.innerHTML;
+    };
+
+    _UiElement.prototype.remove = function(){
+        this.element.parentNode.removeChild(this.element);
     };
 
     /**
