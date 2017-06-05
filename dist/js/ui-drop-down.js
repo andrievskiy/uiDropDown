@@ -136,7 +136,7 @@
     _UiElement.prototype.wrap = function (wrapper) {
         var el, parent;
         if(wrapper instanceof _UiElement){
-            el = wrapper.element;    
+            el = wrapper.element;
         } else{
             el = wrapper;
         }
@@ -155,7 +155,7 @@
     /**
      *
      * @param value
-     * @returns {*|string|Number}
+     * @returns {*|string|Number|undefined}
      */
     _UiElement.prototype.val = function (value) {
         if(value != undefined){
@@ -213,6 +213,10 @@
         return this.element.innerHTML;
     };
 
+    _UiElement.prototype.remove = function(){
+        this.element.parentNode.removeChild(this.element);
+    };
+
     /**
      * Прокси для проброса style
      */
@@ -227,21 +231,56 @@
     window.UiElement = UiElement;
 
 })(window);
-/**
- * Created by andrievskiy on 03.06.17.
- */
-;(function (window) {
-    function renderTemplate(template, data) {
-          return template.replace(/{(\w+)}/g, function (match, key) {
-            return data[key] || '';
-        })
+(function (window) {
+    var ESCAPE_CHARS = {
+        '¢': 'cent',
+        '£': 'pound',
+        '¥': 'yen',
+        '€': 'euro',
+        '©': 'copy',
+        '®': 'reg',
+        '<': 'lt',
+        '>': 'gt',
+        '"': 'quot',
+        '&': 'amp',
+        '\'': '#39'
+    }, regex;
+
+    function _makeRegexpString() {
+        var regexString = '[';
+
+        for (var key in ESCAPE_CHARS) {
+            regexString += key;
+        }
+        regexString += ']';
+
+        return regexString;
     }
 
+    regex = new RegExp(_makeRegexpString(), 'g');
+
+    function uiDropDownHtmlEscaping(str) {
+        return str.replace(regex, function (m) {
+            return '&' + ESCAPE_CHARS[m] + ';';
+        });
+    }
+
+    window.uiDropDownHtmlEscaping = uiDropDownHtmlEscaping;
+})(window);
+;(function (window) {
+    function renderTemplate(template, data) {
+        return template.replace(/{([\w|:]+)}/g, function (match, key) {
+
+            var isHtml = ~key.indexOf('::html');
+            if(isHtml){
+                key = key.split('::')[0];
+                return data[key] || '';
+            }
+            return uiDropDownHtmlEscaping(data[key] || '');
+        })
+    }
     window.uiRenderTemplate = renderTemplate;
 })(window);
-/**
- * Created by andrievskiy on 03.06.17.
- */
 ;(function (window) {
     var dropDownItemDefaultTemplate = '';
 
@@ -250,14 +289,15 @@
     }
 
     function _DropDownItem(template, data, matchedBy) {
-        // TODO: Безопасный рендеринг
         this.uiElement = UiElement.create('div');
         this.uiElement.addClass('ui-drop-down-item-container');
 
         this.template = template || dropDownItemDefaultTemplate;
         this.data = data;
         this.matchedBy = matchedBy;
-        this.name = this.data.name.replace(this.matchedBy, '<span class="highlight">' + this.matchedBy + '</span>');
+        this.name = uiDropDownHtmlEscaping(this.data.name);
+        this.name = this.name.replace(this.matchedBy, '<span class="ui-drop-down-highlight">' + this.matchedBy + '</span>');
+        console.log('_DropDownItem', this.matchedBy);
     }
     
     _DropDownItem.prototype.render = function () {
@@ -551,8 +591,12 @@
         self.suggestions = options.suggestions || [];
         self.options = options;
         self.matcher = options.matcher || uiDropDownUsersMatcher;
-        // TODO: Добавить подсветку префиксов
-        self.options.itemTemplate = '<div class="ui-drop-down-multiple-item" data-user-id="{data.id}"><p>{name}</p></div>';
+
+        self.options.itemTemplate =
+            '<div class="ui-drop-down-multiple-item" data-user-id="{data.id}">' +
+            '   <p>{name::html}</p>' +
+            '</div>';
+
 
         self.matchedSuggestions = [];
         self.selectedItems = Object.create(null);
@@ -600,11 +644,13 @@
             lookup();
             showSuggestionList();
             renderMatchedSuggestions();
+            //setSuggestionListSize();
         }
 
         function onKeyUpInputHandler() {
             lookup();
             renderMatchedSuggestions();
+            //setSuggestionListSize();
         }
 
         function onWrapperClick(event) {
@@ -677,6 +723,16 @@
             self._suggestionsWrapper.style.width =
                 self.inputElement.offsetWidth() - self._suggestionsWrapper.clientLeft()
                 - self._suggestionsWrapper.clientRight() + 'px';
+        }
+
+        function setSuggestionListSize(){
+            var suggestionHeight = 0;
+            var children = Array.prototype.slice.apply(self._suggestionsWrapper.element.children);
+            children.forEach(function(child){
+                suggestionHeight += child.offsetHeight;
+            });
+            selector._suggestionsWrapper.style.heigth = suggestionHeight;
+
         }
 
 
@@ -764,7 +820,7 @@
         function renderSelectedSuggestion(suggestion) {
             var element = UiElement.create('div');
             element.addClass('ui-drop-down-selected-suggestion');
-            element.html(suggestion.name);
+            element.html(uiDropDownHtmlEscaping(suggestion.name));
             self._selectedContainer.append(element.element);
         }
     }
