@@ -17,7 +17,7 @@
         self.suggestions = options.suggestions || [];
         self.options = options;
         self.matcher = options.matcher || uiDropDownUsersMatcher;
-        // @TODO: Добавить подсветку префиксов
+        // TODO: Добавить подсветку префиксов
         self.options.itemTemplate = '<div class="ui-item" id="{data.id}"><p>{name}</p></div>';
 
         self.matchedSuggestions = [];
@@ -32,7 +32,7 @@
         self._dropDownInputWrapper.element.insertBefore(self._selectedContainer.element, self.inputElement.element);
 
         self.inputElement.on('focus', onFocusInputHandler);
-        self.inputElement.on('keyup', debounce(onKeyUpInputHandler, 300));
+        self.inputElement.on('keyup', deBounce(onKeyUpInputHandler, 300));
         self.inputElement.on('blur', onBlurInputElement);
 
         self._dropDownInputWrapper.on('click', onWrapperClick);
@@ -46,7 +46,7 @@
             });
         };
 
-        function debounce(func, wait, immediate) {
+        function deBounce(func, wait, immediate) {
             var timeout;
             return function () {
                 var context = this, args = arguments;
@@ -159,18 +159,20 @@
         }
 
         function renderSuggestion(suggestion) {
-            // TODO: fix it
+            // TODO: Исправить проброс matchedBy
             var mathedBy = suggestion.mathedBy;
             delete suggestion.mathedBy;
 
             var element = DropDownItem(self.options.itemTemplate, suggestion, mathedBy);
             element.render();
 
-            // TODO: разобрать на методы. Добавить setter val на uiElement
+            // TODO: разобрать на отдельные методы. Добавить setter val на uiElement
+            // TODO: пернести обработчик на suggestion-list. Испрользовать делегирование,
+            // TODO: чтообы избавиться от лишних обработчиков
             element.element.on('click', function () {
                 onSelectSuggestion(suggestion, this);
             });
-            // @TODO:  Fix it.
+            // TODO: Сделать нормальный интрефейс для возврата элемента
             return element.element.element;
         }
 

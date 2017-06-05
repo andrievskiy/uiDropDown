@@ -9,6 +9,7 @@
     }
 
     function _DropDownItem(template, data, matchedBy) {
+        // TODO: Безопасный рендеринг
         this.element = UiElement.create('div');
         this.element.addClass('ui-drop-down-item-container');
         console.log('_DropI', matchedBy);

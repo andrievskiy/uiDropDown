@@ -1,7 +1,5 @@
 (function (window) {
     'use strict';
-
-    // @TODO: Сделать оптимизацию тормозов
     var LATIN_TO_CYRILLIC_KEYBOARD = {
         'q': 'й',
         'w': 'ц',
@@ -231,11 +229,10 @@
         prefix = prefix.trim().toLowerCase();
 
         var prefixes = _getPrefixVariables(prefix);
+        // TODO: Произвести оптимизацию (использовать map)
 
         var suggestionParts = suggestion[options.byProperty].split(' ');
         suggestionParts.unshift(suggestion[options.byProperty]);
-
-
 
         var matched = suggestionParts.some(function (part) {
             part = part.toLowerCase().trim();
