@@ -23,6 +23,11 @@
             '   <p>{name::html}</p>' +
             '</div>';
 
+        self.options.selectedItemTemplae =
+            '<div class="ui-drop-down-selected-item">' +
+            '   <div class="ui-drop-down-selected-name">{name}</div>' +
+            '   <a class="ui-drop-down-slected-remove" data-user-id="{data.uid}" data-is-remove-button="true">X</a>' +
+            '</div>';
 
         self.matchedSuggestions = [];
         self.selectedItems = Object.create(null);
@@ -167,7 +172,7 @@
             var matchedBy = suggestion.mathedBy;
             delete suggestion.mathedBy;
 
-            var dropDownItem = DropDownItem(self.options.itemTemplate, suggestion, matchedBy);
+            var dropDownItem = DropDownSuggestionItem(self.options.itemTemplate, suggestion, matchedBy);
             dropDownItem.render();
 
             // TODO: разобрать на отдельные методы. Добавить setter val на uiElement
@@ -234,7 +239,7 @@
         function renderSelectedSuggestion(suggestion) {
             var element = UiElement.create('div');
             element.addClass('ui-drop-down-selected-suggestion');
-            element.html(uiDropDownHtmlEscaping(suggestion.name));
+            element.html(uiRenderTemplate(self.options.selectedItemTemplae, suggestion));
             self._selectedContainer.append(element.element);
         }
     }

@@ -284,11 +284,11 @@
 ;(function (window) {
     var dropDownItemDefaultTemplate = '';
 
-    function DropDownItem(template, data, matchedBy) {
-        return new _DropDownItem(template, data, matchedBy);
+    function DropDownSuggestionItem(template, data, matchedBy) {
+        return new _DropDownSuggestionItem(template, data, matchedBy);
     }
 
-    function _DropDownItem(template, data, matchedBy) {
+    function _DropDownSuggestionItem(template, data, matchedBy) {
         this.uiElement = UiElement.create('div');
         this.uiElement.addClass('ui-drop-down-item-container');
 
@@ -300,13 +300,13 @@
         console.log('_DropDownItem', this.matchedBy);
     }
     
-    _DropDownItem.prototype.render = function () {
+    _DropDownSuggestionItem.prototype.render = function () {
         var html = uiRenderTemplate(this.template, this);
         this.uiElement.html(html);
         return this.uiElement;
     };
 
-    window.DropDownItem = DropDownItem;
+    window.DropDownSuggestionItem = DropDownSuggestionItem;
 })(window);
 (function (window) {
     'use strict';
@@ -597,6 +597,11 @@
             '   <p>{name::html}</p>' +
             '</div>';
 
+        self.options.selectedItemTemplae =
+            '<div class="ui-drop-down-selected-item">' +
+            '   <div class="ui-drop-down-selected-name">{name}</div>' +
+            '   <a class="ui-drop-down-slected-remove" data-user-id="{data.uid}" data-is-remove-button="true">X</a>' +
+            '</div>';
 
         self.matchedSuggestions = [];
         self.selectedItems = Object.create(null);
@@ -644,13 +649,11 @@
             lookup();
             showSuggestionList();
             renderMatchedSuggestions();
-            //setSuggestionListSize();
         }
 
         function onKeyUpInputHandler() {
             lookup();
             renderMatchedSuggestions();
-            //setSuggestionListSize();
         }
 
         function onWrapperClick(event) {
@@ -725,16 +728,6 @@
                 - self._suggestionsWrapper.clientRight() + 'px';
         }
 
-        function setSuggestionListSize(){
-            var suggestionHeight = 0;
-            var children = Array.prototype.slice.apply(self._suggestionsWrapper.element.children);
-            children.forEach(function(child){
-                suggestionHeight += child.offsetHeight;
-            });
-            selector._suggestionsWrapper.style.heigth = suggestionHeight;
-
-        }
-
 
         function renderMatchedSuggestions() {
             var children = Array.prototype.slice.apply(self._suggestionsWrapper.element.children);
@@ -753,7 +746,7 @@
             var matchedBy = suggestion.mathedBy;
             delete suggestion.mathedBy;
 
-            var dropDownItem = DropDownItem(self.options.itemTemplate, suggestion, matchedBy);
+            var dropDownItem = DropDownSuggestionItem(self.options.itemTemplate, suggestion, matchedBy);
             dropDownItem.render();
 
             // TODO: разобрать на отдельные методы. Добавить setter val на uiElement
@@ -820,7 +813,7 @@
         function renderSelectedSuggestion(suggestion) {
             var element = UiElement.create('div');
             element.addClass('ui-drop-down-selected-suggestion');
-            element.html(uiDropDownHtmlEscaping(suggestion.name));
+            element.html(uiRenderTemplate(self.options.selectedItemTemplae, suggestion));
             self._selectedContainer.append(element.element);
         }
     }

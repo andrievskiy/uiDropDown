@@ -1,11 +1,11 @@
 ;(function (window) {
     var dropDownItemDefaultTemplate = '';
 
-    function DropDownItem(template, data, matchedBy) {
-        return new _DropDownItem(template, data, matchedBy);
+    function DropDownSuggestionItem(template, data, matchedBy) {
+        return new _DropDownSuggestionItem(template, data, matchedBy);
     }
 
-    function _DropDownItem(template, data, matchedBy) {
+    function _DropDownSuggestionItem(template, data, matchedBy) {
         this.uiElement = UiElement.create('div');
         this.uiElement.addClass('ui-drop-down-item-container');
 
@@ -17,11 +17,11 @@
         console.log('_DropDownItem', this.matchedBy);
     }
     
-    _DropDownItem.prototype.render = function () {
+    _DropDownSuggestionItem.prototype.render = function () {
         var html = uiRenderTemplate(this.template, this);
         this.uiElement.html(html);
         return this.uiElement;
     };
 
-    window.DropDownItem = DropDownItem;
+    window.DropDownSuggestionItem = DropDownSuggestionItem;
 })(window);
