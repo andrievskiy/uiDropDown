@@ -155,7 +155,7 @@
     /**
      *
      * @param value
-     * @returns {*|string|Number}
+     * @returns {*|string|Number|undefined}
      */
     _UiElement.prototype.val = function (value) {
         if(value != undefined){
@@ -215,7 +215,7 @@
 
     _UiElement.prototype.remove = function(){
         this.element.parentNode.removeChild(this.element);
-    }
+    };
 
     /**
      * Прокси для проброса style

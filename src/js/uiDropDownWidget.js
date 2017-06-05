@@ -17,8 +17,12 @@
         self.suggestions = options.suggestions || [];
         self.options = options;
         self.matcher = options.matcher || uiDropDownUsersMatcher;
-        // TODO: Добавить подсветку префиксов
-        self.options.itemTemplate = '<div class="ui-drop-down-multiple-item" data-user-id="{data.id}"><p>{name}</p></div>';
+
+        self.options.itemTemplate =
+            '<div class="ui-drop-down-multiple-item" data-user-id="{data.id}">' +
+            '   <p>{name::html}</p>' +
+            '</div>';
+
 
         self.matchedSuggestions = [];
         self.selectedItems = Object.create(null);
@@ -230,7 +234,7 @@
         function renderSelectedSuggestion(suggestion) {
             var element = UiElement.create('div');
             element.addClass('ui-drop-down-selected-suggestion');
-            element.html(suggestion.name);
+            element.html(uiDropDownHtmlEscaping(suggestion.name));
             self._selectedContainer.append(element.element);
         }
     }

@@ -1,6 +1,3 @@
-/**
- * Created by andrievskiy on 03.06.17.
- */
 ;(function (window) {
     var dropDownItemDefaultTemplate = '';
 
@@ -9,14 +6,15 @@
     }
 
     function _DropDownItem(template, data, matchedBy) {
-        // TODO: Безопасный рендеринг
         this.uiElement = UiElement.create('div');
         this.uiElement.addClass('ui-drop-down-item-container');
 
         this.template = template || dropDownItemDefaultTemplate;
         this.data = data;
         this.matchedBy = matchedBy;
-        this.name = this.data.name.replace(this.matchedBy, '<span class="highlight">' + this.matchedBy + '</span>');
+        this.name = uiDropDownHtmlEscaping(this.data.name);
+        this.name = this.name.replace(this.matchedBy, '<span class="ui-drop-down-highlight">' + this.matchedBy + '</span>');
+        console.log('_DropDownItem', this.matchedBy);
     }
     
     _DropDownItem.prototype.render = function () {
