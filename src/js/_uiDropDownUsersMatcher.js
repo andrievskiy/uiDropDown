@@ -106,6 +106,8 @@
      */
     function _getPrefixVariables(prefix) {
         var variables = [];
+        var cyrillicKeyboard;
+        var latinKeyboard;
 
         // Получение всех кирилических вариантов по латинице
         // За счет того, что латиница уже, то одну строку на ней
@@ -120,8 +122,8 @@
 
         // Приведение расладок
 
-        var cyrillicKeyboard = _toCyrillicKeyboard(prefix);
-        var latinKeyboard = _toLatinKeyboard(prefix);
+        cyrillicKeyboard = _toCyrillicKeyboard(prefix);
+        latinKeyboard = _toLatinKeyboard(prefix);
         variables.push(cyrillicKeyboard);
         variables.push(latinKeyboard);
 
@@ -142,13 +144,14 @@
 
     function _latinToCyrillicVariants(str) {
         var variants;
+        var charts;
 
         // Сначала происходит замена "букв" из нескольких символов
         Object.keys(LATIN_TO_CYRILLIC_FIRST_REPLACE_MAP).forEach(function (char) {
            str = str.split(char).join(LATIN_TO_CYRILLIC_FIRST_REPLACE_MAP[char]);
         });
 
-        var charts = str.split('');
+        charts = str.split('');
 
         variants = _extendVariants(charts);
         variants = variants.map(function (variant) {
@@ -167,10 +170,13 @@
         function _extendVariants(charts) {
             var variants = [charts];
             var lastChart = charts[charts.length - 1];
+            var chartVariants;
+
             if(MULTIPLE_LATIN_CHARTS[lastChart]){
                 variants = [];
-                var chartVariants = MULTIPLE_LATIN_CHARTS[lastChart];
+                chartVariants = MULTIPLE_LATIN_CHARTS[lastChart];
                 chartVariants.forEach(function (chartVar) {
+
                     var newVariant = charts.slice(0, charts.length - 1);
                     newVariant.push(chartVar);
                     variants.push(newVariant);
@@ -215,31 +221,37 @@
      * @returns {Object}
      */
     function uiDropDownUsersMatcher(prefix, suggestion, selectedSuggestions, options) {
+        // TODO: произветси оптимизацию поиска
         options = options || { byProperty: 'name', uidProperty: 'uid' };
+
         var result = {
             matched: false,
             matchedBy: null
         };
-
+        var prefixes, suggestionParts, matched;
 
         if(selectedSuggestions[suggestion[options.uidProperty]]){
             return result;
         }
-        var originalPrefix = prefix;
+
         prefix = prefix.trim().toLowerCase();
 
-        var prefixes = _getPrefixVariables(prefix);
-        // TODO: Произвести оптимизацию (использовать map)
+        prefixes = _getPrefixVariables(prefix);
 
-        var suggestionParts = suggestion[options.byProperty].split(' ');
-        suggestionParts.unshift(suggestion[options.byProperty]);
+        suggestionParts = suggestion[options.byProperty].split(' ');
 
-        var matched = suggestionParts.some(function (part) {
+        suggestionParts.push(suggestion[options.byProperty]);
+
+        matched = suggestionParts.some(function (part) {
+            var originalPart = part;
             part = part.toLowerCase().trim();
+
             return prefixes.some(function (prefix) {
+                originalPart = originalPart.slice(0, prefix.length);
+
                 var matched =  part.slice(0, prefix.length) === prefix;
                 if(matched){
-                    result.matchedBy = originalPrefix;
+                    result.matchedBy = originalPart;
                 }
                 return matched;
             });
