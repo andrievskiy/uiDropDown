@@ -17,3 +17,24 @@
 
 .ui-drop-down-highlight {
   color: red; }
+
+.ui-drop-down-selected-item {
+  display: inline-block;
+  background: blue;
+  color: #fff; }
+
+.ui-drop-down-input-wrapper {
+  border: 1px solid #ccc; }
+
+.ui-drop-down-selected-container, .ui-drop-down-selected-suggestion {
+  display: inline-block; }
+
+input[type="text"] {
+  display: inline-block;
+  width: 400px; }
+
+.ui-drop-down-selected-container {
+  display: none; }
+
+.ui-drop-down-selected-container.show {
+  display: inline-block; }

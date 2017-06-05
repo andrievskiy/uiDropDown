@@ -71,7 +71,15 @@
             var target = event.target;
             if(target.getAttribute('data-is-remove-button') == 'true'){
                 removeSelectedItem(target);
+                if(!self.getSelected().length){
+                    hideSelectedContainer();
+                    showInputElement();
+                }
+            } else {
+                showInputElement();
+                self.inputElement.element.focus();
             }
+
         }
 
         function removeSelectedItem(element){
@@ -80,6 +88,7 @@
             var container = element.parentNode;
             delete self.selectedItems[uid];
             container.parentNode.removeChild(container);
+
         }
 
         function onFocusInputHandler() {
@@ -95,6 +104,7 @@
 
         function onWrapperClick(event) {
             if (event.target === this) {
+                showInputElement();
                 self.inputElement.element.focus();
             }
         }
@@ -121,6 +131,26 @@
             self.inputElement.val('');
             hideSuggestionList();
             renderSelectedSuggestion(item);
+            hideInputElement();
+            showSelectedContainer();
+        }
+
+        function showSelectedContainer(){
+            self._selectedContainer.addClass('show');
+        }
+
+        function hideSelectedContainer(){
+            self._selectedContainer.removeClass('show');
+        }
+
+        function hideInputElement(){
+            if(self.getSelected().length){
+                self.inputElement.style.display = 'none';
+            }
+        }
+
+        function showInputElement(){
+            self.inputElement.style.display = 'block';
         }
 
 
@@ -132,7 +162,7 @@
 
         function createDropDownInputWrapper() {
             function setWidth(wrapper) {
-                wrapper.style.width = self.inputElement.clientWidth() + 'px';
+                wrapper.style.width = self.inputElement.offsetWidth() + 'px';
             }
 
             var element = UiElement.create('div');
@@ -162,7 +192,7 @@
          * Прозводит позиционирование блока предложений относительно эелемента
          */
         function positionSuggestionList() {
-            var inputWrapperCoordinates = self._dropDownInputWrapper.getCoordinates();
+            var inputWrapperCoordinates = self.inputElement.getCoordinates();
 
             self._suggestionsWrapper.style.top =
                 inputWrapperCoordinates.bottom + self.inputElement.clientTop() + 'px';
@@ -270,7 +300,7 @@
                 clearTimeout(timeout);
                 timeout = setTimeout(later, wait);
                 if (callNow) {
-                    func.apply(context, args); 
+                    func.apply(context, args);
                 }
             };
         }

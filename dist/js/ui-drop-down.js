@@ -679,7 +679,15 @@ if (!Object.assign) {
             var target = event.target;
             if(target.getAttribute('data-is-remove-button') == 'true'){
                 removeSelectedItem(target);
+                if(!self.getSelected().length){
+                    hideSelectedContainer();
+                    showInputElement();
+                }
+            } else {
+                showInputElement();
+                self.inputElement.element.focus();
             }
+
         }
 
         function removeSelectedItem(element){
@@ -688,6 +696,7 @@ if (!Object.assign) {
             var container = element.parentNode;
             delete self.selectedItems[uid];
             container.parentNode.removeChild(container);
+
         }
 
         function onFocusInputHandler() {
@@ -703,6 +712,7 @@ if (!Object.assign) {
 
         function onWrapperClick(event) {
             if (event.target === this) {
+                showInputElement();
                 self.inputElement.element.focus();
             }
         }
@@ -729,6 +739,26 @@ if (!Object.assign) {
             self.inputElement.val('');
             hideSuggestionList();
             renderSelectedSuggestion(item);
+            hideInputElement();
+            showSelectedContainer();
+        }
+
+        function showSelectedContainer(){
+            self._selectedContainer.addClass('show');
+        }
+
+        function hideSelectedContainer(){
+            self._selectedContainer.removeClass('show');
+        }
+
+        function hideInputElement(){
+            if(self.getSelected().length){
+                self.inputElement.style.display = 'none';
+            }
+        }
+
+        function showInputElement(){
+            self.inputElement.style.display = 'block';
         }
 
 
@@ -740,7 +770,7 @@ if (!Object.assign) {
 
         function createDropDownInputWrapper() {
             function setWidth(wrapper) {
-                wrapper.style.width = self.inputElement.clientWidth() + 'px';
+                wrapper.style.width = self.inputElement.offsetWidth() + 'px';
             }
 
             var element = UiElement.create('div');
@@ -770,7 +800,7 @@ if (!Object.assign) {
          * Прозводит позиционирование блока предложений относительно эелемента
          */
         function positionSuggestionList() {
-            var inputWrapperCoordinates = self._dropDownInputWrapper.getCoordinates();
+            var inputWrapperCoordinates = self.inputElement.getCoordinates();
 
             self._suggestionsWrapper.style.top =
                 inputWrapperCoordinates.bottom + self.inputElement.clientTop() + 'px';
@@ -868,14 +898,18 @@ if (!Object.assign) {
             var timeout;
             return function () {
                 var context = this, args = arguments;
+
                 var later = function () {
                     timeout = null;
                     if (!immediate) func.apply(context, args);
                 };
+
                 var callNow = immediate && !timeout;
                 clearTimeout(timeout);
                 timeout = setTimeout(later, wait);
-                if (callNow) func.apply(context, args);
+                if (callNow) {
+                    func.apply(context, args);
+                }
             };
         }
 
