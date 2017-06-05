@@ -8,25 +8,28 @@
 
     function UiDropDown(selector, options) {
         var self = this;
+
         self.cache = {};
 
         options = options || defaultUiDropDownOptions;
 
         self.lastVal = null;
         self.inputElement = UiElement(selector);
+
+
         self.suggestions = options.suggestions || [];
         self.options = options;
         self.matcher = options.matcher || uiDropDownUsersMatcher;
 
         self.options.itemTemplate =
-            '<div class="ui-drop-down-multiple-item" data-user-id="{data.id}">' +
+            '<div class="ui-drop-down-multiple-item" data-user-id="{uid}">' +
             '   <p>{name::html}</p>' +
             '</div>';
 
         self.options.selectedItemTemplae =
             '<div class="ui-drop-down-selected-item">' +
             '   <div class="ui-drop-down-selected-name">{name}</div>' +
-            '   <a class="ui-drop-down-slected-remove" data-user-id="{data.uid}" data-is-remove-button="true">X</a>' +
+            '   <a class="ui-drop-down-selected-remove-btn" data-user-id="{uid}" data-is-remove-button="true">x</a>' +
             '</div>';
 
         self.matchedSuggestions = [];
@@ -48,6 +51,23 @@
 
         self._suggestionsWrapper.on('mouseenter', onHoverSuggestionsWrapper);
         self._suggestionsWrapper.on('mouseleave', onMouseLeaveSuggestionsWrapper);
+
+        self._selectedContainer.on('click', onRemoveSelected);
+
+        function onRemoveSelected(event){
+            var target = event.target;
+            if(target.getAttribute('data-is-remove-button') == 'true'){
+                removeSelectedItem(target);
+            }
+        }
+
+        function removeSelectedItem(element){
+            // TODO: Добавить id. Чтобы не зависеть от верстки
+            var uid = element.getAttribute('data-user-id');
+            var container = element.parentNode;
+            delete self.selectedItems[uid];
+            container.parentNode.removeChild(container);
+        }
 
         self.getSelected = function () {
             return Object.keys(self.selectedItems).map(function (key) {

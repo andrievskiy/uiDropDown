@@ -8,6 +8,8 @@
 <body>
 <div>
     <input type="text" id="test">
+
+    <a onclick="showSelected()">Show Selected</a>
     <p style="height: 10px">
     </p>
     <input type="text" id="test2">
@@ -36,7 +38,12 @@
     var widget2 = new UiDropDown('#test2', {
         suggestions: suggestions2,
         limit: 5
-    })
+    });
+
+    function showSelected(){
+        console.log(widget1.getSelected());
+        console.log(widget2.getSelected());
+    }
 </script>
 </body>
 </html>
