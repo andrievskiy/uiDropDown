@@ -15,7 +15,6 @@
         this.name = uiDropDownHtmlEscaping(this.data.name);
         this.name = this.name.replace(this.matchedBy, '<span class="ui-drop-down-highlight">' + this.matchedBy + '</span>');
         this.uid = this.data.uid;
-        console.log('_DropDownItem', this.matchedBy);
     }
     
     _DropDownSuggestionItem.prototype.render = function () {

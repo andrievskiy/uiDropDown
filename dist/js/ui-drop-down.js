@@ -1,4 +1,38 @@
 /**
+ * Created by andrievskiy on 05.06.2017.
+ */
+if (!Object.assign) {
+    Object.defineProperty(Object, 'assign', {
+        enumerable: false,
+        configurable: true,
+        writable: true,
+        value: function (target, firstSource) {
+            'use strict';
+            if (target === undefined || target === null) {
+                throw new TypeError('Cannot convert first argument to object');
+            }
+
+            var to = Object(target);
+            for (var i = 1; i < arguments.length; i++) {
+                var nextSource = arguments[i];
+                if (nextSource === undefined || nextSource === null) {
+                    continue;
+                }
+
+                var keysArray = Object.keys(Object(nextSource));
+                for (var nextIndex = 0, len = keysArray.length; nextIndex < len; nextIndex++) {
+                    var nextKey = keysArray[nextIndex];
+                    var desc = Object.getOwnPropertyDescriptor(nextSource, nextKey);
+                    if (desc !== undefined && desc.enumerable) {
+                        to[nextKey] = nextSource[nextKey];
+                    }
+                }
+            }
+            return to;
+        }
+    });
+}
+/**
  * Модуль для работы с DOM
  */
 (function (window) {
@@ -298,7 +332,6 @@
         this.name = uiDropDownHtmlEscaping(this.data.name);
         this.name = this.name.replace(this.matchedBy, '<span class="ui-drop-down-highlight">' + this.matchedBy + '</span>');
         this.uid = this.data.uid;
-        console.log('_DropDownItem', this.matchedBy);
     }
     
     _DropDownSuggestionItem.prototype.render = function () {
@@ -577,35 +610,47 @@
  * Created by andrievskiy on 03.06.17.
  */
 ;(function (window) {
-    var defaultUiDropDownOptions = {
-        limit: 20
+    var DEFAULT_SUGGESTION_TEMPLATE =
+        '<div class="ui-drop-down-multiple-item" data-user-id="{uid}">' +
+            '<p>{name::html}</p>' +
+        '</div>';
+
+    var DEFAULT_MULTIPLE_SELECTED_ITEM_TEMPLATE =
+        '<div class="ui-drop-down-selected-item">' +
+            '   <div class="ui-drop-down-selected-name">{name}</div>' +
+            '   <a class="ui-drop-down-selected-remove-btn" data-user-id="{uid}" data-is-remove-button="true">x</a>' +
+        '</div>';
+
+    var DEFAULT_OPTIONS = {
+        multiple: true,
+        itemTemplate: DEFAULT_SUGGESTION_TEMPLATE,
+        selectedItemTemplate: DEFAULT_MULTIPLE_SELECTED_ITEM_TEMPLATE
     };
 
     function UiDropDown(selector, options) {
         var self = this;
+        
+        options = options || {};
 
-        self.cache = {};
+        /**
+         * Возравщает список выбранных элементов
+         * @returns {Array}
+         */
+        self.getSelected = function () {
+            return Object.keys(self.selectedItems).map(function (key) {
+                return self.selectedItems[key];
+            });
+        };
 
-        options = options || defaultUiDropDownOptions;
+        self.options = Object.assign(DEFAULT_OPTIONS, options);
 
-        self.lastVal = null;
+        self._cache = {};
+        self._lastVal = null;
+
         self.inputElement = UiElement(selector);
 
-
-        self.suggestions = options.suggestions || [];
-        self.options = options;
-        self.matcher = options.matcher || uiDropDownUsersMatcher;
-
-        self.options.itemTemplate =
-            '<div class="ui-drop-down-multiple-item" data-user-id="{uid}">' +
-            '   <p>{name::html}</p>' +
-            '</div>';
-
-        self.options.selectedItemTemplae =
-            '<div class="ui-drop-down-selected-item">' +
-            '   <div class="ui-drop-down-selected-name">{name}</div>' +
-            '   <a class="ui-drop-down-selected-remove-btn" data-user-id="{uid}" data-is-remove-button="true">x</a>' +
-            '</div>';
+        self.suggestions = self.options.suggestions || [];
+        self.matcher = self.options.matcher || uiDropDownUsersMatcher;
 
         self.matchedSuggestions = [];
         self.selectedItems = Object.create(null);
@@ -629,6 +674,7 @@
 
         self._selectedContainer.on('click', onRemoveSelected);
 
+
         function onRemoveSelected(event){
             var target = event.target;
             if(target.getAttribute('data-is-remove-button') == 'true'){
@@ -643,28 +689,6 @@
             delete self.selectedItems[uid];
             container.parentNode.removeChild(container);
         }
-
-        self.getSelected = function () {
-            return Object.keys(self.selectedItems).map(function (key) {
-                return self.selectedItems[key];
-            });
-        };
-
-        function deBounce(func, wait, immediate) {
-            var timeout;
-            return function () {
-                var context = this, args = arguments;
-                var later = function () {
-                    timeout = null;
-                    if (!immediate) func.apply(context, args);
-                };
-                var callNow = immediate && !timeout;
-                clearTimeout(timeout);
-                timeout = setTimeout(later, wait);
-                if (callNow) func.apply(context, args);
-            };
-        }
-
 
         function onFocusInputHandler() {
             lookup();
@@ -696,6 +720,15 @@
 
         function onMouseLeaveSuggestionsWrapper() {
             self._suggestionsWrapper.hovered = false;
+        }
+
+
+        function onSelectSuggestion(item, element) {
+            self.selectedItems[item.uid] = item;
+            element.parentNode.removeChild(element);
+            self.inputElement.val('');
+            hideSuggestionList();
+            renderSelectedSuggestion(item);
         }
 
 
@@ -781,16 +814,24 @@
             return dropDownItem.uiElement.element;
         }
 
+
+        function renderSelectedSuggestion(suggestion) {
+            var element = UiElement.create('div');
+            element.addClass('ui-drop-down-selected-suggestion');
+            element.html(uiRenderTemplate(self.options.selectedItemTemplate, suggestion));
+            self._selectedContainer.append(element.element);
+        }
+
         function lookup() {
             var counter = 0;
             var idx = 0;
             var val = self.inputElement.val();
 
-            if (val == self.lastVal && val !== '') {
+            if (val == self._lastVal && val !== '') {
                 return;
             }
 
-            self.lastVal = val;
+            self._lastVal = val;
             self.matchedSuggestions = [];
 
             if (val === '') {
@@ -823,20 +864,22 @@
             console.timeEnd('lookUp');
         }
 
-        function onSelectSuggestion(item, element) {
-            self.selectedItems[item.uid] = item;
-            element.parentNode.removeChild(element);
-            self.inputElement.val('');
-            hideSuggestionList();
-            renderSelectedSuggestion(item);
+        function deBounce(func, wait, immediate) {
+            var timeout;
+            return function () {
+                var context = this, args = arguments;
+                var later = function () {
+                    timeout = null;
+                    if (!immediate) func.apply(context, args);
+                };
+                var callNow = immediate && !timeout;
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+                if (callNow) func.apply(context, args);
+            };
         }
 
-        function renderSelectedSuggestion(suggestion) {
-            var element = UiElement.create('div');
-            element.addClass('ui-drop-down-selected-suggestion');
-            element.html(uiRenderTemplate(self.options.selectedItemTemplae, suggestion));
-            self._selectedContainer.append(element.element);
-        }
+
     }
 
     window.UiDropDown = UiDropDown;

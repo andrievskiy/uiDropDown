@@ -1,6 +1,6 @@
 .ui-drop-down-autocomplete-suggestions {
   position: absolute;
-  max-height: 3q00px;
+  max-height: 300px;
   display: none;
   border: 1px solid #ccc;
   overflow-y: hidden;
