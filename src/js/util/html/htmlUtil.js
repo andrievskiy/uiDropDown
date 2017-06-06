@@ -27,6 +27,9 @@
     regex = new RegExp(_makeRegexpString(), 'g');
 
     function uiDropDownHtmlEscaping(str) {
+        if(typeof str != 'string'){
+            return str;
+        }
         return str.replace(regex, function (m) {
             return '&' + ESCAPE_CHARS[m] + ';';
         });
