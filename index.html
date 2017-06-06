@@ -33,7 +33,9 @@
 
     var widget1 = new UiDropDown('#test', {
         suggestions: suggestions,
-        limit: 5
+        limit: 5,
+        serverSide: true,
+        url: 'http://127.0.0.1:5000/find'
     });
 
     var widget2 = new UiDropDown('#test2', {

@@ -32,6 +32,43 @@ if (!Object.assign) {
         }
     });
 }
+(function (window) {
+    function uiDropDownajax(options) {
+        var xhr = new XMLHttpRequest();
+        xhr.open(options.method.toUpperCase(), options.url, true);
+
+
+        xhr.onerror = function () {
+            console.error(xhr.status, xhr.statusText);
+            if (options.onError) {
+                options.onError(xhr);
+            }
+        };
+
+        xhr.onload = function () {
+            var response;
+            if (options.onSuccess) {
+                if (~xhr.getResponseHeader('Content-Type').indexOf('application/json')) {
+                    try {
+                        response = JSON.parse(xhr.responseText);
+                    } catch (e){
+                        console.error(e);
+                    }
+                }
+                options.onSuccess(response);
+            }
+
+        };
+
+        if (options.method.toUpperCase() != 'GET') {
+            xhr.send(options.data);
+        } else {
+            xhr.send();
+        }
+        return xhr;
+    }
+    window.uiDropDownajax = uiDropDownajax;
+})(window);
 /**
  * Модуль для работы с DOM
  */
@@ -294,6 +331,9 @@ if (!Object.assign) {
     regex = new RegExp(_makeRegexpString(), 'g');
 
     function uiDropDownHtmlEscaping(str) {
+        if(typeof str != 'string'){
+            return str;
+        }
         return str.replace(regex, function (m) {
             return '&' + ESCAPE_CHARS[m] + ';';
         });
@@ -651,7 +691,7 @@ if (!Object.assign) {
         '<div class="ui-drop-down-single-selected-item">' +
         '    <div class="ui-drop-down-single-selected-name">{name}</div>' +
         '    <a class="ui-drop-down-selected-single-remove-btn" data-user-id="{uid}" data-is-remove-button="true">x</a>'
-        '</div>';
+    '</div>';
 
     var DEFAULT_OPTIONS = {
         multiple: true,
@@ -661,7 +701,8 @@ if (!Object.assign) {
         selectedSingleItemTemplate: DEFAULT_SINGLE_SELECTED_ITEM_TEMPLATE,
         limit: 10,
         serverSide: false,
-        showAvatars: true
+        showAvatars: true,
+        suggestionIdentifierProperty: 'uid'
     };
 
     function UiDropDown(selector, options) {
@@ -701,6 +742,13 @@ if (!Object.assign) {
             return self.options.selectedSingleItemTemplate;
         }
 
+        function isSelected(item){
+            return Boolean(self.selectedItems[item[self.options.suggestionIdentifierProperty]]);
+        }
+
+        function addItemToSelected(item){
+            self.selectedItems[item[self.options.suggestionIdentifierProperty]] = item;
+        }
 
         self.inputElement = UiElement(selector);
 
@@ -735,7 +783,7 @@ if (!Object.assign) {
             var target = event.target;
 
             if (target.getAttribute('data-is-remove-button') == 'true') {
-                removeSelectedSuggesstion(target);
+                removeSelectedSuggestion(target);
 
                 if (!self.getSelected().length) {
                     hideSelectedContainer();
@@ -743,7 +791,7 @@ if (!Object.assign) {
                 }
             } else {
                 activateInputElement();
-                if(!self.options.multiple){
+                if (!self.options.multiple) {
                     hideSelectedContainer();
                 }
             }
@@ -764,7 +812,7 @@ if (!Object.assign) {
         function onClickWrapper(event) {
             if (event.target === this) {
                 activateInputElement();
-                if(!self.options.multiple){
+                if (!self.options.multiple) {
                     hideSelectedContainer();
                 }
             }
@@ -775,7 +823,7 @@ if (!Object.assign) {
                 return;
             }
             hideSuggestionList();
-            if(self.options.multiple && self.getSelected().length){
+            if (self.options.multiple && self.getSelected().length) {
                 hideInputElement();
             }
         }
@@ -795,18 +843,17 @@ if (!Object.assign) {
             });
             console.log(self.selectedItems);
             var children = Array.prototype.slice.apply(self._selectedContainer.element.children);
-            children.forEach(function(child){
-                child.remove();
+            children.forEach(function (child) {
+                child.parentNode.removeChild(child);
             });
 
         }
 
         function onSelectSuggestion(item, element) {
-            if(!self.options.multiple){
+            if (!self.options.multiple) {
                 _clearLastSelected();
             }
-
-            self.selectedItems[item.uid] = item;
+            addItemToSelected(item);
             element.parentNode.removeChild(element);
             self.inputElement.val('');
             hideSuggestionList();
@@ -887,14 +934,18 @@ if (!Object.assign) {
                 - self._suggestionsWrapper.clientRight() + 'px';
         }
 
-
-        function renderMatchedSuggestions() {
-            var children = Array.prototype.slice.apply(self._suggestionsWrapper.element.children);
+        function clearMatchedSuggestionsList(){
+             var children = Array.prototype.slice.apply(self._suggestionsWrapper.element.children);
 
             children.forEach(function (childNode) {
                 self._suggestionsWrapper.removeChild(childNode);
             });
+        }
 
+        function renderMatchedSuggestions(append) {
+            if (!append) {
+               clearMatchedSuggestionsList();
+            }
             self.matchedSuggestions.forEach(function (item) {
                 self._suggestionsWrapper.append(renderSuggestion(item));
             });
@@ -921,7 +972,7 @@ if (!Object.assign) {
         }
 
 
-        function removeSelectedSuggesstion(element) {
+        function removeSelectedSuggestion(element) {
             // TODO: Добавить id. Чтобы не зависеть от верстки
             var uid = element.getAttribute('data-user-id');
             var container = element.parentNode;
@@ -956,7 +1007,7 @@ if (!Object.assign) {
             if (val === '') {
                 while (counter < self.options.limit && idx < self.suggestions.length) {
                     var item = self.suggestions[idx];
-                    if (self.selectedItems[item.uid]) {
+                    if (isSelected(item)) {
                         idx++;
                         continue;
                     }
@@ -981,6 +1032,34 @@ if (!Object.assign) {
                 idx++;
             }
             console.timeEnd('lookUp');
+            console.log('self.options.serverSide', self.options.serverSide);
+            if (self.options.serverSide) {
+                serverLookUp();
+            }
+        }
+
+        function onServerLookUpLoaded(response) {
+            if (response.result.length) {
+                response.result.forEach(function (suggestion) {
+                    if(!isSelected(suggestion)){
+                        self.matchedSuggestions.push(suggestion);
+                        renderMatchedSuggestions(true);
+                    }
+                });
+
+            }
+        }
+
+        function serverLookUp() {
+            uiDropDownajax({
+                method: 'GET',
+                url: 'http://127.0.0.1:5000/find',
+                onError: function (xrh) {
+                    console.log('ERROR', xrh.statusText)
+                },
+                onSuccess: onServerLookUpLoaded
+            });
+
         }
 
         function deBounce(func, wait, immediate) {
