@@ -693,8 +693,8 @@ if (!Object.assign) {
 })(window);
 ;(function (window) {
     var DEFAULT_SUGGESTION_TEMPLATE =
-        '<div class="ui-drop-down-multiple-item" data-user-id="{uid}">' +
-        '<p>{name::html}</p>' +
+        '<div class="ui-drop-down-suggestion-item" data-user-id="{uid}">' +
+        '   <p>{name::html}</p>' +
         '</div>';
 
     var DEFAULT_MULTIPLE_SELECTED_ITEM_TEMPLATE =
@@ -709,12 +709,18 @@ if (!Object.assign) {
         '    <a class="ui-drop-down-selected-single-remove-btn" data-user-id="{uid}" data-is-remove-button="true">x</a>' +
     '</div>';
 
+    var DEFAULT_EMPTY_MESSAGE =
+        '<div class="ui-drop-down-suggestion-item">' +
+        '   <p>Пользователь не найден</p>' +
+        '</div>';
+
     var DEFAULT_OPTIONS = {
         multiple: true,
         suggestionTemplateWithAvatar: DEFAULT_SUGGESTION_TEMPLATE,
         suggestionTemplateWithoutAvatar: DEFAULT_SUGGESTION_TEMPLATE,
         selectedMultipleItemTemplate: DEFAULT_MULTIPLE_SELECTED_ITEM_TEMPLATE,
         selectedSingleItemTemplate: DEFAULT_SINGLE_SELECTED_ITEM_TEMPLATE,
+        emptyMessageTemplate: DEFAULT_EMPTY_MESSAGE,
         limit: 10,
         serverSide: false,
         serverSideUrl: '/',
@@ -855,6 +861,10 @@ if (!Object.assign) {
             if (self.options.multiple && self.getSelected().length) {
                 hideInputElement();
             }
+            if(!self.options.multiple && self.getSelected().length){
+                hideInputElement();
+                showSelectedContainer();
+            }
         }
 
         function onHoverSuggestionsWrapper() {
@@ -972,6 +982,9 @@ if (!Object.assign) {
 
         function renderAllMatchedSuggestions() {
             clearMatchedSuggestionsList();
+            if(!self.matchedSuggestions.length){
+                showEmptySuggestionMessage();
+            }
             self.matchedSuggestions.forEach(function (item) {
                 renderMatchedSuggestion(item);
             });
@@ -990,7 +1003,7 @@ if (!Object.assign) {
             dropDownItem.uiElement.on('click', function () {
                 onSelectSuggestion(suggestion, this);
             });
-            self._suggestionsWrapper.append(dropDownItem.uiElement.element);
+            self._suggestionsWrapper.append(dropDownItem.uiElement);
         }
 
 
@@ -1075,8 +1088,13 @@ if (!Object.assign) {
 
         function onServerLookUpLoaded(prefix, response) {
             self._cache[prefix] = response.result;
+            if(!self.matchedSuggestions.length){
+                clearMatchedSuggestionsList();
+            }
             if (response.result.length) {
                 appendMatchedSuggestionsFromServer(response.result);
+            } else if(!self.matchedSuggestions.length){
+                 showEmptySuggestionMessage();
             }
         }
 
@@ -1126,6 +1144,13 @@ if (!Object.assign) {
                     func.apply(context, args);
                 }
             };
+        }
+        function showEmptySuggestionMessage(){
+
+            var dropDownItem = DropDownSuggestionItem(self.options.emptyMessageTemplate, {name: 'empty'});
+            dropDownItem.render();
+            console.log(dropDownItem.uiElement.element.innerHTML);
+            self._suggestionsWrapper.append(dropDownItem.uiElement.element);
         }
     }
 
