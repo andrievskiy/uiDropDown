@@ -43,13 +43,13 @@
 
 
     var LATIN_TO_CYRILLIC_FIRST_REPLACE_MAP = {
+        'shch': 'щ',
+        'sch': 'щ',
         'yo': 'ё',
         'zh': 'ж',
         'kh': 'х',
         'ts': 'ц',
         'ch': 'ч',
-        'sch': 'щ',
-        'shch': 'щ',
         'sh': 'ш',
         'eh': 'э',
         'yu': 'ю',
@@ -117,8 +117,7 @@
 
         // Приведение кириллицы к латинице
         // Например: юа => yoa
-        variables.push(_cyrillicToLatinVariants(prefix));
-
+        variables.concat(_cyrillicToLatinVariants(prefix));
 
         // Приведение расладок
 
@@ -147,6 +146,7 @@
         var charts;
 
         // Сначала происходит замена "букв" из нескольких символов
+        // TODO: Добавить сортировку ключей
         Object.keys(LATIN_TO_CYRILLIC_FIRST_REPLACE_MAP).forEach(function (char) {
            str = str.split(char).join(LATIN_TO_CYRILLIC_FIRST_REPLACE_MAP[char]);
         });
@@ -195,6 +195,7 @@
 
 
     function _cyrillicToLatinVariants(str) {
+        // TODO: Добавить сортировку ключей
         // Сначала происходит замена "букв" из нескольких символов
         Object.keys(CYRILLIC_TO_LATIN_FIRST_REPLACE_MAP).forEach(function (char) {
            str = str.split(char).join(CYRILLIC_TO_LATIN_FIRST_REPLACE_MAP[char]);
@@ -206,7 +207,7 @@
             }
             return str;
         }
-        return _replace(str);
+        return [_replace(str)];
     }
 
 

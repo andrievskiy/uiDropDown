@@ -471,13 +471,13 @@ if (!Object.assign) {
 
 
     var LATIN_TO_CYRILLIC_FIRST_REPLACE_MAP = {
+        'shch': 'щ',
+        'sch': 'щ',
         'yo': 'ё',
         'zh': 'ж',
         'kh': 'х',
         'ts': 'ц',
         'ch': 'ч',
-        'sch': 'щ',
-        'shch': 'щ',
         'sh': 'ш',
         'eh': 'э',
         'yu': 'ю',
@@ -545,8 +545,7 @@ if (!Object.assign) {
 
         // Приведение кириллицы к латинице
         // Например: юа => yoa
-        variables.push(_cyrillicToLatinVariants(prefix));
-
+        variables.concat(_cyrillicToLatinVariants(prefix));
 
         // Приведение расладок
 
@@ -575,6 +574,7 @@ if (!Object.assign) {
         var charts;
 
         // Сначала происходит замена "букв" из нескольких символов
+        // TODO: Добавить сортировку ключей
         Object.keys(LATIN_TO_CYRILLIC_FIRST_REPLACE_MAP).forEach(function (char) {
            str = str.split(char).join(LATIN_TO_CYRILLIC_FIRST_REPLACE_MAP[char]);
         });
@@ -623,6 +623,7 @@ if (!Object.assign) {
 
 
     function _cyrillicToLatinVariants(str) {
+        // TODO: Добавить сортировку ключей
         // Сначала происходит замена "букв" из нескольких символов
         Object.keys(CYRILLIC_TO_LATIN_FIRST_REPLACE_MAP).forEach(function (char) {
            str = str.split(char).join(CYRILLIC_TO_LATIN_FIRST_REPLACE_MAP[char]);
@@ -634,7 +635,7 @@ if (!Object.assign) {
             }
             return str;
         }
-        return _replace(str);
+        return [_replace(str)];
     }
 
 
@@ -690,9 +691,6 @@ if (!Object.assign) {
 
     window.uiDropDownUsersMatcher = uiDropDownUsersMatcher;
 })(window);
-/**
- * Created by andrievskiy on 03.06.17.
- */
 ;(function (window) {
     var DEFAULT_SUGGESTION_TEMPLATE =
         '<div class="ui-drop-down-multiple-item" data-user-id="{uid}">' +
@@ -708,7 +706,7 @@ if (!Object.assign) {
     var DEFAULT_SINGLE_SELECTED_ITEM_TEMPLATE =
         '<div class="ui-drop-down-single-selected-item">' +
         '    <div class="ui-drop-down-single-selected-name">{name}</div>' +
-        '    <a class="ui-drop-down-selected-single-remove-btn" data-user-id="{uid}" data-is-remove-button="true">x</a>'
+        '    <a class="ui-drop-down-selected-single-remove-btn" data-user-id="{uid}" data-is-remove-button="true">x</a>' +
     '</div>';
 
     var DEFAULT_OPTIONS = {
@@ -793,19 +791,19 @@ if (!Object.assign) {
             return self.options.selectedSingleItemTemplate;
         }
 
-        function isSelected(item){
+        function isSelected(item) {
             return Boolean(self.selectedItems[item[self.options.suggestionIdentifierProperty]]);
         }
 
-        function addItemToSelected(item){
+        function addItemToSelected(item) {
             self.selectedItems[item[self.options.suggestionIdentifierProperty]] = item;
         }
 
-        function isInMatchedSuggestions(item){
+        function isInMatchedSuggestions(item) {
             return Boolean(self._matchesSuggestionIds[item[self.options.suggestionIdentifierProperty]]);
         }
 
-        function addToMatchedSuggestions(item){
+        function addToMatchedSuggestions(item) {
             self.matchedSuggestions.push(item);
             self._matchesSuggestionIds[item[self.options.suggestionIdentifierProperty]] = true;
         }
@@ -832,12 +830,12 @@ if (!Object.assign) {
         function onFocusInputHandler() {
             lookup();
             showSuggestionList();
-            renderMatchedSuggestions();
+            renderAllMatchedSuggestions();
         }
 
         function onKeyUpInputHandler() {
             lookup();
-            renderMatchedSuggestions();
+            renderAllMatchedSuggestions();
         }
 
         function onClickWrapper(event) {
@@ -964,25 +962,22 @@ if (!Object.assign) {
                 - self._suggestionsWrapper.clientRight() + 'px';
         }
 
-        function clearMatchedSuggestionsList(){
-             var children = Array.prototype.slice.apply(self._suggestionsWrapper.element.children);
+        function clearMatchedSuggestionsList() {
+            var children = Array.prototype.slice.apply(self._suggestionsWrapper.element.children);
 
             children.forEach(function (childNode) {
                 self._suggestionsWrapper.removeChild(childNode);
             });
         }
 
-        function renderMatchedSuggestions(append) {
-            if (!append) {
-               clearMatchedSuggestionsList();
-            }
+        function renderAllMatchedSuggestions() {
+            clearMatchedSuggestionsList();
             self.matchedSuggestions.forEach(function (item) {
-                self._suggestionsWrapper.append(renderSuggestion(item));
+                renderMatchedSuggestion(item);
             });
         }
 
-
-        function renderSuggestion(suggestion) {
+        function renderMatchedSuggestion(suggestion) {
             // TODO: Исправить проброс matchedBy
             var matchedBy = suggestion.mathedBy;
             delete suggestion.mathedBy;
@@ -995,8 +990,7 @@ if (!Object.assign) {
             dropDownItem.uiElement.on('click', function () {
                 onSelectSuggestion(suggestion, this);
             });
-
-            return dropDownItem.uiElement.element;
+            self._suggestionsWrapper.append(dropDownItem.uiElement.element);
         }
 
 
@@ -1017,39 +1011,44 @@ if (!Object.assign) {
             self._selectedContainer.append(selectedItem.uiElement);
         }
 
+        function _lookUpEmptyPrefix() {
+            var counter = 0;
+            var idx = 0;
+            while (counter < self.options.limit && idx < self.suggestions.length) {
+                var item = self.suggestions[idx];
+                if (isSelected(item)) {
+                    idx++;
+                    continue;
+                }
+
+                addToMatchedSuggestions(item);
+                counter++;
+                idx++;
+            }
+        }
+
         function lookup() {
             var counter = 0;
             var idx = 0;
-            var val = self.inputElement.val();
 
-            if (val == self._lastVal && val !== '') {
+            var prefix = self.inputElement.val();
+
+            if (prefix == self._lastVal && prefix !== '') {
                 return;
             }
 
-            self._lastVal = val;
+            self._lastVal = prefix;
             self.matchedSuggestions = [];
             self._matchesSuggestionIds = Object.create(null);
 
-            if (val === '') {
-                while (counter < self.options.limit && idx < self.suggestions.length) {
-                    var item = self.suggestions[idx];
-                    if (isSelected(item)) {
-                        idx++;
-                        continue;
-                    }
-
-                    addToMatchedSuggestions(item);
-                    counter++;
-                    idx++;
-                }
+            if (prefix === '') {
+                _lookUpEmptyPrefix();
                 return;
             }
 
             console.time('lookUp');
-            idx = 0;
-            counter = 0;
             while (counter < self.options.limit && idx < self.suggestions.length) {
-                var matchResult = self.matcher(val, self.suggestions[idx], self.selectedItems);
+                var matchResult = self.matcher(prefix, self.suggestions[idx], self.selectedItems);
                 if (matchResult.matched) {
                     self.suggestions[idx].mathedBy = matchResult.matchedBy;
                     addToMatchedSuggestions(self.suggestions[idx]);
@@ -1058,50 +1057,53 @@ if (!Object.assign) {
                 idx++;
             }
             console.timeEnd('lookUp');
-            console.log('self.options.serverSide', self.options.serverSide);
+
             if (self.options.serverSide) {
-                serverLookUp(val);
+                serverLookUp(prefix);
             }
         }
 
-        function appendMatchedSuggestions(suggestions){
-           suggestions.forEach(function (suggestion) {
-                if(!isSelected(suggestion) && !isInMatchedSuggestions(suggestion)){
+
+        function appendMatchedSuggestionsFromServer(suggestions) {
+            suggestions.forEach(function (suggestion) {
+                if (!isSelected(suggestion) && !isInMatchedSuggestions(suggestion)) {
                     addToMatchedSuggestions(suggestion);
-                    renderMatchedSuggestions(true);
+                    renderMatchedSuggestion(suggestion);
                 }
-           });
+            });
         }
 
         function onServerLookUpLoaded(prefix, response) {
             self._cache[prefix] = response.result;
             if (response.result.length) {
-                appendMatchedSuggestions(response.result);
+                appendMatchedSuggestionsFromServer(response.result);
             }
         }
 
         function serverLookUp(prefix) {
-            if(prefix == ''){
+            if (prefix == '') {
                 return;
             }
             var _cached = self._cache[prefix];
+            var findParams = {};
 
-            if(_cached){
-                appendMatchedSuggestions(_cached);
+            if (_cached) {
+                appendMatchedSuggestionsFromServer(_cached);
                 return;
             }
-            
-            var findData = {};
-            findData[self.options.serverSideFindProperty] = prefix;
+
+            findParams[self.options.serverSideFindProperty] = prefix;
+            findParams['limit'] = self.options.limit;
+
             uiDropDownajax({
                 method: self.options.serverSideMethod,
                 url: self.options.serverSideUrl,
-                data: findData,
-                params: findData,
+                data: findParams,
+                params: findParams,
                 onError: function (xrh) {
                     console.log('ERROR', xrh.statusText)
                 },
-                onSuccess: function(response){
+                onSuccess: function (response) {
                     onServerLookUpLoaded(prefix, response)
                 }
             });
