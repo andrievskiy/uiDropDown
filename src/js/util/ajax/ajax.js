@@ -1,8 +1,20 @@
 (function (window) {
-    function uiDropDownajax(options) {
-        var xhr = new XMLHttpRequest();
-        xhr.open(options.method.toUpperCase(), options.url, true);
+    function _makeGetArgs(params) {
+        var parts = [];
+        Object.keys(params).forEach(function (key) {
+            parts.push(key + '=' + params[key]);
+        });
+        return '?' + parts.join('&');
+    }
 
+    function isOkStatusCode(code){
+        return code >= 200 && code < 300;
+    }
+
+    function uiDropDownAjax(options) {
+        var xhr = new XMLHttpRequest();
+        var url = options.url + _makeGetArgs(options.params);
+        xhr.open(options.method.toUpperCase(), url);
 
         xhr.onerror = function () {
             console.error(xhr.status, xhr.statusText);
@@ -13,17 +25,21 @@
 
         xhr.onload = function () {
             var response;
-            if (options.onSuccess) {
-                if (~xhr.getResponseHeader('Content-Type').indexOf('application/json')) {
-                    try {
-                        response = JSON.parse(xhr.responseText);
-                    } catch (e){
-                        console.error(e);
+            if (isOkStatusCode(xhr.status)) {
+                if (options.onSuccess) {
+                    if (~xhr.getResponseHeader('Content-Type').indexOf('application/json')) {
+                        try {
+                            response = JSON.parse(xhr.responseText);
+                        } catch (e) {
+                            console.error(e);
+                        }
+                    } else {
+                        response = xhr.responseText;
                     }
-                } else {
-                    response = xhr.responseText;
+                    options.onSuccess(response);
                 }
-                options.onSuccess(response);
+            } else{
+                console.error('Unexpected response code: ', xhr.status);
             }
         };
 
@@ -34,5 +50,6 @@
         }
         return xhr;
     }
-    window.uiDropDownajax = uiDropDownajax;
+
+    window.uiDropDownajax = uiDropDownAjax;
 })(window);

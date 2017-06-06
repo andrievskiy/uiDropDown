@@ -4,7 +4,7 @@ from ui_api import app
 DATASET = [
     {
         'domain': '/mixryta',
-        'name': 'MiMI',
+        'name': 'MiMi',
         'uid': 998
     },
 ]

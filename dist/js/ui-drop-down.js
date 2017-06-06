@@ -33,10 +33,22 @@ if (!Object.assign) {
     });
 }
 (function (window) {
-    function uiDropDownajax(options) {
-        var xhr = new XMLHttpRequest();
-        xhr.open(options.method.toUpperCase(), options.url, true);
+    function _makeGetArgs(params) {
+        var parts = [];
+        Object.keys(params).forEach(function (key) {
+            parts.push(key + '=' + params[key]);
+        });
+        return '?' + parts.join('&');
+    }
 
+    function isOkStatusCode(code){
+        return code >= 200 && code < 300;
+    }
+
+    function uiDropDownAjax(options) {
+        var xhr = new XMLHttpRequest();
+        var url = options.url + _makeGetArgs(options.params);
+        xhr.open(options.method.toUpperCase(), url);
 
         xhr.onerror = function () {
             console.error(xhr.status, xhr.statusText);
@@ -47,17 +59,22 @@ if (!Object.assign) {
 
         xhr.onload = function () {
             var response;
-            if (options.onSuccess) {
-                if (~xhr.getResponseHeader('Content-Type').indexOf('application/json')) {
-                    try {
-                        response = JSON.parse(xhr.responseText);
-                    } catch (e){
-                        console.error(e);
+            if (isOkStatusCode(xhr.status)) {
+                if (options.onSuccess) {
+                    if (~xhr.getResponseHeader('Content-Type').indexOf('application/json')) {
+                        try {
+                            response = JSON.parse(xhr.responseText);
+                        } catch (e) {
+                            console.error(e);
+                        }
+                    } else {
+                        response = xhr.responseText;
                     }
+                    options.onSuccess(response);
                 }
-                options.onSuccess(response);
+            } else{
+                console.error('Unexpected response code: ', xhr.status);
             }
-
         };
 
         if (options.method.toUpperCase() != 'GET') {
@@ -67,7 +84,8 @@ if (!Object.assign) {
         }
         return xhr;
     }
-    window.uiDropDownajax = uiDropDownajax;
+
+    window.uiDropDownajax = uiDropDownAjax;
 })(window);
 /**
  * Модуль для работы с DOM
@@ -701,6 +719,9 @@ if (!Object.assign) {
         selectedSingleItemTemplate: DEFAULT_SINGLE_SELECTED_ITEM_TEMPLATE,
         limit: 10,
         serverSide: false,
+        serverSideUrl: '/',
+        serverSideMethod: 'GET',
+        serverSideFindProperty: 'domain',
         showAvatars: true,
         suggestionIdentifierProperty: 'uid'
     };
@@ -728,34 +749,13 @@ if (!Object.assign) {
         self._suggestionTemplate = getSuggestionTemplate();
         self._selectedItemTemplate = getSelectedItemTemplate();
 
-        function getSuggestionTemplate() {
-            if (self.options.showAvatars) {
-                return self.options.suggestionTemplateWithAvatar;
-            }
-            return self.options.suggestionTemplateWithoutAvatar;
-        }
-
-        function getSelectedItemTemplate() {
-            if (self.options.multiple) {
-                return self.options.selectedMultipleItemTemplate;
-            }
-            return self.options.selectedSingleItemTemplate;
-        }
-
-        function isSelected(item){
-            return Boolean(self.selectedItems[item[self.options.suggestionIdentifierProperty]]);
-        }
-
-        function addItemToSelected(item){
-            self.selectedItems[item[self.options.suggestionIdentifierProperty]] = item;
-        }
-
         self.inputElement = UiElement(selector);
 
         self.suggestions = self.options.suggestions || [];
         self.matcher = self.options.matcher || uiDropDownUsersMatcher;
 
         self.matchedSuggestions = [];
+        self._matchesSuggestionIds = Object.create(null);
         self.selectedItems = Object.create(null);
 
         self._dropDownInputWrapper = createDropDownInputWrapper();
@@ -778,6 +778,37 @@ if (!Object.assign) {
 
         self._selectedContainer.on('click', onClickSelectedContainer);
 
+
+        function getSuggestionTemplate() {
+            if (self.options.showAvatars) {
+                return self.options.suggestionTemplateWithAvatar;
+            }
+            return self.options.suggestionTemplateWithoutAvatar;
+        }
+
+        function getSelectedItemTemplate() {
+            if (self.options.multiple) {
+                return self.options.selectedMultipleItemTemplate;
+            }
+            return self.options.selectedSingleItemTemplate;
+        }
+
+        function isSelected(item){
+            return Boolean(self.selectedItems[item[self.options.suggestionIdentifierProperty]]);
+        }
+
+        function addItemToSelected(item){
+            self.selectedItems[item[self.options.suggestionIdentifierProperty]] = item;
+        }
+
+        function isInMatchedSuggestions(item){
+            return Boolean(self._matchesSuggestionIds[item[self.options.suggestionIdentifierProperty]]);
+        }
+
+        function addToMatchedSuggestions(item){
+            self.matchedSuggestions.push(item);
+            self._matchesSuggestionIds[item[self.options.suggestionIdentifierProperty]] = true;
+        }
 
         function onClickSelectedContainer(event) {
             var target = event.target;
@@ -841,7 +872,6 @@ if (!Object.assign) {
             Object.keys(self.selectedItems).forEach(function (prop) {
                 delete self.selectedItems[prop];
             });
-            console.log(self.selectedItems);
             var children = Array.prototype.slice.apply(self._selectedContainer.element.children);
             children.forEach(function (child) {
                 child.parentNode.removeChild(child);
@@ -959,8 +989,6 @@ if (!Object.assign) {
 
             var dropDownItem = DropDownSuggestionItem(self._suggestionTemplate, suggestion, matchedBy);
             dropDownItem.render();
-
-            // TODO: разобрать на отдельные методы. Добавить setter val на uiElement
             // TODO: пернести обработчик на suggestion-list. Испрользовать делегирование,
             // TODO: чтообы избавиться от лишних обработчиков
             // TODO: С ходу мешает необходимость ссылки на item(suggestion)
@@ -985,9 +1013,6 @@ if (!Object.assign) {
             var selectedItem = DropDownSelectedSuggestionItem(
                 self._selectedItemTemplate, suggestion, self.options.multiple
             );
-            //var element = UiElement.create('div');
-            //element.addClass('ui-drop-down-selected-suggestion');
-            //element.html(uiRenderTemplate(self._selectedItemTemplate, suggestion));
             selectedItem.render();
             self._selectedContainer.append(selectedItem.uiElement);
         }
@@ -1003,6 +1028,7 @@ if (!Object.assign) {
 
             self._lastVal = val;
             self.matchedSuggestions = [];
+            self._matchesSuggestionIds = Object.create(null);
 
             if (val === '') {
                 while (counter < self.options.limit && idx < self.suggestions.length) {
@@ -1011,7 +1037,8 @@ if (!Object.assign) {
                         idx++;
                         continue;
                     }
-                    self.matchedSuggestions.push(item);
+
+                    addToMatchedSuggestions(item);
                     counter++;
                     idx++;
                 }
@@ -1024,9 +1051,8 @@ if (!Object.assign) {
             while (counter < self.options.limit && idx < self.suggestions.length) {
                 var matchResult = self.matcher(val, self.suggestions[idx], self.selectedItems);
                 if (matchResult.matched) {
-
                     self.suggestions[idx].mathedBy = matchResult.matchedBy;
-                    self.matchedSuggestions.push(self.suggestions[idx]);
+                    addToMatchedSuggestions(self.suggestions[idx]);
                     counter++;
                 }
                 idx++;
@@ -1034,32 +1060,51 @@ if (!Object.assign) {
             console.timeEnd('lookUp');
             console.log('self.options.serverSide', self.options.serverSide);
             if (self.options.serverSide) {
-                serverLookUp();
+                serverLookUp(val);
             }
         }
 
-        function onServerLookUpLoaded(response) {
+        function appendMatchedSuggestions(suggestions){
+           suggestions.forEach(function (suggestion) {
+                if(!isSelected(suggestion) && !isInMatchedSuggestions(suggestion)){
+                    addToMatchedSuggestions(suggestion);
+                    renderMatchedSuggestions(true);
+                }
+           });
+        }
+
+        function onServerLookUpLoaded(prefix, response) {
+            self._cache[prefix] = response.result;
             if (response.result.length) {
-                response.result.forEach(function (suggestion) {
-                    if(!isSelected(suggestion)){
-                        self.matchedSuggestions.push(suggestion);
-                        renderMatchedSuggestions(true);
-                    }
-                });
-
+                appendMatchedSuggestions(response.result);
             }
         }
 
-        function serverLookUp() {
+        function serverLookUp(prefix) {
+            if(prefix == ''){
+                return;
+            }
+            var _cached = self._cache[prefix];
+
+            if(_cached){
+                appendMatchedSuggestions(_cached);
+                return;
+            }
+            
+            var findData = {};
+            findData[self.options.serverSideFindProperty] = prefix;
             uiDropDownajax({
-                method: 'GET',
-                url: 'http://127.0.0.1:5000/find',
+                method: self.options.serverSideMethod,
+                url: self.options.serverSideUrl,
+                data: findData,
+                params: findData,
                 onError: function (xrh) {
                     console.log('ERROR', xrh.statusText)
                 },
-                onSuccess: onServerLookUpLoaded
+                onSuccess: function(response){
+                    onServerLookUpLoaded(prefix, response)
+                }
             });
-
         }
 
         function deBounce(func, wait, immediate) {
@@ -1080,8 +1125,6 @@ if (!Object.assign) {
                 }
             };
         }
-
-
     }
 
     window.UiDropDown = UiDropDown;
