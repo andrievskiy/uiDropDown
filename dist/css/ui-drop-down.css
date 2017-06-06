@@ -20,21 +20,52 @@
 
 .ui-drop-down-selected-item {
   display: inline-block;
-  background: blue;
-  color: #fff; }
+  background: #6285af;
+  color: #fff;
+  margin: 3px;
+  padding: 3px; }
 
 .ui-drop-down-input-wrapper {
-  border: 1px solid #ccc; }
+  border: 1px solid #ccc;
+  font-family: 'Roboto', serif;
+  font-size: 12px;
+  padding: 3px; }
+
+.ui-drop-down-selected-remove-btn {
+  cursor: pointer; }
+
+.ui-drop-down-selected-name {
+  display: inline-block; }
 
 .ui-drop-down-selected-container, .ui-drop-down-selected-suggestion {
   display: inline-block; }
 
 input[type="text"] {
   display: inline-block;
-  width: 400px; }
+  width: 400px;
+  border: none;
+  outline: none;
+  height: 20px;
+  padding: 3px; }
 
 .ui-drop-down-selected-container {
   display: none; }
 
 .ui-drop-down-selected-container.show {
   display: inline-block; }
+
+body {
+  padding-left: 99px; }
+
+.ui-drop-down-single-selected-item {
+  display: block; }
+
+.ui-drop-down-single-selected-name {
+  display: inline-block; }
+
+.ui-drop-down-selected-single-remove-btn {
+  display: inline-block;
+  margin-left: 10px; }
+
+.ui-drop-down-single-selected-item {
+  padding: 6px; }

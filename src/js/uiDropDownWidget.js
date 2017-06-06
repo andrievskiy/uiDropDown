@@ -4,24 +4,35 @@
 ;(function (window) {
     var DEFAULT_SUGGESTION_TEMPLATE =
         '<div class="ui-drop-down-multiple-item" data-user-id="{uid}">' +
-            '<p>{name::html}</p>' +
+        '<p>{name::html}</p>' +
         '</div>';
 
     var DEFAULT_MULTIPLE_SELECTED_ITEM_TEMPLATE =
         '<div class="ui-drop-down-selected-item">' +
-            '   <div class="ui-drop-down-selected-name">{name}</div>' +
-            '   <a class="ui-drop-down-selected-remove-btn" data-user-id="{uid}" data-is-remove-button="true">x</a>' +
+        '   <div class="ui-drop-down-selected-name">{name}</div>' +
+        '   <a class="ui-drop-down-selected-remove-btn" data-user-id="{uid}" data-is-remove-button="true">x</a>' +
+        '</div>';
+
+    var DEFAULT_SINGLE_SELECTED_ITEM_TEMPLATE =
+        '<div class="ui-drop-down-single-selected-item">' +
+        '    <div class="ui-drop-down-single-selected-name">{name}</div>' +
+        '    <a class="ui-drop-down-selected-single-remove-btn" data-user-id="{uid}" data-is-remove-button="true">x</a>'
         '</div>';
 
     var DEFAULT_OPTIONS = {
         multiple: true,
-        itemTemplate: DEFAULT_SUGGESTION_TEMPLATE,
-        selectedItemTemplate: DEFAULT_MULTIPLE_SELECTED_ITEM_TEMPLATE
+        suggestionTemplateWithAvatar: DEFAULT_SUGGESTION_TEMPLATE,
+        suggestionTemplateWithoutAvatar: DEFAULT_SUGGESTION_TEMPLATE,
+        selectedMultipleItemTemplate: DEFAULT_MULTIPLE_SELECTED_ITEM_TEMPLATE,
+        selectedSingleItemTemplate: DEFAULT_SINGLE_SELECTED_ITEM_TEMPLATE,
+        limit: 10,
+        serverSide: false,
+        showAvatars: true
     };
 
     function UiDropDown(selector, options) {
         var self = this;
-        
+
         options = options || {};
 
         /**
@@ -34,10 +45,28 @@
             });
         };
 
-        self.options = Object.assign(DEFAULT_OPTIONS, options);
+        self.options = Object.assign({}, DEFAULT_OPTIONS, options);
 
         self._cache = {};
         self._lastVal = null;
+
+        self._suggestionTemplate = getSuggestionTemplate();
+        self._selectedItemTemplate = getSelectedItemTemplate();
+
+        function getSuggestionTemplate() {
+            if (self.options.showAvatars) {
+                return self.options.suggestionTemplateWithAvatar;
+            }
+            return self.options.suggestionTemplateWithoutAvatar;
+        }
+
+        function getSelectedItemTemplate() {
+            if (self.options.multiple) {
+                return self.options.selectedMultipleItemTemplate;
+            }
+            return self.options.selectedSingleItemTemplate;
+        }
+
 
         self.inputElement = UiElement(selector);
 
@@ -52,6 +81,7 @@
         self._selectedContainer = createSelectedSuggestionsContainer();
 
         self.inputElement.wrap(self._dropDownInputWrapper);
+
         self._dropDownInputWrapper.append(self._suggestionsWrapper.element);
         self._dropDownInputWrapper.element.insertBefore(self._selectedContainer.element, self.inputElement.element);
 
@@ -59,35 +89,30 @@
         self.inputElement.on('keyup', deBounce(onKeyUpInputHandler, 300));
         self.inputElement.on('blur', onBlurInputElement);
 
-        self._dropDownInputWrapper.on('click', onWrapperClick);
+        self._dropDownInputWrapper.on('click', onClickWrapper);
 
         self._suggestionsWrapper.on('mouseenter', onHoverSuggestionsWrapper);
         self._suggestionsWrapper.on('mouseleave', onMouseLeaveSuggestionsWrapper);
 
-        self._selectedContainer.on('click', onRemoveSelected);
+        self._selectedContainer.on('click', onClickSelectedContainer);
 
 
-        function onRemoveSelected(event){
+        function onClickSelectedContainer(event) {
             var target = event.target;
-            if(target.getAttribute('data-is-remove-button') == 'true'){
-                removeSelectedItem(target);
-                if(!self.getSelected().length){
+
+            if (target.getAttribute('data-is-remove-button') == 'true') {
+                removeSelectedSuggesstion(target);
+
+                if (!self.getSelected().length) {
                     hideSelectedContainer();
-                    showInputElement();
+                    activateInputElement();
                 }
             } else {
-                showInputElement();
-                self.inputElement.element.focus();
+                activateInputElement();
+                if(!self.options.multiple){
+                    hideSelectedContainer();
+                }
             }
-
-        }
-
-        function removeSelectedItem(element){
-            // TODO: Добавить id. Чтобы не зависеть от верстки
-            var uid = element.getAttribute('data-user-id');
-            var container = element.parentNode;
-            delete self.selectedItems[uid];
-            container.parentNode.removeChild(container);
 
         }
 
@@ -102,10 +127,12 @@
             renderMatchedSuggestions();
         }
 
-        function onWrapperClick(event) {
+        function onClickWrapper(event) {
             if (event.target === this) {
-                showInputElement();
-                self.inputElement.element.focus();
+                activateInputElement();
+                if(!self.options.multiple){
+                    hideSelectedContainer();
+                }
             }
         }
 
@@ -114,6 +141,9 @@
                 return;
             }
             hideSuggestionList();
+            if(self.options.multiple && self.getSelected().length){
+                hideInputElement();
+            }
         }
 
         function onHoverSuggestionsWrapper() {
@@ -125,32 +155,51 @@
         }
 
 
+        function _clearLastSelected() {
+            Object.keys(self.selectedItems).forEach(function (prop) {
+                delete self.selectedItems[prop];
+            });
+            console.log(self.selectedItems);
+            var children = Array.prototype.slice.apply(self._selectedContainer.element.children);
+            children.forEach(function(child){
+                child.remove();
+            });
+
+        }
+
         function onSelectSuggestion(item, element) {
+            if(!self.options.multiple){
+                _clearLastSelected();
+            }
+
             self.selectedItems[item.uid] = item;
             element.parentNode.removeChild(element);
             self.inputElement.val('');
             hideSuggestionList();
             renderSelectedSuggestion(item);
             hideInputElement();
+            // Соббытие не будет послано брузером. Поэтому нужно простваить руками.
+            self._suggestionsWrapper.hovered = false;
             showSelectedContainer();
         }
 
-        function showSelectedContainer(){
+        function showSelectedContainer() {
             self._selectedContainer.addClass('show');
         }
 
-        function hideSelectedContainer(){
+        function hideSelectedContainer() {
             self._selectedContainer.removeClass('show');
         }
 
-        function hideInputElement(){
-            if(self.getSelected().length){
+        function hideInputElement() {
+            if (self.getSelected().length) {
                 self.inputElement.style.display = 'none';
             }
         }
 
-        function showInputElement(){
+        function activateInputElement() {
             self.inputElement.style.display = 'block';
+            self.inputElement.element.focus();
         }
 
 
@@ -192,15 +241,15 @@
          * Прозводит позиционирование блока предложений относительно эелемента
          */
         function positionSuggestionList() {
-            var inputWrapperCoordinates = self.inputElement.getCoordinates();
+            var inputWrapperCoordinates = self._dropDownInputWrapper.getCoordinates();
 
             self._suggestionsWrapper.style.top =
-                inputWrapperCoordinates.bottom + self.inputElement.clientTop() + 'px';
+                inputWrapperCoordinates.bottom + self._dropDownInputWrapper.clientTop() + 'px';
 
             self._suggestionsWrapper.style.left = inputWrapperCoordinates.left + 'px';
 
             self._suggestionsWrapper.style.width =
-                self.inputElement.offsetWidth() - self._suggestionsWrapper.clientLeft()
+                self._dropDownInputWrapper.offsetWidth() - self._suggestionsWrapper.clientLeft()
                 - self._suggestionsWrapper.clientRight() + 'px';
         }
 
@@ -217,12 +266,13 @@
             });
         }
 
+
         function renderSuggestion(suggestion) {
             // TODO: Исправить проброс matchedBy
             var matchedBy = suggestion.mathedBy;
             delete suggestion.mathedBy;
 
-            var dropDownItem = DropDownSuggestionItem(self.options.itemTemplate, suggestion, matchedBy);
+            var dropDownItem = DropDownSuggestionItem(self._suggestionTemplate, suggestion, matchedBy);
             dropDownItem.render();
 
             // TODO: разобрать на отдельные методы. Добавить setter val на uiElement
@@ -237,11 +287,24 @@
         }
 
 
+        function removeSelectedSuggesstion(element) {
+            // TODO: Добавить id. Чтобы не зависеть от верстки
+            var uid = element.getAttribute('data-user-id');
+            var container = element.parentNode;
+            delete self.selectedItems[uid];
+            container.parentNode.removeChild(container);
+
+        }
+
         function renderSelectedSuggestion(suggestion) {
-            var element = UiElement.create('div');
-            element.addClass('ui-drop-down-selected-suggestion');
-            element.html(uiRenderTemplate(self.options.selectedItemTemplate, suggestion));
-            self._selectedContainer.append(element.element);
+            var selectedItem = DropDownSelectedSuggestionItem(
+                self._selectedItemTemplate, suggestion, self.options.multiple
+            );
+            //var element = UiElement.create('div');
+            //element.addClass('ui-drop-down-selected-suggestion');
+            //element.html(uiRenderTemplate(self._selectedItemTemplate, suggestion));
+            selectedItem.render();
+            self._selectedContainer.append(selectedItem.uiElement);
         }
 
         function lookup() {
@@ -275,7 +338,7 @@
             counter = 0;
             while (counter < self.options.limit && idx < self.suggestions.length) {
                 var matchResult = self.matcher(val, self.suggestions[idx], self.selectedItems);
-                if(matchResult.matched){
+                if (matchResult.matched) {
 
                     self.suggestions[idx].mathedBy = matchResult.matchedBy;
                     self.matchedSuggestions.push(self.suggestions[idx]);

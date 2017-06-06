@@ -15,6 +15,7 @@ var PATCHES = {
     'js': [
         'src/js/util/**/*.js',
         'src/js/_uiDropDownSuggestionItem.js',
+        'src/js/_uiDropDownSelectedSuggestionItem.js',
         'src/js/_uiDropDownUsersMatcher.js',
         'src/js/uiDropDownWidget.js'
     ],

@@ -3,23 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <title>Title</title>
+    <link href='https://fonts.googleapis.com/css?family=Roboto' rel='stylesheet'>
     <link type="text/css" rel="stylesheet" href="dist/css/ui-drop-down.css">
 </head>
 <body>
 <div>
-    <input type="text" id="test">
+    <input type="text" id="test" placeholder="Введите имя или адрес страницы">
 
     <a onclick="showSelected()">Show Selected</a>
-    <p style="height: 10px">
+    <p style="height: 20px">
     </p>
-    <input type="text" id="test2">
+    <input type="text" id="test2"  placeholder="Введите имя или адрес страницы">
 </div>
 
 <script src="dist/js/ui-drop-down.js"></script>
 <script>
     var suggestions = [];
     var suggestions2 = [];
-    for(var i=0; i < 1000; i++){
+    for(var i=0; i < 300; i++){
         suggestions.push({
             name: i + 'Тестовый ' + i + 'Пользователь',
             uid: '' + i
@@ -37,7 +38,8 @@
 
     var widget2 = new UiDropDown('#test2', {
         suggestions: suggestions2,
-        limit: 5
+        limit: 5,
+        multiple: false
     });
 
     function showSelected(){
