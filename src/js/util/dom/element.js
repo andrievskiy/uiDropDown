@@ -58,7 +58,9 @@
 
         return {
             top: byWindow.top + scrollTop - clientTop,
-            left: byWindow.left + scrollLeft - clientLeft
+            left: byWindow.left + scrollLeft - clientLeft,
+            bottom: byWindow.bottom + scrollTop - clientTop,
+            right: byWindow.right + scrollLeft - clientLeft
         }
     };
 
@@ -104,6 +106,16 @@
     _UiElement.prototype.clientWidth = function () {
         return this.element.clientWidth;
     };
+
+    _UiElement.prototype.offsetHeight = function () {
+        return this.element.offsetHeight;
+    };
+
+    _UiElement.prototype.clientHeight = function () {
+        return this.element.clientHeight;
+    };
+
+
 
     /**
      *

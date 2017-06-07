@@ -3,9 +3,9 @@
   max-height: 300px;
   display: none;
   border: 1px solid #ccc;
-  overflow-y: hidden;
-  transition: 0.1s linear all;
-  background: #fff; }
+  overflow-y: auto;
+  background: #fff;
+  z-index: 1; }
 
 .ui-drop-down-autocomplete-suggestions.show {
   display: block; }
@@ -29,7 +29,15 @@
   border: 1px solid #ccc;
   font-family: 'Roboto', serif;
   font-size: 12px;
-  padding: 3px; }
+  padding: 3px;
+  position: relative;
+  /*scroll */ }
+  .ui-drop-down-input-wrapper ::-webkit-scrollbar {
+    width: 7px; }
+  .ui-drop-down-input-wrapper ::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.01); }
+  .ui-drop-down-input-wrapper ::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.05); }
 
 .ui-drop-down-selected-remove-btn {
   cursor: pointer; }
@@ -37,7 +45,7 @@
 .ui-drop-down-selected-name {
   display: inline-block; }
 
-.ui-drop-down-selected-container, .ui-drop-down-selected-suggestion {
+.ui-drop-down-selected-suggestion {
   display: inline-block; }
 
 input[type="text"] {

@@ -87,6 +87,45 @@ if (!Object.assign) {
 
     window.uiDropDownajax = uiDropDownAjax;
 })(window);
+(function (window) {
+    var ESCAPE_CHARS = {
+        '¢': 'cent',
+        '£': 'pound',
+        '¥': 'yen',
+        '€': 'euro',
+        '©': 'copy',
+        '®': 'reg',
+        '<': 'lt',
+        '>': 'gt',
+        '"': 'quot',
+        '&': 'amp',
+        '\'': '#39'
+    }, regex;
+
+    function _makeRegexpString() {
+        var regexString = '[';
+
+        for (var key in ESCAPE_CHARS) {
+            regexString += key;
+        }
+        regexString += ']';
+
+        return regexString;
+    }
+
+    regex = new RegExp(_makeRegexpString(), 'g');
+
+    function uiDropDownHtmlEscaping(str) {
+        if(typeof str != 'string'){
+            return str;
+        }
+        return str.replace(regex, function (m) {
+            return '&' + ESCAPE_CHARS[m] + ';';
+        });
+    }
+
+    window.uiDropDownHtmlEscaping = uiDropDownHtmlEscaping;
+})(window);
 /**
  * Модуль для работы с DOM
  */
@@ -147,7 +186,9 @@ if (!Object.assign) {
 
         return {
             top: byWindow.top + scrollTop - clientTop,
-            left: byWindow.left + scrollLeft - clientLeft
+            left: byWindow.left + scrollLeft - clientLeft,
+            bottom: byWindow.bottom + scrollTop - clientTop,
+            right: byWindow.right + scrollLeft - clientLeft
         }
     };
 
@@ -193,6 +234,16 @@ if (!Object.assign) {
     _UiElement.prototype.clientWidth = function () {
         return this.element.clientWidth;
     };
+
+    _UiElement.prototype.offsetHeight = function () {
+        return this.element.offsetHeight;
+    };
+
+    _UiElement.prototype.clientHeight = function () {
+        return this.element.clientHeight;
+    };
+
+
 
     /**
      *
@@ -319,45 +370,6 @@ if (!Object.assign) {
 
     window.UiElement = UiElement;
 
-})(window);
-(function (window) {
-    var ESCAPE_CHARS = {
-        '¢': 'cent',
-        '£': 'pound',
-        '¥': 'yen',
-        '€': 'euro',
-        '©': 'copy',
-        '®': 'reg',
-        '<': 'lt',
-        '>': 'gt',
-        '"': 'quot',
-        '&': 'amp',
-        '\'': '#39'
-    }, regex;
-
-    function _makeRegexpString() {
-        var regexString = '[';
-
-        for (var key in ESCAPE_CHARS) {
-            regexString += key;
-        }
-        regexString += ']';
-
-        return regexString;
-    }
-
-    regex = new RegExp(_makeRegexpString(), 'g');
-
-    function uiDropDownHtmlEscaping(str) {
-        if(typeof str != 'string'){
-            return str;
-        }
-        return str.replace(regex, function (m) {
-            return '&' + ESCAPE_CHARS[m] + ';';
-        });
-    }
-
-    window.uiDropDownHtmlEscaping = uiDropDownHtmlEscaping;
 })(window);
 ;(function (window) {
     function renderTemplate(template, data) {
@@ -821,14 +833,18 @@ if (!Object.assign) {
                 removeSelectedSuggestion(target);
 
                 if (!self.getSelected().length) {
+                    // Для корректного позиционирования нужно сначала срыывать контейнер
+                    // Только после этого вызывать activateInputElement
                     hideSelectedContainer();
                     activateInputElement();
                 }
             } else {
-                activateInputElement();
                 if (!self.options.multiple) {
+                    // Для корректного позиционирования нужно сначала срыывать контейнер
+                    // Только после этого вызывать activateInputElement
                     hideSelectedContainer();
                 }
+                activateInputElement();
             }
 
         }
@@ -846,10 +862,12 @@ if (!Object.assign) {
 
         function onClickWrapper(event) {
             if (event.target === this) {
-                activateInputElement();
                 if (!self.options.multiple) {
+                    // Для корректного позиционирования нужно сначала срыывать контейнер
+                    // Только после этого вызывать activateInputElement
                     hideSelectedContainer();
                 }
+                activateInputElement();
             }
         }
 
@@ -960,16 +978,19 @@ if (!Object.assign) {
          * Прозводит позиционирование блока предложений относительно эелемента
          */
         function positionSuggestionList() {
-            var inputWrapperCoordinates = self._dropDownInputWrapper.getCoordinates();
+            // var inputWrapperCoordinates = self._dropDownInputWrapper.getCoordinates();
 
-            self._suggestionsWrapper.style.top =
-                inputWrapperCoordinates.bottom + self._dropDownInputWrapper.clientTop() + 'px';
-
-            self._suggestionsWrapper.style.left = inputWrapperCoordinates.left + 'px';
-
-            self._suggestionsWrapper.style.width =
-                self._dropDownInputWrapper.offsetWidth() - self._suggestionsWrapper.clientLeft()
-                - self._suggestionsWrapper.clientRight() + 'px';
+            // self._suggestionsWrapper.style.top =
+            //     inputWrapperCoordinates.bottom - self._dropDownInputWrapper.clientTop()  + 'px';
+            //
+            // self._suggestionsWrapper.style.left = inputWrapperCoordinates.left + 'px';
+            //
+            // self._suggestionsWrapper.style.width =
+            //     self._dropDownInputWrapper.offsetWidth() - self._suggestionsWrapper.clientLeft() * 2 + 'px';
+                // - self._suggestionsWrapper.clientRight() + 'px';
+            self._suggestionsWrapper.style.top = self._dropDownInputWrapper.clientHeight() + 'px';
+            self._suggestionsWrapper.style.left = -self._dropDownInputWrapper.clientLeft() + 'px';
+            self._suggestionsWrapper.style.width = '100%';
         }
 
         function clearMatchedSuggestionsList() {
@@ -1088,6 +1109,8 @@ if (!Object.assign) {
 
         function onServerLookUpLoaded(prefix, response) {
             self._cache[prefix] = response.result;
+            // Очищаем сообщение о отсутствии пользователя
+            // TODO: Дораюотать. 
             if(!self.matchedSuggestions.length){
                 clearMatchedSuggestionsList();
             }

@@ -128,14 +128,18 @@
                 removeSelectedSuggestion(target);
 
                 if (!self.getSelected().length) {
+                    // Для корректного позиционирования нужно сначала срыывать контейнер
+                    // Только после этого вызывать activateInputElement
                     hideSelectedContainer();
                     activateInputElement();
                 }
             } else {
-                activateInputElement();
                 if (!self.options.multiple) {
+                    // Для корректного позиционирования нужно сначала срыывать контейнер
+                    // Только после этого вызывать activateInputElement
                     hideSelectedContainer();
                 }
+                activateInputElement();
             }
 
         }
@@ -153,10 +157,12 @@
 
         function onClickWrapper(event) {
             if (event.target === this) {
-                activateInputElement();
                 if (!self.options.multiple) {
+                    // Для корректного позиционирования нужно сначала срыывать контейнер
+                    // Только после этого вызывать activateInputElement
                     hideSelectedContainer();
                 }
+                activateInputElement();
             }
         }
 
@@ -267,16 +273,22 @@
          * Прозводит позиционирование блока предложений относительно эелемента
          */
         function positionSuggestionList() {
-            var inputWrapperCoordinates = self._dropDownInputWrapper.getCoordinates();
+            // var inputWrapperCoordinates = self._dropDownInputWrapper.getCoordinates();
 
-            self._suggestionsWrapper.style.top =
-                inputWrapperCoordinates.bottom + self._dropDownInputWrapper.clientTop() + 'px';
-
-            self._suggestionsWrapper.style.left = inputWrapperCoordinates.left + 'px';
-
-            self._suggestionsWrapper.style.width =
-                self._dropDownInputWrapper.offsetWidth() - self._suggestionsWrapper.clientLeft()
-                - self._suggestionsWrapper.clientRight() + 'px';
+            // self._suggestionsWrapper.style.top =
+            //     inputWrapperCoordinates.bottom - self._dropDownInputWrapper.clientTop()  + 'px';
+            //
+            // self._suggestionsWrapper.style.left = inputWrapperCoordinates.left + 'px';
+            //
+            // self._suggestionsWrapper.style.width =
+            //     self._dropDownInputWrapper.offsetWidth() - self._suggestionsWrapper.clientLeft() * 2 + 'px';
+                // - self._suggestionsWrapper.clientRight() + 'px';
+            // Изменил алгоритм позиционирования
+            // TODO: Предусмотреть оба варианта. На случай если нет возможности использовать
+            // TODO: position=relative для враппера
+            self._suggestionsWrapper.style.top = self._dropDownInputWrapper.clientHeight() + 'px';
+            self._suggestionsWrapper.style.left = -self._dropDownInputWrapper.clientLeft() + 'px';
+            self._suggestionsWrapper.style.width = '100%';
         }
 
         function clearMatchedSuggestionsList() {

@@ -6,9 +6,9 @@ $color-white: #fff;
   max-height: 300px;
   display: none;
   border: 1px solid #ccc;
-  overflow-y: hidden;
-  transition: 0.1s linear all;
+  overflow-y: auto;
   background: #fff;
+  z-index: 1;
 }
 
 .ui-drop-down-autocomplete-suggestions.show{
@@ -36,6 +36,22 @@ $color-white: #fff;
   font-family: 'Roboto', serif;
   font-size: 12px;
   padding: 3px;
+  position: relative;
+
+    /*scroll */
+  ::-webkit-scrollbar {
+      width: 7px;
+  }
+
+  ::-webkit-scrollbar-track {
+     background: rgba(0, 0, 0, 0.01);
+  }
+
+  ::-webkit-scrollbar-thumb {
+      background: rgba(0, 0, 0, 0.05);
+
+  }
+
 }
 .ui-drop-down-selected-remove-btn{
   cursor: pointer;
@@ -44,7 +60,7 @@ $color-white: #fff;
 .ui-drop-down-selected-name{
   display: inline-block;
 }
-.ui-drop-down-selected-container, .ui-drop-down-selected-suggestion{
+.ui-drop-down-selected-suggestion{
   display: inline-block;
 }
 
