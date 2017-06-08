@@ -56,6 +56,7 @@
 
         self._cache = {};
         self._lastVal = null;
+        self._serverQuryIsRunning = false;
 
         self._suggestionTemplate = getSuggestionTemplate();
         self._selectedItemTemplate = getSelectedItemTemplate();
@@ -296,9 +297,11 @@
         }
 
         function renderAllMatchedSuggestions() {
+            // TODO: Убрать мигание
             clearMatchedSuggestionsList();
-            if(!self.matchedSuggestions.length){
-                showEmptySuggestionMessage();
+            if(!self.matchedSuggestions.length && !self._serverQuryIsRunning){
+                 showEmptySuggestionMessage();
+                 return;
             }
             self.matchedSuggestions.forEach(function (item) {
                 renderMatchedSuggestion(item);
@@ -419,11 +422,13 @@
             if (prefix == '') {
                 return;
             }
+            self._serverQuryIsRunning = true;
             var _cached = self._cache[prefix];
             var findParams = {};
 
             if (_cached) {
                 appendMatchedSuggestionsFromServer(_cached);
+                self._serverQuryIsRunning = false;
                 return;
             }
 
@@ -436,10 +441,15 @@
                 data: findParams,
                 params: findParams,
                 onError: function (xrh) {
-                    console.log('ERROR', xrh.statusText)
+                    console.log('ERROR', xrh.statusText);
+                    if(!self.matchedSuggestions.length){
+                        showEmptySuggestionMessage();
+                    }
+                    self._serverQuryIsRunning = false;
                 },
                 onSuccess: function (response) {
-                    onServerLookUpLoaded(prefix, response)
+                    onServerLookUpLoaded(prefix, response);
+                    self._serverQuryIsRunning = false;
                 }
             });
         }

@@ -772,6 +772,7 @@ if (!Object.assign) {
 
         self._cache = {};
         self._lastVal = null;
+        self._serverQuryIsRunning = false;
 
         self._suggestionTemplate = getSuggestionTemplate();
         self._selectedItemTemplate = getSelectedItemTemplate();
@@ -1001,8 +1002,6 @@ if (!Object.assign) {
 
             self._suggestionsWrapper.style.width =
                 self._dropDownInputWrapper.offsetWidth() - self._suggestionsWrapper.clientLeft() - self._suggestionsWrapper.clientRight() + 'px';
-
-
         }
 
         function clearMatchedSuggestionsList() {
@@ -1015,8 +1014,9 @@ if (!Object.assign) {
 
         function renderAllMatchedSuggestions() {
             clearMatchedSuggestionsList();
-            if(!self.matchedSuggestions.length){
-                showEmptySuggestionMessage();
+            if(!self.matchedSuggestions.length && !self._serverQuryIsRunning){
+                 showEmptySuggestionMessage();
+                 return;
             }
             self.matchedSuggestions.forEach(function (item) {
                 renderMatchedSuggestion(item);
@@ -1137,11 +1137,13 @@ if (!Object.assign) {
             if (prefix == '') {
                 return;
             }
+            self._serverQuryIsRunning = true;
             var _cached = self._cache[prefix];
             var findParams = {};
 
             if (_cached) {
                 appendMatchedSuggestionsFromServer(_cached);
+                self._serverQuryIsRunning = false;
                 return;
             }
 
@@ -1154,10 +1156,15 @@ if (!Object.assign) {
                 data: findParams,
                 params: findParams,
                 onError: function (xrh) {
-                    console.log('ERROR', xrh.statusText)
+                    console.log('ERROR', xrh.statusText);
+                    if(!self.matchedSuggestions.length){
+                        showEmptySuggestionMessage();
+                    }
+                    self._serverQuryIsRunning = false;
                 },
                 onSuccess: function (response) {
-                    onServerLookUpLoaded(prefix, response)
+                    onServerLookUpLoaded(prefix, response);
+                    self._serverQuryIsRunning = false;
                 }
             });
         }
