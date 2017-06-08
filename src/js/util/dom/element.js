@@ -77,9 +77,10 @@
      * @returns {number}
      */
     _UiElement.prototype.clientRight = function () {
-        // @TODO: Поправить на корректную работу в случае скрола
-        var clientRight =  this.offsetWidth() - this.clientLeft() - this.clientWidth();
-        return clientRight;
+        var computedStyles = window.getComputedStyle(this.element);
+        var borderRight = computedStyles.borderRightWidth;
+        borderRight = borderRight.split('px')[0];
+        return +borderRight;
     };
 
     /**
@@ -227,6 +228,16 @@
 
     _UiElement.prototype.remove = function(){
         this.element.parentNode.removeChild(this.element);
+    };
+
+    _UiElement.prototype.css = function (css) {
+        var self = this;
+        if(!css){
+            return window.getComputedStyle(this.element);
+        }
+        Object.keys(css).forEach(function (property) {
+           self.element.style[property] = css[property];
+        });
     };
 
     /**

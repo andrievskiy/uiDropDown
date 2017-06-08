@@ -1,3 +1,11 @@
+.ui-drop-down-input-wrapper {
+  border: 1px solid #ccc;
+  font-family: 'Roboto', serif;
+  font-size: 12px;
+  padding: 3px;
+  position: relative;
+  background: #fff; }
+
 .ui-drop-down-autocomplete-suggestions {
   position: absolute;
   max-height: 300px;
@@ -5,7 +13,16 @@
   border: 1px solid #ccc;
   overflow-y: auto;
   background: #fff;
-  z-index: 1; }
+  z-index: 1;
+  font-family: 'Roboto', serif;
+  font-size: 12px;
+  /*scroll */ }
+  .ui-drop-down-autocomplete-suggestions ::-webkit-scrollbar {
+    width: 7px; }
+  .ui-drop-down-autocomplete-suggestions ::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.01); }
+  .ui-drop-down-autocomplete-suggestions ::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.05); }
 
 .ui-drop-down-autocomplete-suggestions.show {
   display: block; }
@@ -24,20 +41,6 @@
   color: #fff;
   margin: 3px;
   padding: 3px; }
-
-.ui-drop-down-input-wrapper {
-  border: 1px solid #ccc;
-  font-family: 'Roboto', serif;
-  font-size: 12px;
-  padding: 3px;
-  position: relative;
-  /*scroll */ }
-  .ui-drop-down-input-wrapper ::-webkit-scrollbar {
-    width: 7px; }
-  .ui-drop-down-input-wrapper ::-webkit-scrollbar-track {
-    background: rgba(0, 0, 0, 0.01); }
-  .ui-drop-down-input-wrapper ::-webkit-scrollbar-thumb {
-    background: rgba(0, 0, 0, 0.05); }
 
 .ui-drop-down-selected-remove-btn {
   cursor: pointer; }

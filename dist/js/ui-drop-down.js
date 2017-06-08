@@ -87,45 +87,6 @@ if (!Object.assign) {
 
     window.uiDropDownajax = uiDropDownAjax;
 })(window);
-(function (window) {
-    var ESCAPE_CHARS = {
-        '¢': 'cent',
-        '£': 'pound',
-        '¥': 'yen',
-        '€': 'euro',
-        '©': 'copy',
-        '®': 'reg',
-        '<': 'lt',
-        '>': 'gt',
-        '"': 'quot',
-        '&': 'amp',
-        '\'': '#39'
-    }, regex;
-
-    function _makeRegexpString() {
-        var regexString = '[';
-
-        for (var key in ESCAPE_CHARS) {
-            regexString += key;
-        }
-        regexString += ']';
-
-        return regexString;
-    }
-
-    regex = new RegExp(_makeRegexpString(), 'g');
-
-    function uiDropDownHtmlEscaping(str) {
-        if(typeof str != 'string'){
-            return str;
-        }
-        return str.replace(regex, function (m) {
-            return '&' + ESCAPE_CHARS[m] + ';';
-        });
-    }
-
-    window.uiDropDownHtmlEscaping = uiDropDownHtmlEscaping;
-})(window);
 /**
  * Модуль для работы с DOM
  */
@@ -205,9 +166,10 @@ if (!Object.assign) {
      * @returns {number}
      */
     _UiElement.prototype.clientRight = function () {
-        // @TODO: Поправить на корректную работу в случае скрола
-        var clientRight =  this.offsetWidth() - this.clientLeft() - this.clientWidth();
-        return clientRight;
+        var computedStyles = window.getComputedStyle(this.element);
+        var borderRight = computedStyles.borderRightWidth;
+        borderRight = borderRight.split('px')[0];
+        return +borderRight;
     };
 
     /**
@@ -357,6 +319,16 @@ if (!Object.assign) {
         this.element.parentNode.removeChild(this.element);
     };
 
+    _UiElement.prototype.css = function (css) {
+        var self = this;
+        if(!css){
+            return window.getComputedStyle(this.element);
+        }
+        Object.keys(css).forEach(function (property) {
+           self.element.style[property] = css[property];
+        });
+    };
+
     /**
      * Прокси для проброса style
      */
@@ -370,6 +342,45 @@ if (!Object.assign) {
 
     window.UiElement = UiElement;
 
+})(window);
+(function (window) {
+    var ESCAPE_CHARS = {
+        '¢': 'cent',
+        '£': 'pound',
+        '¥': 'yen',
+        '€': 'euro',
+        '©': 'copy',
+        '®': 'reg',
+        '<': 'lt',
+        '>': 'gt',
+        '"': 'quot',
+        '&': 'amp',
+        '\'': '#39'
+    }, regex;
+
+    function _makeRegexpString() {
+        var regexString = '[';
+
+        for (var key in ESCAPE_CHARS) {
+            regexString += key;
+        }
+        regexString += ']';
+
+        return regexString;
+    }
+
+    regex = new RegExp(_makeRegexpString(), 'g');
+
+    function uiDropDownHtmlEscaping(str) {
+        if(typeof str != 'string'){
+            return str;
+        }
+        return str.replace(regex, function (m) {
+            return '&' + ESCAPE_CHARS[m] + ';';
+        });
+    }
+
+    window.uiDropDownHtmlEscaping = uiDropDownHtmlEscaping;
 })(window);
 ;(function (window) {
     function renderTemplate(template, data) {
@@ -777,11 +788,8 @@ if (!Object.assign) {
         self._dropDownInputWrapper = createDropDownInputWrapper();
         self._suggestionsWrapper = createSuggestionWrapper();
         self._selectedContainer = createSelectedSuggestionsContainer();
+        appendElementsToDom();
 
-        self.inputElement.wrap(self._dropDownInputWrapper);
-
-        self._dropDownInputWrapper.append(self._suggestionsWrapper.element);
-        self._dropDownInputWrapper.element.insertBefore(self._selectedContainer.element, self.inputElement.element);
 
         self.inputElement.on('focus', onFocusInputHandler);
         self.inputElement.on('keyup', deBounce(onKeyUpInputHandler, 300));
@@ -793,6 +801,12 @@ if (!Object.assign) {
         self._suggestionsWrapper.on('mouseleave', onMouseLeaveSuggestionsWrapper);
 
         self._selectedContainer.on('click', onClickSelectedContainer);
+
+        function appendElementsToDom() {
+            self.inputElement.wrap(self._dropDownInputWrapper);
+            document.body.appendChild(self._suggestionsWrapper.element);
+            self._dropDownInputWrapper.element.insertBefore(self._selectedContainer.element, self.inputElement.element);
+        }
 
 
         function getSuggestionTemplate() {
@@ -833,15 +847,11 @@ if (!Object.assign) {
                 removeSelectedSuggestion(target);
 
                 if (!self.getSelected().length) {
-                    // Для корректного позиционирования нужно сначала срыывать контейнер
-                    // Только после этого вызывать activateInputElement
                     hideSelectedContainer();
                     activateInputElement();
                 }
             } else {
                 if (!self.options.multiple) {
-                    // Для корректного позиционирования нужно сначала срыывать контейнер
-                    // Только после этого вызывать activateInputElement
                     hideSelectedContainer();
                 }
                 activateInputElement();
@@ -863,8 +873,6 @@ if (!Object.assign) {
         function onClickWrapper(event) {
             if (event.target === this) {
                 if (!self.options.multiple) {
-                    // Для корректного позиционирования нужно сначала срыывать контейнер
-                    // Только после этого вызывать activateInputElement
                     hideSelectedContainer();
                 }
                 activateInputElement();
@@ -915,7 +923,7 @@ if (!Object.assign) {
             hideSuggestionList();
             renderSelectedSuggestion(item);
             hideInputElement();
-            // Соббытие не будет послано брузером. Поэтому нужно простваить руками.
+            // Событие не будет послано брузером. Поэтому нужно простваить руками.
             self._suggestionsWrapper.hovered = false;
             showSelectedContainer();
         }
@@ -947,13 +955,17 @@ if (!Object.assign) {
         }
 
         function createDropDownInputWrapper() {
-            function setWidth(wrapper) {
-                wrapper.style.width = self.inputElement.offsetWidth() + 'px';
+            function setStyles(wrapper) {
+                var position = self.inputElement.css().position;
+                wrapper.css({
+                    width: self.inputElement.offsetWidth() + 'px',
+                    position: position
+                });
             }
 
             var element = UiElement.create('div');
             element.addClass('ui-drop-down-input-wrapper');
-            setWidth(element);
+            setStyles(element);
 
             return element;
         }
@@ -974,23 +986,23 @@ if (!Object.assign) {
             self._suggestionsWrapper.removeClass('show');
         }
 
+
         /**
          * Прозводит позиционирование блока предложений относительно эелемента
+         * В зависимости от его позиционирования(static/relative)
          */
         function positionSuggestionList() {
-            // var inputWrapperCoordinates = self._dropDownInputWrapper.getCoordinates();
+            var inputWrapperCoordinates = self._dropDownInputWrapper.getCoordinates();
 
-            // self._suggestionsWrapper.style.top =
-            //     inputWrapperCoordinates.bottom - self._dropDownInputWrapper.clientTop()  + 'px';
-            //
-            // self._suggestionsWrapper.style.left = inputWrapperCoordinates.left + 'px';
-            //
-            // self._suggestionsWrapper.style.width =
-            //     self._dropDownInputWrapper.offsetWidth() - self._suggestionsWrapper.clientLeft() * 2 + 'px';
-                // - self._suggestionsWrapper.clientRight() + 'px';
-            self._suggestionsWrapper.style.top = self._dropDownInputWrapper.clientHeight() + 'px';
-            self._suggestionsWrapper.style.left = -self._dropDownInputWrapper.clientLeft() + 'px';
-            self._suggestionsWrapper.style.width = '100%';
+            self._suggestionsWrapper.style.top =
+                inputWrapperCoordinates.bottom - self._dropDownInputWrapper.clientTop()  + 'px';
+
+            self._suggestionsWrapper.style.left = inputWrapperCoordinates.left + 'px';
+
+            self._suggestionsWrapper.style.width =
+                self._dropDownInputWrapper.offsetWidth() - self._suggestionsWrapper.clientLeft() - self._suggestionsWrapper.clientRight() + 'px';
+
+
         }
 
         function clearMatchedSuggestionsList() {
