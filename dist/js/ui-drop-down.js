@@ -343,6 +343,20 @@ if (!Object.assign) {
     window.UiElement = UiElement;
 
 })(window);
+;(function (window) {
+    function renderTemplate(template, data) {
+        return template.replace(/{([\w|:]+)}/g, function (match, key) {
+
+            var isHtml = ~key.indexOf('::html');
+            if(isHtml){
+                key = key.split('::')[0];
+                return data[key] || '';
+            }
+            return uiDropDownHtmlEscaping(data[key] || '');
+        })
+    }
+    window.uiRenderTemplate = renderTemplate;
+})(window);
 (function (window) {
     var ESCAPE_CHARS = {
         '¢': 'cent',
@@ -381,20 +395,6 @@ if (!Object.assign) {
     }
 
     window.uiDropDownHtmlEscaping = uiDropDownHtmlEscaping;
-})(window);
-;(function (window) {
-    function renderTemplate(template, data) {
-        return template.replace(/{([\w|:]+)}/g, function (match, key) {
-
-            var isHtml = ~key.indexOf('::html');
-            if(isHtml){
-                key = key.split('::')[0];
-                return data[key] || '';
-            }
-            return uiDropDownHtmlEscaping(data[key] || '');
-        })
-    }
-    window.uiRenderTemplate = renderTemplate;
 })(window);
 ;(function (window) {
     var dropDownItemDefaultTemplate = '';
@@ -773,6 +773,7 @@ if (!Object.assign) {
         self._cache = {};
         self._lastVal = null;
         self._serverQuryIsRunning = false;
+        self._lastIsEmpty = false;
 
         self._suggestionTemplate = getSuggestionTemplate();
         self._selectedItemTemplate = getSelectedItemTemplate();
@@ -1013,10 +1014,18 @@ if (!Object.assign) {
         }
 
         function renderAllMatchedSuggestions() {
-            clearMatchedSuggestionsList();
+            // Если пачка предложений пуста, то производить очистку и показвать сообщение нужно только
+            // Если предложения не смогут появиться с сервера
             if(!self.matchedSuggestions.length && !self._serverQuryIsRunning){
+                 clearMatchedSuggestionsList();
                  showEmptySuggestionMessage();
                  return;
+            }
+
+            // Если запрос еще выпоняется, то очистку списка нужно производить
+            // Только если есть записи
+            if(self.matchedSuggestions.length){
+                clearMatchedSuggestionsList();
             }
             self.matchedSuggestions.forEach(function (item) {
                 renderMatchedSuggestion(item);
@@ -1103,6 +1112,7 @@ if (!Object.assign) {
                 idx++;
             }
             console.timeEnd('lookUp');
+            self._lastIsEmpty = !self.matchedSuggestions.length;
 
             if (self.options.serverSide) {
                 serverLookUp(prefix);
@@ -1121,15 +1131,14 @@ if (!Object.assign) {
 
         function onServerLookUpLoaded(prefix, response) {
             self._cache[prefix] = response.result;
-            // Очищаем сообщение о отсутствии пользователя
-            // TODO: Дораюотать. 
             if(!self.matchedSuggestions.length){
                 clearMatchedSuggestionsList();
             }
             if (response.result.length) {
                 appendMatchedSuggestionsFromServer(response.result);
             } else if(!self.matchedSuggestions.length){
-                 showEmptySuggestionMessage();
+                showEmptySuggestionMessage();
+                self._lastIsEmpty = true;
             }
         }
 
@@ -1188,10 +1197,8 @@ if (!Object.assign) {
             };
         }
         function showEmptySuggestionMessage(){
-
             var dropDownItem = DropDownSuggestionItem(self.options.emptyMessageTemplate, {name: 'empty'});
             dropDownItem.render();
-            console.log(dropDownItem.uiElement.element.innerHTML);
             self._suggestionsWrapper.append(dropDownItem.uiElement.element);
         }
     }

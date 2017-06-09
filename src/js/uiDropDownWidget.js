@@ -57,6 +57,7 @@
         self._cache = {};
         self._lastVal = null;
         self._serverQuryIsRunning = false;
+        self._lastIsEmpty = false;
 
         self._suggestionTemplate = getSuggestionTemplate();
         self._selectedItemTemplate = getSelectedItemTemplate();
@@ -297,11 +298,18 @@
         }
 
         function renderAllMatchedSuggestions() {
-            // TODO: Убрать мигание
-            clearMatchedSuggestionsList();
+            // Если пачка предложений пуста, то производить очистку и показвать сообщение нужно только
+            // Если предложения не смогут появиться с сервера
             if(!self.matchedSuggestions.length && !self._serverQuryIsRunning){
+                 clearMatchedSuggestionsList();
                  showEmptySuggestionMessage();
                  return;
+            }
+
+            // Если запрос еще выпоняется, то очистку списка нужно производить
+            // Только если есть записи
+            if(self.matchedSuggestions.length){
+                clearMatchedSuggestionsList();
             }
             self.matchedSuggestions.forEach(function (item) {
                 renderMatchedSuggestion(item);
@@ -388,6 +396,7 @@
                 idx++;
             }
             console.timeEnd('lookUp');
+            self._lastIsEmpty = !self.matchedSuggestions.length;
 
             if (self.options.serverSide) {
                 serverLookUp(prefix);
@@ -406,15 +415,14 @@
 
         function onServerLookUpLoaded(prefix, response) {
             self._cache[prefix] = response.result;
-            // Очищаем сообщение о отсутствии пользователя
-            // TODO: Дораюотать. 
             if(!self.matchedSuggestions.length){
                 clearMatchedSuggestionsList();
             }
             if (response.result.length) {
                 appendMatchedSuggestionsFromServer(response.result);
             } else if(!self.matchedSuggestions.length){
-                 showEmptySuggestionMessage();
+                showEmptySuggestionMessage();
+                self._lastIsEmpty = true;
             }
         }
 
@@ -473,10 +481,8 @@
             };
         }
         function showEmptySuggestionMessage(){
-
             var dropDownItem = DropDownSuggestionItem(self.options.emptyMessageTemplate, {name: 'empty'});
             dropDownItem.render();
-            console.log(dropDownItem.uiElement.element.innerHTML);
             self._suggestionsWrapper.append(dropDownItem.uiElement.element);
         }
     }
