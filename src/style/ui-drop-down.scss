@@ -6,11 +6,6 @@ $color-white: #fff;
 @import "wrappers/ui-drop-down-suggestions-wrapper";
 @import "items/ui-drop-down-suggestion-item";
 
-
-.ui-drop-down-highlight{
-  color: red;
-}
-
 .ui-drop-down-selected-item{
   display: inline-block;
   background: $color-blue-background;

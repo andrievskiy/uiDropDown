@@ -38,6 +38,9 @@
 .ui-drop-down-autocomplete-suggestions.show {
   display: block; }
 
+.ui-drop-down-highlight {
+  background: #e7edf2; }
+
 .ui-drop-down-item-container {
   border-top: 1px solid #e7e8ec;
   text-align: left;
@@ -46,6 +49,8 @@
 
 .ui-drop-down-item-container.ui-drop-down-hovered, .ui-drop-down-item-container:hover {
   background: #f0f2f5; }
+  .ui-drop-down-item-container.ui-drop-down-hovered .ui-drop-down-highlight, .ui-drop-down-item-container:hover .ui-drop-down-highlight {
+    background: #cfdae6; }
 
 .ui-drop-down-item-container:first-child {
   border-top: none; }
@@ -83,9 +88,6 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis; }
-
-.ui-drop-down-highlight {
-  color: red; }
 
 .ui-drop-down-selected-item {
   display: inline-block;
