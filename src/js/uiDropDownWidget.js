@@ -65,6 +65,7 @@
         self.inputElement = UiElement(selector);
         if(!self.options.autocomplete){
             self.inputElement.element.setAttribute('readonly', 'true');
+            // self.inputElement.addClass('ui-drop-down-readonly-input')
         }
 
         self.suggestions = self.options.suggestions || [];
@@ -131,48 +132,37 @@
 
         function onClickSelectedContainer(event) {
             var target = event.target;
-
             if (target.getAttribute('data-is-remove-button') == 'true') {
                 removeSelectedSuggestion(target);
+            }
+            activateInputElement();
+        }
 
-                if (!self.getSelected().length) {
-                    hideSelectedContainer();
-                    activateInputElement();
-                }
+        function open() {
+            if((!self.options.multiple && self.options.autocomplete) || !self.getSelected().length){
+                hideSelectedContainer();
+            }
+
+            if(!self.options.autocomplete && self.getSelected().length){
+                self.inputElement.addClass('ui-drop-down-input-hidden');
             } else {
-                if (!self.options.multiple) {
-                    hideSelectedContainer();
-                }
-                activateInputElement();
+                self.inputElement.removeClass('ui-drop-down-input-hidden');
             }
 
-        }
-
-        function onFocusInputHandler() {
-            lookup();
             showSuggestionList();
-            renderAllMatchedSuggestions();
+            search();
         }
 
-        function onKeyUpInputHandler() {
+        function search() {
             lookup();
             renderAllMatchedSuggestions();
         }
 
-        function onClickWrapper(event) {
-            if (event.target === this) {
-                if (!self.options.multiple) {
-                    hideSelectedContainer();
-                }
-                activateInputElement();
-            }
-        }
-
-        function onBlurInputElement() {
+        function close() {
             if (self._suggestionsWrapper.hovered) {
                 return;
             }
-            hideSuggestionList();
+            hideSuggestiosnList();
             if (self.options.multiple && self.getSelected().length) {
                 hideInputElement();
             }
@@ -182,6 +172,24 @@
             }
         }
 
+        function onFocusInputHandler() {
+            open();
+        }
+
+        function onKeyUpInputHandler() {
+            search();
+        }
+
+        function onClickWrapper(event) {
+            if (event.target === this) {
+                activateInputElement();
+            }
+        }
+
+        function onBlurInputElement() {
+            close();
+        }
+
         function onHoverSuggestionsWrapper() {
             self._suggestionsWrapper.hovered = true;
         }
@@ -189,7 +197,6 @@
         function onMouseLeaveSuggestionsWrapper() {
             self._suggestionsWrapper.hovered = false;
         }
-
 
         function _clearLastSelected() {
             Object.keys(self.selectedItems).forEach(function (prop) {
@@ -209,7 +216,7 @@
             addItemToSelected(item);
             element.parentNode.removeChild(element);
             self.inputElement.val('');
-            hideSuggestionList();
+            hideSuggestiosnList();
             renderSelectedSuggestion(item);
             hideInputElement();
             // Событие не будет послано брузером. Поэтому нужно простваить руками.
@@ -233,9 +240,10 @@
 
         function activateInputElement() {
             self.inputElement.style.display = 'block';
-            self.inputElement.element.focus();
+            if(document.activeElement !== self.inputElement.element){
+                self.inputElement.element.focus();
+            }
         }
-
 
         function createSuggestionWrapper() {
             var element = UiElement.create('div');
@@ -271,7 +279,7 @@
             positionSuggestionList();
         }
 
-        function hideSuggestionList() {
+        function hideSuggestiosnList() {
             self._suggestionsWrapper.removeClass('show');
         }
 

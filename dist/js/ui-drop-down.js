@@ -343,20 +343,6 @@ if (!Object.assign) {
     window.UiElement = UiElement;
 
 })(window);
-;(function (window) {
-    function renderTemplate(template, data) {
-        return template.replace(/{([\w|:]+)}/g, function (match, key) {
-
-            var isHtml = ~key.indexOf('::html');
-            if(isHtml){
-                key = key.split('::')[0];
-                return data[key] || '';
-            }
-            return uiDropDownHtmlEscaping(data[key] || '');
-        })
-    }
-    window.uiRenderTemplate = renderTemplate;
-})(window);
 (function (window) {
     var ESCAPE_CHARS = {
         '¢': 'cent',
@@ -395,6 +381,20 @@ if (!Object.assign) {
     }
 
     window.uiDropDownHtmlEscaping = uiDropDownHtmlEscaping;
+})(window);
+;(function (window) {
+    function renderTemplate(template, data) {
+        return template.replace(/{([\w|:]+)}/g, function (match, key) {
+
+            var isHtml = ~key.indexOf('::html');
+            if(isHtml){
+                key = key.split('::')[0];
+                return data[key] || '';
+            }
+            return uiDropDownHtmlEscaping(data[key] || '');
+        })
+    }
+    window.uiRenderTemplate = renderTemplate;
 })(window);
 ;(function (window) {
     var dropDownItemDefaultTemplate = '';
@@ -781,6 +781,7 @@ if (!Object.assign) {
         self.inputElement = UiElement(selector);
         if(!self.options.autocomplete){
             self.inputElement.element.setAttribute('readonly', 'true');
+            // self.inputElement.addClass('ui-drop-down-readonly-input')
         }
 
         self.suggestions = self.options.suggestions || [];
@@ -847,48 +848,37 @@ if (!Object.assign) {
 
         function onClickSelectedContainer(event) {
             var target = event.target;
-
             if (target.getAttribute('data-is-remove-button') == 'true') {
                 removeSelectedSuggestion(target);
+            }
+            activateInputElement();
+        }
 
-                if (!self.getSelected().length) {
-                    hideSelectedContainer();
-                    activateInputElement();
-                }
+        function open() {
+            if((!self.options.multiple && self.options.autocomplete) || !self.getSelected().length){
+                hideSelectedContainer();
+            }
+
+            if(!self.options.autocomplete && self.getSelected().length){
+                self.inputElement.addClass('ui-drop-down-input-hidden');
             } else {
-                if (!self.options.multiple) {
-                    hideSelectedContainer();
-                }
-                activateInputElement();
+                self.inputElement.removeClass('ui-drop-down-input-hidden');
             }
 
-        }
-
-        function onFocusInputHandler() {
-            lookup();
             showSuggestionList();
-            renderAllMatchedSuggestions();
+            search();
         }
 
-        function onKeyUpInputHandler() {
+        function search() {
             lookup();
             renderAllMatchedSuggestions();
         }
 
-        function onClickWrapper(event) {
-            if (event.target === this) {
-                if (!self.options.multiple) {
-                    hideSelectedContainer();
-                }
-                activateInputElement();
-            }
-        }
-
-        function onBlurInputElement() {
+        function close() {
             if (self._suggestionsWrapper.hovered) {
                 return;
             }
-            hideSuggestionList();
+            hideSuggestiosnList();
             if (self.options.multiple && self.getSelected().length) {
                 hideInputElement();
             }
@@ -898,6 +888,24 @@ if (!Object.assign) {
             }
         }
 
+        function onFocusInputHandler() {
+            open();
+        }
+
+        function onKeyUpInputHandler() {
+            search();
+        }
+
+        function onClickWrapper(event) {
+            if (event.target === this) {
+                activateInputElement();
+            }
+        }
+
+        function onBlurInputElement() {
+            close();
+        }
+
         function onHoverSuggestionsWrapper() {
             self._suggestionsWrapper.hovered = true;
         }
@@ -905,7 +913,6 @@ if (!Object.assign) {
         function onMouseLeaveSuggestionsWrapper() {
             self._suggestionsWrapper.hovered = false;
         }
-
 
         function _clearLastSelected() {
             Object.keys(self.selectedItems).forEach(function (prop) {
@@ -925,7 +932,7 @@ if (!Object.assign) {
             addItemToSelected(item);
             element.parentNode.removeChild(element);
             self.inputElement.val('');
-            hideSuggestionList();
+            hideSuggestiosnList();
             renderSelectedSuggestion(item);
             hideInputElement();
             // Событие не будет послано брузером. Поэтому нужно простваить руками.
@@ -949,9 +956,10 @@ if (!Object.assign) {
 
         function activateInputElement() {
             self.inputElement.style.display = 'block';
-            self.inputElement.element.focus();
+            if(document.activeElement !== self.inputElement.element){
+                self.inputElement.element.focus();
+            }
         }
-
 
         function createSuggestionWrapper() {
             var element = UiElement.create('div');
@@ -987,7 +995,7 @@ if (!Object.assign) {
             positionSuggestionList();
         }
 
-        function hideSuggestionList() {
+        function hideSuggestiosnList() {
             self._suggestionsWrapper.removeClass('show');
         }
 

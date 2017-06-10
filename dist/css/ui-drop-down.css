@@ -80,3 +80,10 @@ body {
 
 .ui-drop-down-single-selected-item {
   padding: 6px; }
+
+.ui-drop-down-input-hidden {
+  padding: 0 !important;
+  height: 0 !important; }
+
+.ui-drop-down-readonly-input {
+  cursor: default; }
