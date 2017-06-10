@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <link href='https://fonts.googleapis.com/css?family=Roboto' rel='stylesheet'>
+    <link type="text/css" rel="stylesheet" href="css/ui-drop-down.css">
+</head>
+<body>
+<div>
+    <input type="text" id="test" style="position: relative;" placeholder="Введите имя или адрес страницы">
+
+    <a onclick="showSelected()">Show Selected</a>
+    <p style="height: 20px">
+    </p>
+    <input type="text" id="test2"  placeholder="Введите имя или адрес страницы">
+    <p></p>
+    <input type="text" id="test3" placeholder="Test">
+    <p></p>
+    <input type="text" id="test4" placeholder="Test2">
+</div>
+
+<script src="js/ui-drop-down.js"></script>
+<script>
+    var suggestions = [];
+    var suggestions2 = [];
+    for(var i=0; i < 300; i++){
+        suggestions.push({
+            name: i + 'Тестовый ' + i + 'Пользователь',
+            uid: '' + i + 2000
+        });
+        suggestions2.push({
+            name: i + 'Test2 ' + i + 'User',
+            uid: '' + i + 2000
+        })
+    }
+
+    var widget1 = new UiDropDown('#test', {
+        suggestions: suggestions,
+        limit: 10,
+        serverSide: true,
+        serverSideUrl: 'http://172.27.0.41:5001/find',
+        serverSideFindProperty: 'domain'
+    });
+
+    var widget2 = new UiDropDown('#test2', {
+        suggestions: suggestions2,
+        limit: 10,
+        multiple: false
+    });
+
+    var widet3 = new UiDropDown('#test3', {
+        suggestions: suggestions2,
+        limit: 10,
+        autocomplete: false
+    });
+
+    var widet4 = new UiDropDown('#test4', {
+        suggestions: suggestions2,
+        limit: 10,
+        autocomplete: false,
+        multiple: false
+    });
+
+    function showSelected(){
+        console.log(widget1.getSelected());
+        console.log(widget2.getSelected());
+    }
+</script>
+</body>
+</html>

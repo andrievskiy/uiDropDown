@@ -2,9 +2,8 @@ from flask import Flask
 from flask.json import JSONEncoder
 from flask_sqlalchemy import SQLAlchemy
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='../dist/',  static_url_path='')
 
-app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite://'
 db = SQLAlchemy(app)
 
