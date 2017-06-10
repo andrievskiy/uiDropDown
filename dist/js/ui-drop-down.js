@@ -397,22 +397,22 @@ if (!Object.assign) {
     window.uiRenderTemplate = renderTemplate;
 })(window);
 ;(function (window) {
-    var dropDownItemDefaultTemplate = '';
-
     function DropDownSuggestionItem(template, data, matchedBy) {
         return new _DropDownSuggestionItem(template, data, matchedBy);
     }
 
-    function _DropDownSuggestionItem(template, data, matchedBy) {
+    function _DropDownSuggestionItem(template, data, matchedBy, defaultAvatarUrl) {
         this.uiElement = UiElement.create('div');
         this.uiElement.addClass('ui-drop-down-item-container');
 
-        this.template = template || dropDownItemDefaultTemplate;
+        this.template = template;
         this.data = data;
         this.matchedBy = matchedBy;
+
         this.name = uiDropDownHtmlEscaping(this.data.name);
         this.name = this.name.replace(this.matchedBy, '<span class="ui-drop-down-highlight">' + this.matchedBy + '</span>');
         this.uid = this.data.uid;
+        this.avatarUrl = this.data.avatarUrl || this.data.avatar || defaultAvatarUrl || '';
     }
     
     _DropDownSuggestionItem.prototype.render = function () {
@@ -717,6 +717,12 @@ if (!Object.assign) {
 ;(function (window) {
     var DEFAULT_SUGGESTION_TEMPLATE =
         '<div class="ui-drop-down-suggestion-item" data-user-id="{uid}">' +
+        '   <img src="{avatarUrl}">' +
+        '   <p>{name::html}</p>' +
+        '</div>';
+
+    var DEFAULT_SUGGESTION_TEMPLATE_WITHOUT_AVATARS =
+        '<div class="ui-drop-down-suggestion-item" data-user-id="{uid}">' +
         '   <p>{name::html}</p>' +
         '</div>';
 
@@ -740,18 +746,22 @@ if (!Object.assign) {
     var DEFAULT_OPTIONS = {
         multiple: true,
         autocomplete: true,
-        suggestionTemplateWithAvatar: DEFAULT_SUGGESTION_TEMPLATE,
-        suggestionTemplateWithoutAvatar: DEFAULT_SUGGESTION_TEMPLATE,
-        selectedMultipleItemTemplate: DEFAULT_MULTIPLE_SELECTED_ITEM_TEMPLATE,
-        selectedSingleItemTemplate: DEFAULT_SINGLE_SELECTED_ITEM_TEMPLATE,
-        emptyMessageTemplate: DEFAULT_EMPTY_MESSAGE,
+        showAvatars: true,
+        defaultAvatarUrl: null,
         limit: 10,
+
         serverSide: false,
         serverSideUrl: '/',
         serverSideMethod: 'GET',
         serverSideFindProperty: 'domain',
-        showAvatars: true,
-        suggestionIdentifierProperty: 'uid'
+        suggestionIdentifierProperty: 'uid',
+
+        suggestionTemplateWithAvatar: DEFAULT_SUGGESTION_TEMPLATE,
+        suggestionTemplateWithoutAvatar: DEFAULT_SUGGESTION_TEMPLATE_WITHOUT_AVATARS,
+        selectedMultipleItemTemplate: DEFAULT_MULTIPLE_SELECTED_ITEM_TEMPLATE,
+        selectedSingleItemTemplate: DEFAULT_SINGLE_SELECTED_ITEM_TEMPLATE,
+        emptyMessageTemplate: DEFAULT_EMPTY_MESSAGE
+
     };
 
     function UiDropDown(selector, options) {
@@ -781,7 +791,6 @@ if (!Object.assign) {
         self.inputElement = UiElement(selector);
         if(!self.options.autocomplete){
             self.inputElement.element.setAttribute('readonly', 'true');
-            // self.inputElement.addClass('ui-drop-down-readonly-input')
         }
 
         self.suggestions = self.options.suggestions || [];
@@ -1048,7 +1057,9 @@ if (!Object.assign) {
             var matchedBy = suggestion.mathedBy;
             delete suggestion.mathedBy;
 
-            var dropDownItem = DropDownSuggestionItem(self._suggestionTemplate, suggestion, matchedBy);
+            var dropDownItem = DropDownSuggestionItem(
+                self._suggestionTemplate, suggestion, matchedBy, self.options.defaultAvatarUrl
+            );
             dropDownItem.render();
             // TODO: пернести обработчик на suggestion-list. Испрользовать делегирование,
             // TODO: чтообы избавиться от лишних обработчиков

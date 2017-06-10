@@ -27,11 +27,13 @@
     for(var i=0; i < 300; i++){
         suggestions.push({
             name: i + 'Тестовый ' + i + 'Пользователь',
-            uid: '' + i + 2000
+            uid: '' + i + 2000,
+            avatarUrl: 'https://vk.com/images/deactivated_50.png'
         });
         suggestions2.push({
             name: i + 'Test2 ' + i + 'User',
-            uid: '' + i + 2000
+            uid: '' + i + 2000,
+            avatarUrl: 'https://vk.com/images/deactivated_50.png'
         })
     }
 
@@ -39,12 +41,14 @@
         suggestions: suggestions,
         limit: 10,
         serverSide: true,
+        showAvatars: true,
         serverSideUrl: 'http://127.0.0.1:5001/find',
         serverSideFindProperty: 'domain'
     });
 
     var widget2 = new UiDropDown('#test2', {
         suggestions: suggestions2,
+        showAvatars: false,
         limit: 10,
         multiple: false
     });

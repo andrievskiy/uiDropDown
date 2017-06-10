@@ -27,11 +27,13 @@
     for(var i=0; i < 300; i++){
         suggestions.push({
             name: i + 'Тестовый ' + i + 'Пользователь',
-            uid: '' + i + 2000
+            uid: '' + i + 2000,
+            avatarUrl: 'https://vk.com/images/deactivated_50.png'
         });
         suggestions2.push({
             name: i + 'Test2 ' + i + 'User',
-            uid: '' + i + 2000
+            uid: '' + i + 2000,
+            avatarUrl: 'https://vk.com/images/deactivated_50.png'
         })
     }
 
@@ -46,7 +48,8 @@
     var widget2 = new UiDropDown('#test2', {
         suggestions: suggestions2,
         limit: 10,
-        multiple: false
+        multiple: false,
+        showAvatars: false
     });
 
     var widet3 = new UiDropDown('#test3', {

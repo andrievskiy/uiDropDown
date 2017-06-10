@@ -1,6 +1,12 @@
 ;(function (window) {
     var DEFAULT_SUGGESTION_TEMPLATE =
         '<div class="ui-drop-down-suggestion-item" data-user-id="{uid}">' +
+        '   <img src="{avatarUrl}">' +
+        '   <p>{name::html}</p>' +
+        '</div>';
+
+    var DEFAULT_SUGGESTION_TEMPLATE_WITHOUT_AVATARS =
+        '<div class="ui-drop-down-suggestion-item" data-user-id="{uid}">' +
         '   <p>{name::html}</p>' +
         '</div>';
 
@@ -24,18 +30,22 @@
     var DEFAULT_OPTIONS = {
         multiple: true,
         autocomplete: true,
-        suggestionTemplateWithAvatar: DEFAULT_SUGGESTION_TEMPLATE,
-        suggestionTemplateWithoutAvatar: DEFAULT_SUGGESTION_TEMPLATE,
-        selectedMultipleItemTemplate: DEFAULT_MULTIPLE_SELECTED_ITEM_TEMPLATE,
-        selectedSingleItemTemplate: DEFAULT_SINGLE_SELECTED_ITEM_TEMPLATE,
-        emptyMessageTemplate: DEFAULT_EMPTY_MESSAGE,
+        showAvatars: true,
+        defaultAvatarUrl: null,
         limit: 10,
+
         serverSide: false,
         serverSideUrl: '/',
         serverSideMethod: 'GET',
         serverSideFindProperty: 'domain',
-        showAvatars: true,
-        suggestionIdentifierProperty: 'uid'
+        suggestionIdentifierProperty: 'uid',
+
+        suggestionTemplateWithAvatar: DEFAULT_SUGGESTION_TEMPLATE,
+        suggestionTemplateWithoutAvatar: DEFAULT_SUGGESTION_TEMPLATE_WITHOUT_AVATARS,
+        selectedMultipleItemTemplate: DEFAULT_MULTIPLE_SELECTED_ITEM_TEMPLATE,
+        selectedSingleItemTemplate: DEFAULT_SINGLE_SELECTED_ITEM_TEMPLATE,
+        emptyMessageTemplate: DEFAULT_EMPTY_MESSAGE
+
     };
 
     function UiDropDown(selector, options) {
@@ -65,7 +75,6 @@
         self.inputElement = UiElement(selector);
         if(!self.options.autocomplete){
             self.inputElement.element.setAttribute('readonly', 'true');
-            // self.inputElement.addClass('ui-drop-down-readonly-input')
         }
 
         self.suggestions = self.options.suggestions || [];
@@ -332,7 +341,9 @@
             var matchedBy = suggestion.mathedBy;
             delete suggestion.mathedBy;
 
-            var dropDownItem = DropDownSuggestionItem(self._suggestionTemplate, suggestion, matchedBy);
+            var dropDownItem = DropDownSuggestionItem(
+                self._suggestionTemplate, suggestion, matchedBy, self.options.defaultAvatarUrl
+            );
             dropDownItem.render();
             // TODO: пернести обработчик на suggestion-list. Испрользовать делегирование,
             // TODO: чтообы избавиться от лишних обработчиков
