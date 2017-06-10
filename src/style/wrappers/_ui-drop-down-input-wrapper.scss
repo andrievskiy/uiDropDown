@@ -1,0 +1,12 @@
+@import "../vars";
+
+.ui-drop-down-input-wrapper{
+  border: 1px solid $border-color;
+  font-family: 'Roboto', serif;
+  font-size: 12px;
+  position: relative;
+  background: $bg-color;
+  padding: 3px 30px 3px 3px;
+}
+
+

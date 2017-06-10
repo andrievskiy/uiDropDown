@@ -6,6 +6,7 @@
     }
 
     function _DropDownSelectedSuggestionItem(template, data, multiple) {
+        var self = this;
         this.uiElement = UiElement.create('div');
         var containerCls = multiple ? 'ui-drop-down-selected-suggestion': 'ui-drop-down-single-selected-suggestion';
         this.uiElement.addClass(containerCls);
@@ -14,6 +15,12 @@
         this.data = data;
         this.name = this.data.name;
         this.uid = this.data.uid;
+
+        Object.keys(this.data).forEach(function (dataKey) {
+            if(!self[dataKey]){
+                self[dataKey] = self.data[dataKey];
+            }
+        });
     }
     
     _DropDownSelectedSuggestionItem.prototype.render = function () {

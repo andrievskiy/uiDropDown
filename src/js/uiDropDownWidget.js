@@ -1,13 +1,14 @@
 ;(function (window) {
     var DEFAULT_SUGGESTION_TEMPLATE =
         '<div class="ui-drop-down-suggestion-item" data-user-id="{uid}">' +
-        '   <img src="{avatarUrl}">' +
-        '   <p>{name::html}</p>' +
+        '   <img class="ui-drop-down-suggestion-item-avatar" src="{avatarUrl}">' +
+        '   <label class="ui-drop-down-suggestion-item-name">{name::html}</label>' +
+        '   <span class="ui-drop-down-suggestion-item-extra">{extra}</span>'  +
         '</div>';
 
     var DEFAULT_SUGGESTION_TEMPLATE_WITHOUT_AVATARS =
         '<div class="ui-drop-down-suggestion-item" data-user-id="{uid}">' +
-        '   <p>{name::html}</p>' +
+        '   <label class="ui-drop-down-suggestion-item-name">{name::html}</label>' +
         '</div>';
 
     var DEFAULT_MULTIPLE_SELECTED_ITEM_TEMPLATE =
@@ -73,6 +74,7 @@
         self._selectedItemTemplate = getSelectedItemTemplate();
 
         self.inputElement = UiElement(selector);
+        self.inputElement.addClass('ui-drop-down-input');
         if(!self.options.autocomplete){
             self.inputElement.element.setAttribute('readonly', 'true');
         }
