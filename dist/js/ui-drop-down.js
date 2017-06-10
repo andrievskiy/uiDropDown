@@ -87,45 +87,6 @@ if (!Object.assign) {
 
     window.uiDropDownajax = uiDropDownAjax;
 })(window);
-(function (window) {
-    var ESCAPE_CHARS = {
-        '¢': 'cent',
-        '£': 'pound',
-        '¥': 'yen',
-        '€': 'euro',
-        '©': 'copy',
-        '®': 'reg',
-        '<': 'lt',
-        '>': 'gt',
-        '"': 'quot',
-        '&': 'amp',
-        '\'': '#39'
-    }, regex;
-
-    function _makeRegexpString() {
-        var regexString = '[';
-
-        for (var key in ESCAPE_CHARS) {
-            regexString += key;
-        }
-        regexString += ']';
-
-        return regexString;
-    }
-
-    regex = new RegExp(_makeRegexpString(), 'g');
-
-    function uiDropDownHtmlEscaping(str) {
-        if(typeof str != 'string'){
-            return str;
-        }
-        return str.replace(regex, function (m) {
-            return '&' + ESCAPE_CHARS[m] + ';';
-        });
-    }
-
-    window.uiDropDownHtmlEscaping = uiDropDownHtmlEscaping;
-})(window);
 /**
  * Модуль для работы с DOM
  */
@@ -382,6 +343,45 @@ if (!Object.assign) {
     window.UiElement = UiElement;
 
 })(window);
+(function (window) {
+    var ESCAPE_CHARS = {
+        '¢': 'cent',
+        '£': 'pound',
+        '¥': 'yen',
+        '€': 'euro',
+        '©': 'copy',
+        '®': 'reg',
+        '<': 'lt',
+        '>': 'gt',
+        '"': 'quot',
+        '&': 'amp',
+        '\'': '#39'
+    }, regex;
+
+    function _makeRegexpString() {
+        var regexString = '[';
+
+        for (var key in ESCAPE_CHARS) {
+            regexString += key;
+        }
+        regexString += ']';
+
+        return regexString;
+    }
+
+    regex = new RegExp(_makeRegexpString(), 'g');
+
+    function uiDropDownHtmlEscaping(str) {
+        if(typeof str != 'string'){
+            return str;
+        }
+        return str.replace(regex, function (m) {
+            return '&' + ESCAPE_CHARS[m] + ';';
+        });
+    }
+
+    window.uiDropDownHtmlEscaping = uiDropDownHtmlEscaping;
+})(window);
 ;(function (window) {
     function renderTemplate(template, data) {
         return template.replace(/{([\w|:]+)}/g, function (match, key) {
@@ -397,22 +397,22 @@ if (!Object.assign) {
     window.uiRenderTemplate = renderTemplate;
 })(window);
 ;(function (window) {
-    var dropDownItemDefaultTemplate = '';
-
     function DropDownSuggestionItem(template, data, matchedBy) {
         return new _DropDownSuggestionItem(template, data, matchedBy);
     }
 
-    function _DropDownSuggestionItem(template, data, matchedBy) {
+    function _DropDownSuggestionItem(template, data, matchedBy, defaultAvatarUrl) {
         this.uiElement = UiElement.create('div');
         this.uiElement.addClass('ui-drop-down-item-container');
 
-        this.template = template || dropDownItemDefaultTemplate;
+        this.template = template;
         this.data = data;
         this.matchedBy = matchedBy;
+
         this.name = uiDropDownHtmlEscaping(this.data.name);
         this.name = this.name.replace(this.matchedBy, '<span class="ui-drop-down-highlight">' + this.matchedBy + '</span>');
         this.uid = this.data.uid;
+        this.avatarUrl = this.data.avatarUrl || this.data.avatar || defaultAvatarUrl || '';
     }
     
     _DropDownSuggestionItem.prototype.render = function () {
@@ -717,6 +717,12 @@ if (!Object.assign) {
 ;(function (window) {
     var DEFAULT_SUGGESTION_TEMPLATE =
         '<div class="ui-drop-down-suggestion-item" data-user-id="{uid}">' +
+        '   <img src="{avatarUrl}">' +
+        '   <p>{name::html}</p>' +
+        '</div>';
+
+    var DEFAULT_SUGGESTION_TEMPLATE_WITHOUT_AVATARS =
+        '<div class="ui-drop-down-suggestion-item" data-user-id="{uid}">' +
         '   <p>{name::html}</p>' +
         '</div>';
 
@@ -739,18 +745,23 @@ if (!Object.assign) {
 
     var DEFAULT_OPTIONS = {
         multiple: true,
-        suggestionTemplateWithAvatar: DEFAULT_SUGGESTION_TEMPLATE,
-        suggestionTemplateWithoutAvatar: DEFAULT_SUGGESTION_TEMPLATE,
-        selectedMultipleItemTemplate: DEFAULT_MULTIPLE_SELECTED_ITEM_TEMPLATE,
-        selectedSingleItemTemplate: DEFAULT_SINGLE_SELECTED_ITEM_TEMPLATE,
-        emptyMessageTemplate: DEFAULT_EMPTY_MESSAGE,
+        autocomplete: true,
+        showAvatars: true,
+        defaultAvatarUrl: null,
         limit: 10,
+
         serverSide: false,
         serverSideUrl: '/',
         serverSideMethod: 'GET',
         serverSideFindProperty: 'domain',
-        showAvatars: true,
-        suggestionIdentifierProperty: 'uid'
+        suggestionIdentifierProperty: 'uid',
+
+        suggestionTemplateWithAvatar: DEFAULT_SUGGESTION_TEMPLATE,
+        suggestionTemplateWithoutAvatar: DEFAULT_SUGGESTION_TEMPLATE_WITHOUT_AVATARS,
+        selectedMultipleItemTemplate: DEFAULT_MULTIPLE_SELECTED_ITEM_TEMPLATE,
+        selectedSingleItemTemplate: DEFAULT_SINGLE_SELECTED_ITEM_TEMPLATE,
+        emptyMessageTemplate: DEFAULT_EMPTY_MESSAGE
+
     };
 
     function UiDropDown(selector, options) {
@@ -778,6 +789,9 @@ if (!Object.assign) {
         self._selectedItemTemplate = getSelectedItemTemplate();
 
         self.inputElement = UiElement(selector);
+        if(!self.options.autocomplete){
+            self.inputElement.element.setAttribute('readonly', 'true');
+        }
 
         self.suggestions = self.options.suggestions || [];
         self.matcher = self.options.matcher || uiDropDownUsersMatcher;
@@ -843,48 +857,37 @@ if (!Object.assign) {
 
         function onClickSelectedContainer(event) {
             var target = event.target;
-
             if (target.getAttribute('data-is-remove-button') == 'true') {
                 removeSelectedSuggestion(target);
+            }
+            activateInputElement();
+        }
 
-                if (!self.getSelected().length) {
-                    hideSelectedContainer();
-                    activateInputElement();
-                }
+        function open() {
+            if((!self.options.multiple && self.options.autocomplete) || !self.getSelected().length){
+                hideSelectedContainer();
+            }
+
+            if(!self.options.autocomplete && self.getSelected().length){
+                self.inputElement.addClass('ui-drop-down-input-hidden');
             } else {
-                if (!self.options.multiple) {
-                    hideSelectedContainer();
-                }
-                activateInputElement();
+                self.inputElement.removeClass('ui-drop-down-input-hidden');
             }
 
-        }
-
-        function onFocusInputHandler() {
-            lookup();
             showSuggestionList();
-            renderAllMatchedSuggestions();
+            search();
         }
 
-        function onKeyUpInputHandler() {
+        function search() {
             lookup();
             renderAllMatchedSuggestions();
         }
 
-        function onClickWrapper(event) {
-            if (event.target === this) {
-                if (!self.options.multiple) {
-                    hideSelectedContainer();
-                }
-                activateInputElement();
-            }
-        }
-
-        function onBlurInputElement() {
+        function close() {
             if (self._suggestionsWrapper.hovered) {
                 return;
             }
-            hideSuggestionList();
+            hideSuggestiosnList();
             if (self.options.multiple && self.getSelected().length) {
                 hideInputElement();
             }
@@ -894,6 +897,24 @@ if (!Object.assign) {
             }
         }
 
+        function onFocusInputHandler() {
+            open();
+        }
+
+        function onKeyUpInputHandler() {
+            search();
+        }
+
+        function onClickWrapper(event) {
+            if (event.target === this) {
+                activateInputElement();
+            }
+        }
+
+        function onBlurInputElement() {
+            close();
+        }
+
         function onHoverSuggestionsWrapper() {
             self._suggestionsWrapper.hovered = true;
         }
@@ -901,7 +922,6 @@ if (!Object.assign) {
         function onMouseLeaveSuggestionsWrapper() {
             self._suggestionsWrapper.hovered = false;
         }
-
 
         function _clearLastSelected() {
             Object.keys(self.selectedItems).forEach(function (prop) {
@@ -921,7 +941,7 @@ if (!Object.assign) {
             addItemToSelected(item);
             element.parentNode.removeChild(element);
             self.inputElement.val('');
-            hideSuggestionList();
+            hideSuggestiosnList();
             renderSelectedSuggestion(item);
             hideInputElement();
             // Событие не будет послано брузером. Поэтому нужно простваить руками.
@@ -945,9 +965,10 @@ if (!Object.assign) {
 
         function activateInputElement() {
             self.inputElement.style.display = 'block';
-            self.inputElement.element.focus();
+            if(document.activeElement !== self.inputElement.element){
+                self.inputElement.element.focus();
+            }
         }
-
 
         function createSuggestionWrapper() {
             var element = UiElement.create('div');
@@ -983,7 +1004,7 @@ if (!Object.assign) {
             positionSuggestionList();
         }
 
-        function hideSuggestionList() {
+        function hideSuggestiosnList() {
             self._suggestionsWrapper.removeClass('show');
         }
 
@@ -1036,7 +1057,9 @@ if (!Object.assign) {
             var matchedBy = suggestion.mathedBy;
             delete suggestion.mathedBy;
 
-            var dropDownItem = DropDownSuggestionItem(self._suggestionTemplate, suggestion, matchedBy);
+            var dropDownItem = DropDownSuggestionItem(
+                self._suggestionTemplate, suggestion, matchedBy, self.options.defaultAvatarUrl
+            );
             dropDownItem.render();
             // TODO: пернести обработчик на suggestion-list. Испрользовать делегирование,
             // TODO: чтообы избавиться от лишних обработчиков
@@ -1165,6 +1188,7 @@ if (!Object.assign) {
                 onError: function (xrh) {
                     console.log('ERROR', xrh.statusText);
                     if(!self.matchedSuggestions.length){
+                        clearMatchedSuggestionsList();
                         showEmptySuggestionMessage();
                     }
                     self._serverQuryIsRunning = false;

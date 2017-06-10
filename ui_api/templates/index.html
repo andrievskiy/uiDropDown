@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <title>Title</title>
     <link href='https://fonts.googleapis.com/css?family=Roboto' rel='stylesheet'>
-    <link type="text/css" rel="stylesheet" href="dist/css/ui-drop-down.css">
+    <link type="text/css" rel="stylesheet" href="css/ui-drop-down.css">
 </head>
 <body>
 <div>
@@ -20,7 +20,7 @@
     <input type="text" id="test4" placeholder="Test2">
 </div>
 
-<script src="dist/js/ui-drop-down.js"></script>
+<script src="js/ui-drop-down.js"></script>
 <script>
     var suggestions = [];
     var suggestions2 = [];
@@ -41,16 +41,15 @@
         suggestions: suggestions,
         limit: 10,
         serverSide: true,
-        showAvatars: true,
-        serverSideUrl: 'http://127.0.0.1:5001/find',
+        serverSideUrl: 'http://172.27.0.41:5001/find',
         serverSideFindProperty: 'domain'
     });
 
     var widget2 = new UiDropDown('#test2', {
         suggestions: suggestions2,
-        showAvatars: false,
         limit: 10,
-        multiple: false
+        multiple: false,
+        showAvatars: false
     });
 
     var widet3 = new UiDropDown('#test3', {

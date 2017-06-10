@@ -1,10 +1,16 @@
 from flask import jsonify, request
+from flask.templating import render_template
 from sqlalchemy import or_
 from ui_api import app
 from ui_api.models.user import User
 import logging
 
 from ui_api.util.keyboard import KeyBoardUtils
+
+
+@app.route('/')
+def index():
+    return render_template('index.html')
 
 
 @app.route('/find')

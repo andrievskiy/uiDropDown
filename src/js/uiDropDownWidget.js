@@ -1,6 +1,12 @@
 ;(function (window) {
     var DEFAULT_SUGGESTION_TEMPLATE =
         '<div class="ui-drop-down-suggestion-item" data-user-id="{uid}">' +
+        '   <img src="{avatarUrl}">' +
+        '   <p>{name::html}</p>' +
+        '</div>';
+
+    var DEFAULT_SUGGESTION_TEMPLATE_WITHOUT_AVATARS =
+        '<div class="ui-drop-down-suggestion-item" data-user-id="{uid}">' +
         '   <p>{name::html}</p>' +
         '</div>';
 
@@ -23,18 +29,23 @@
 
     var DEFAULT_OPTIONS = {
         multiple: true,
-        suggestionTemplateWithAvatar: DEFAULT_SUGGESTION_TEMPLATE,
-        suggestionTemplateWithoutAvatar: DEFAULT_SUGGESTION_TEMPLATE,
-        selectedMultipleItemTemplate: DEFAULT_MULTIPLE_SELECTED_ITEM_TEMPLATE,
-        selectedSingleItemTemplate: DEFAULT_SINGLE_SELECTED_ITEM_TEMPLATE,
-        emptyMessageTemplate: DEFAULT_EMPTY_MESSAGE,
+        autocomplete: true,
+        showAvatars: true,
+        defaultAvatarUrl: null,
         limit: 10,
+
         serverSide: false,
         serverSideUrl: '/',
         serverSideMethod: 'GET',
         serverSideFindProperty: 'domain',
-        showAvatars: true,
-        suggestionIdentifierProperty: 'uid'
+        suggestionIdentifierProperty: 'uid',
+
+        suggestionTemplateWithAvatar: DEFAULT_SUGGESTION_TEMPLATE,
+        suggestionTemplateWithoutAvatar: DEFAULT_SUGGESTION_TEMPLATE_WITHOUT_AVATARS,
+        selectedMultipleItemTemplate: DEFAULT_MULTIPLE_SELECTED_ITEM_TEMPLATE,
+        selectedSingleItemTemplate: DEFAULT_SINGLE_SELECTED_ITEM_TEMPLATE,
+        emptyMessageTemplate: DEFAULT_EMPTY_MESSAGE
+
     };
 
     function UiDropDown(selector, options) {
@@ -62,6 +73,9 @@
         self._selectedItemTemplate = getSelectedItemTemplate();
 
         self.inputElement = UiElement(selector);
+        if(!self.options.autocomplete){
+            self.inputElement.element.setAttribute('readonly', 'true');
+        }
 
         self.suggestions = self.options.suggestions || [];
         self.matcher = self.options.matcher || uiDropDownUsersMatcher;
@@ -127,48 +141,37 @@
 
         function onClickSelectedContainer(event) {
             var target = event.target;
-
             if (target.getAttribute('data-is-remove-button') == 'true') {
                 removeSelectedSuggestion(target);
+            }
+            activateInputElement();
+        }
 
-                if (!self.getSelected().length) {
-                    hideSelectedContainer();
-                    activateInputElement();
-                }
+        function open() {
+            if((!self.options.multiple && self.options.autocomplete) || !self.getSelected().length){
+                hideSelectedContainer();
+            }
+
+            if(!self.options.autocomplete && self.getSelected().length){
+                self.inputElement.addClass('ui-drop-down-input-hidden');
             } else {
-                if (!self.options.multiple) {
-                    hideSelectedContainer();
-                }
-                activateInputElement();
+                self.inputElement.removeClass('ui-drop-down-input-hidden');
             }
 
-        }
-
-        function onFocusInputHandler() {
-            lookup();
             showSuggestionList();
-            renderAllMatchedSuggestions();
+            search();
         }
 
-        function onKeyUpInputHandler() {
+        function search() {
             lookup();
             renderAllMatchedSuggestions();
         }
 
-        function onClickWrapper(event) {
-            if (event.target === this) {
-                if (!self.options.multiple) {
-                    hideSelectedContainer();
-                }
-                activateInputElement();
-            }
-        }
-
-        function onBlurInputElement() {
+        function close() {
             if (self._suggestionsWrapper.hovered) {
                 return;
             }
-            hideSuggestionList();
+            hideSuggestiosnList();
             if (self.options.multiple && self.getSelected().length) {
                 hideInputElement();
             }
@@ -178,6 +181,24 @@
             }
         }
 
+        function onFocusInputHandler() {
+            open();
+        }
+
+        function onKeyUpInputHandler() {
+            search();
+        }
+
+        function onClickWrapper(event) {
+            if (event.target === this) {
+                activateInputElement();
+            }
+        }
+
+        function onBlurInputElement() {
+            close();
+        }
+
         function onHoverSuggestionsWrapper() {
             self._suggestionsWrapper.hovered = true;
         }
@@ -185,7 +206,6 @@
         function onMouseLeaveSuggestionsWrapper() {
             self._suggestionsWrapper.hovered = false;
         }
-
 
         function _clearLastSelected() {
             Object.keys(self.selectedItems).forEach(function (prop) {
@@ -205,7 +225,7 @@
             addItemToSelected(item);
             element.parentNode.removeChild(element);
             self.inputElement.val('');
-            hideSuggestionList();
+            hideSuggestiosnList();
             renderSelectedSuggestion(item);
             hideInputElement();
             // Событие не будет послано брузером. Поэтому нужно простваить руками.
@@ -229,9 +249,10 @@
 
         function activateInputElement() {
             self.inputElement.style.display = 'block';
-            self.inputElement.element.focus();
+            if(document.activeElement !== self.inputElement.element){
+                self.inputElement.element.focus();
+            }
         }
-
 
         function createSuggestionWrapper() {
             var element = UiElement.create('div');
@@ -267,7 +288,7 @@
             positionSuggestionList();
         }
 
-        function hideSuggestionList() {
+        function hideSuggestiosnList() {
             self._suggestionsWrapper.removeClass('show');
         }
 
@@ -320,7 +341,9 @@
             var matchedBy = suggestion.mathedBy;
             delete suggestion.mathedBy;
 
-            var dropDownItem = DropDownSuggestionItem(self._suggestionTemplate, suggestion, matchedBy);
+            var dropDownItem = DropDownSuggestionItem(
+                self._suggestionTemplate, suggestion, matchedBy, self.options.defaultAvatarUrl
+            );
             dropDownItem.render();
             // TODO: пернести обработчик на suggestion-list. Испрользовать делегирование,
             // TODO: чтообы избавиться от лишних обработчиков
@@ -449,6 +472,7 @@
                 onError: function (xrh) {
                     console.log('ERROR', xrh.statusText);
                     if(!self.matchedSuggestions.length){
+                        clearMatchedSuggestionsList();
                         showEmptySuggestionMessage();
                     }
                     self._serverQuryIsRunning = false;
