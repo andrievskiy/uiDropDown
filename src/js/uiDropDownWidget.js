@@ -57,7 +57,6 @@
         self._cache = {};
         self._lastVal = null;
         self._serverQuryIsRunning = false;
-        self._lastIsEmpty = false;
 
         self._suggestionTemplate = getSuggestionTemplate();
         self._selectedItemTemplate = getSelectedItemTemplate();
@@ -396,7 +395,6 @@
                 idx++;
             }
             console.timeEnd('lookUp');
-            self._lastIsEmpty = !self.matchedSuggestions.length;
 
             if (self.options.serverSide) {
                 serverLookUp(prefix);

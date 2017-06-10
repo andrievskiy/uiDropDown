@@ -87,6 +87,45 @@ if (!Object.assign) {
 
     window.uiDropDownajax = uiDropDownAjax;
 })(window);
+(function (window) {
+    var ESCAPE_CHARS = {
+        '¢': 'cent',
+        '£': 'pound',
+        '¥': 'yen',
+        '€': 'euro',
+        '©': 'copy',
+        '®': 'reg',
+        '<': 'lt',
+        '>': 'gt',
+        '"': 'quot',
+        '&': 'amp',
+        '\'': '#39'
+    }, regex;
+
+    function _makeRegexpString() {
+        var regexString = '[';
+
+        for (var key in ESCAPE_CHARS) {
+            regexString += key;
+        }
+        regexString += ']';
+
+        return regexString;
+    }
+
+    regex = new RegExp(_makeRegexpString(), 'g');
+
+    function uiDropDownHtmlEscaping(str) {
+        if(typeof str != 'string'){
+            return str;
+        }
+        return str.replace(regex, function (m) {
+            return '&' + ESCAPE_CHARS[m] + ';';
+        });
+    }
+
+    window.uiDropDownHtmlEscaping = uiDropDownHtmlEscaping;
+})(window);
 /**
  * Модуль для работы с DOM
  */
@@ -356,45 +395,6 @@ if (!Object.assign) {
         })
     }
     window.uiRenderTemplate = renderTemplate;
-})(window);
-(function (window) {
-    var ESCAPE_CHARS = {
-        '¢': 'cent',
-        '£': 'pound',
-        '¥': 'yen',
-        '€': 'euro',
-        '©': 'copy',
-        '®': 'reg',
-        '<': 'lt',
-        '>': 'gt',
-        '"': 'quot',
-        '&': 'amp',
-        '\'': '#39'
-    }, regex;
-
-    function _makeRegexpString() {
-        var regexString = '[';
-
-        for (var key in ESCAPE_CHARS) {
-            regexString += key;
-        }
-        regexString += ']';
-
-        return regexString;
-    }
-
-    regex = new RegExp(_makeRegexpString(), 'g');
-
-    function uiDropDownHtmlEscaping(str) {
-        if(typeof str != 'string'){
-            return str;
-        }
-        return str.replace(regex, function (m) {
-            return '&' + ESCAPE_CHARS[m] + ';';
-        });
-    }
-
-    window.uiDropDownHtmlEscaping = uiDropDownHtmlEscaping;
 })(window);
 ;(function (window) {
     var dropDownItemDefaultTemplate = '';
@@ -773,7 +773,6 @@ if (!Object.assign) {
         self._cache = {};
         self._lastVal = null;
         self._serverQuryIsRunning = false;
-        self._lastIsEmpty = false;
 
         self._suggestionTemplate = getSuggestionTemplate();
         self._selectedItemTemplate = getSelectedItemTemplate();
@@ -1112,7 +1111,6 @@ if (!Object.assign) {
                 idx++;
             }
             console.timeEnd('lookUp');
-            self._lastIsEmpty = !self.matchedSuggestions.length;
 
             if (self.options.serverSide) {
                 serverLookUp(prefix);
