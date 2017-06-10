@@ -23,6 +23,7 @@
 
     var DEFAULT_OPTIONS = {
         multiple: true,
+        autocomplete: true,
         suggestionTemplateWithAvatar: DEFAULT_SUGGESTION_TEMPLATE,
         suggestionTemplateWithoutAvatar: DEFAULT_SUGGESTION_TEMPLATE,
         selectedMultipleItemTemplate: DEFAULT_MULTIPLE_SELECTED_ITEM_TEMPLATE,
@@ -62,6 +63,9 @@
         self._selectedItemTemplate = getSelectedItemTemplate();
 
         self.inputElement = UiElement(selector);
+        if(!self.options.autocomplete){
+            self.inputElement.element.setAttribute('readonly', 'true');
+        }
 
         self.suggestions = self.options.suggestions || [];
         self.matcher = self.options.matcher || uiDropDownUsersMatcher;
@@ -449,6 +453,7 @@
                 onError: function (xrh) {
                     console.log('ERROR', xrh.statusText);
                     if(!self.matchedSuggestions.length){
+                        clearMatchedSuggestionsList();
                         showEmptySuggestionMessage();
                     }
                     self._serverQuryIsRunning = false;

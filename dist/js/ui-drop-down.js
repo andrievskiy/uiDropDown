@@ -87,45 +87,6 @@ if (!Object.assign) {
 
     window.uiDropDownajax = uiDropDownAjax;
 })(window);
-(function (window) {
-    var ESCAPE_CHARS = {
-        '¢': 'cent',
-        '£': 'pound',
-        '¥': 'yen',
-        '€': 'euro',
-        '©': 'copy',
-        '®': 'reg',
-        '<': 'lt',
-        '>': 'gt',
-        '"': 'quot',
-        '&': 'amp',
-        '\'': '#39'
-    }, regex;
-
-    function _makeRegexpString() {
-        var regexString = '[';
-
-        for (var key in ESCAPE_CHARS) {
-            regexString += key;
-        }
-        regexString += ']';
-
-        return regexString;
-    }
-
-    regex = new RegExp(_makeRegexpString(), 'g');
-
-    function uiDropDownHtmlEscaping(str) {
-        if(typeof str != 'string'){
-            return str;
-        }
-        return str.replace(regex, function (m) {
-            return '&' + ESCAPE_CHARS[m] + ';';
-        });
-    }
-
-    window.uiDropDownHtmlEscaping = uiDropDownHtmlEscaping;
-})(window);
 /**
  * Модуль для работы с DOM
  */
@@ -395,6 +356,45 @@ if (!Object.assign) {
         })
     }
     window.uiRenderTemplate = renderTemplate;
+})(window);
+(function (window) {
+    var ESCAPE_CHARS = {
+        '¢': 'cent',
+        '£': 'pound',
+        '¥': 'yen',
+        '€': 'euro',
+        '©': 'copy',
+        '®': 'reg',
+        '<': 'lt',
+        '>': 'gt',
+        '"': 'quot',
+        '&': 'amp',
+        '\'': '#39'
+    }, regex;
+
+    function _makeRegexpString() {
+        var regexString = '[';
+
+        for (var key in ESCAPE_CHARS) {
+            regexString += key;
+        }
+        regexString += ']';
+
+        return regexString;
+    }
+
+    regex = new RegExp(_makeRegexpString(), 'g');
+
+    function uiDropDownHtmlEscaping(str) {
+        if(typeof str != 'string'){
+            return str;
+        }
+        return str.replace(regex, function (m) {
+            return '&' + ESCAPE_CHARS[m] + ';';
+        });
+    }
+
+    window.uiDropDownHtmlEscaping = uiDropDownHtmlEscaping;
 })(window);
 ;(function (window) {
     var dropDownItemDefaultTemplate = '';
@@ -739,6 +739,7 @@ if (!Object.assign) {
 
     var DEFAULT_OPTIONS = {
         multiple: true,
+        autocomplete: true,
         suggestionTemplateWithAvatar: DEFAULT_SUGGESTION_TEMPLATE,
         suggestionTemplateWithoutAvatar: DEFAULT_SUGGESTION_TEMPLATE,
         selectedMultipleItemTemplate: DEFAULT_MULTIPLE_SELECTED_ITEM_TEMPLATE,
@@ -778,6 +779,9 @@ if (!Object.assign) {
         self._selectedItemTemplate = getSelectedItemTemplate();
 
         self.inputElement = UiElement(selector);
+        if(!self.options.autocomplete){
+            self.inputElement.element.setAttribute('readonly', 'true');
+        }
 
         self.suggestions = self.options.suggestions || [];
         self.matcher = self.options.matcher || uiDropDownUsersMatcher;
@@ -1165,6 +1169,7 @@ if (!Object.assign) {
                 onError: function (xrh) {
                     console.log('ERROR', xrh.statusText);
                     if(!self.matchedSuggestions.length){
+                        clearMatchedSuggestionsList();
                         showEmptySuggestionMessage();
                     }
                     self._serverQuryIsRunning = false;
