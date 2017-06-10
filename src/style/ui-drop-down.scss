@@ -4,50 +4,17 @@ $color-white: #fff;
 @import "input";
 @import "wrappers/ui-drop-down-input-wrapper";
 @import "wrappers/ui-drop-down-suggestions-wrapper";
+@import "wrappers/ui-drop-down-selected-container";
 @import "items/ui-drop-down-suggestion-item";
+@import "items/ui-drop-down-selected-suggestions";
 
-.ui-drop-down-selected-item{
-  display: inline-block;
-  background: $color-blue-background;
-  color: $color-white;
-  margin: 3px;
-  padding: 3px;
-}
 
-.ui-drop-down-selected-remove-btn{
-  cursor: pointer;
-}
 
-.ui-drop-down-selected-name{
-  display: inline-block;
-}
-.ui-drop-down-selected-suggestion{
-  display: inline-block;
-}
-
-.ui-drop-down-selected-container{
-  display: none;
-}
-.ui-drop-down-selected-container.show{
-   display: inline-block;
-}
 
 body{
   padding-left: 99px;
 }
-.ui-drop-down-single-selected-item{
-  display: block;
-}
-.ui-drop-down-single-selected-name{
-  display: inline-block;
-}
-.ui-drop-down-selected-single-remove-btn{
-  display: inline-block;
-  margin-left: 10px;
-}
-.ui-drop-down-single-selected-item{
-  padding: 6px;
-}
+
 .ui-drop-down-input-hidden{
   padding: 0!important;
   height: 0!important;

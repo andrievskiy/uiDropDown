@@ -1,0 +1,56 @@
+@import "../vars";
+
+// Multiple
+
+.ui-drop-down-selected-suggestion {
+  display: inline-block;
+  cursor: default;
+  margin: 2px;
+}
+
+.ui-drop-down-selected-item {
+  display: inline-block;
+  background: #6285af;
+  color: $color-white;
+  padding: 2px 5px;
+  border-radius: 3px;
+}
+
+.ui-drop-down-selected-name {
+  display: inline-block;
+  max-width: 300px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding-top: 2px;
+  padding-left: 3px;
+}
+
+.ui-drop-down-selected-remove-btn {
+  display: inline-block;
+  width: 18px;
+  position: relative;
+  cursor: pointer;
+}
+
+.ui-drop-down-selected-remove-btn:before {
+  content: '+';
+  font-size: 23px;
+  display: inline-block;
+  transform: rotate(45deg);
+  position: absolute;
+  top: -20.5px;
+  left: 4px;
+  opacity: 0.7;
+}
+.ui-drop-down-selected-remove-btn:hover:before {
+  opacity: 1;
+}
+
+.ui-drop-down-single-selected-suggestion {
+  display: block;
+  min-height: 20px;
+}
+.ui-drop-down-single-selected-name{
+  padding: 5px;
+}

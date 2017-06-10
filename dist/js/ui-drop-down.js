@@ -734,7 +734,7 @@ if (!Object.assign) {
         '<div class="ui-drop-down-suggestion-item" data-user-id="{uid}">' +
         '   <img class="ui-drop-down-suggestion-item-avatar" src="{avatarUrl}">' +
         '   <label class="ui-drop-down-suggestion-item-name">{name::html}</label>' +
-        '   <span class="ui-drop-down-suggestion-item-extra">{extra}</span>'  +
+        '   <span class="ui-drop-down-suggestion-item-extra">{extra}</span>' +
         '</div>';
 
     var DEFAULT_SUGGESTION_TEMPLATE_WITHOUT_AVATARS =
@@ -745,14 +745,14 @@ if (!Object.assign) {
     var DEFAULT_MULTIPLE_SELECTED_ITEM_TEMPLATE =
         '<div class="ui-drop-down-selected-item">' +
         '   <div class="ui-drop-down-selected-name">{name}</div>' +
-        '   <a class="ui-drop-down-selected-remove-btn" data-user-id="{uid}" data-is-remove-button="true">x</a>' +
+        '   <a class="ui-drop-down-selected-remove-btn" data-user-id="{uid}" data-is-remove-button="true"></a>' +
         '</div>';
 
     var DEFAULT_SINGLE_SELECTED_ITEM_TEMPLATE =
         '<div class="ui-drop-down-single-selected-item">' +
         '    <div class="ui-drop-down-single-selected-name">{name}</div>' +
-        '    <a class="ui-drop-down-selected-single-remove-btn" data-user-id="{uid}" data-is-remove-button="true">x</a>' +
-    '</div>';
+        '    <a class="ui-drop-down-selected-single-remove-btn" data-user-id="{uid}" data-is-remove-button="true"></a>' +
+        '</div>';
 
     var DEFAULT_EMPTY_MESSAGE =
         '<div class="ui-drop-down-suggestion-item">' +
@@ -806,7 +806,7 @@ if (!Object.assign) {
 
         self.inputElement = UiElement(selector);
         self.inputElement.addClass('ui-drop-down-input');
-        if(!self.options.autocomplete){
+        if (!self.options.autocomplete) {
             self.inputElement.element.setAttribute('readonly', 'true');
         }
 
@@ -876,19 +876,19 @@ if (!Object.assign) {
             var target = event.target;
             if (target.getAttribute('data-is-remove-button') == 'true') {
                 removeSelectedSuggestion(target);
+                if (!self.getSelected().length) {
+                    hideSelectedContainer();
+                    showInputElement();
+                }
+            } else {
+                activateInputElement();
             }
-            activateInputElement();
+
         }
 
         function open() {
-            if((!self.options.multiple && self.options.autocomplete) || !self.getSelected().length){
+            if ((!self.options.multiple && self.options.autocomplete) || !self.getSelected().length) {
                 hideSelectedContainer();
-            }
-
-            if(!self.options.autocomplete && self.getSelected().length){
-                self.inputElement.addClass('ui-drop-down-input-hidden');
-            } else {
-                self.inputElement.removeClass('ui-drop-down-input-hidden');
             }
 
             showSuggestionList();
@@ -908,7 +908,7 @@ if (!Object.assign) {
             if (self.options.multiple && self.getSelected().length) {
                 hideInputElement();
             }
-            if(!self.options.multiple && self.getSelected().length){
+            if (!self.options.multiple && self.getSelected().length) {
                 hideInputElement();
                 showSelectedContainer();
             }
@@ -980,11 +980,24 @@ if (!Object.assign) {
             }
         }
 
-        function activateInputElement() {
+        function showInputElement() {
             self.inputElement.style.display = 'block';
-            if(document.activeElement !== self.inputElement.element){
+            if (!self.options.autocomplete && self.getSelected().length) {
+                self.inputElement.addClass('ui-drop-down-input-hidden');
+            } else {
+                self.inputElement.removeClass('ui-drop-down-input-hidden');
+            }
+        }
+
+        function focusInputElement() {
+            if (document.activeElement !== self.inputElement.element) {
                 self.inputElement.element.focus();
             }
+        }
+
+        function activateInputElement() {
+            showInputElement();
+            focusInputElement();
         }
 
         function createSuggestionWrapper() {
@@ -1034,7 +1047,7 @@ if (!Object.assign) {
             var inputWrapperCoordinates = self._dropDownInputWrapper.getCoordinates();
 
             self._suggestionsWrapper.style.top =
-                inputWrapperCoordinates.bottom - self._dropDownInputWrapper.clientTop()  + 'px';
+                inputWrapperCoordinates.bottom - self._dropDownInputWrapper.clientTop() + 'px';
 
             self._suggestionsWrapper.style.left = inputWrapperCoordinates.left + 'px';
 
@@ -1053,15 +1066,15 @@ if (!Object.assign) {
         function renderAllMatchedSuggestions() {
             // Если пачка предложений пуста, то производить очистку и показвать сообщение нужно только
             // Если предложения не смогут появиться с сервера
-            if(!self.matchedSuggestions.length && !self._serverQuryIsRunning){
-                 clearMatchedSuggestionsList();
-                 showEmptySuggestionMessage();
-                 return;
+            if (!self.matchedSuggestions.length && !self._serverQuryIsRunning) {
+                clearMatchedSuggestionsList();
+                showEmptySuggestionMessage();
+                return;
             }
 
             // Если запрос еще выпоняется, то очистку списка нужно производить
             // Только если есть записи
-            if(self.matchedSuggestions.length){
+            if (self.matchedSuggestions.length) {
                 clearMatchedSuggestionsList();
             }
             self.matchedSuggestions.forEach(function (item) {
@@ -1092,8 +1105,11 @@ if (!Object.assign) {
             // TODO: Добавить id. Чтобы не зависеть от верстки
             var uid = element.getAttribute('data-user-id');
             var container = element.parentNode;
+            container = container.parentNode;
+            console.log(container);
             delete self.selectedItems[uid];
             container.parentNode.removeChild(container);
+
 
         }
 
@@ -1169,12 +1185,12 @@ if (!Object.assign) {
 
         function onServerLookUpLoaded(prefix, response) {
             self._cache[prefix] = response.result;
-            if(!self.matchedSuggestions.length){
+            if (!self.matchedSuggestions.length) {
                 clearMatchedSuggestionsList();
             }
             if (response.result.length) {
                 appendMatchedSuggestionsFromServer(response.result);
-            } else if(!self.matchedSuggestions.length){
+            } else if (!self.matchedSuggestions.length) {
                 showEmptySuggestionMessage();
                 self._lastIsEmpty = true;
             }
@@ -1204,7 +1220,7 @@ if (!Object.assign) {
                 params: findParams,
                 onError: function (xrh) {
                     console.log('ERROR', xrh.statusText);
-                    if(!self.matchedSuggestions.length){
+                    if (!self.matchedSuggestions.length) {
                         clearMatchedSuggestionsList();
                         showEmptySuggestionMessage();
                     }
@@ -1235,7 +1251,8 @@ if (!Object.assign) {
                 }
             };
         }
-        function showEmptySuggestionMessage(){
+
+        function showEmptySuggestionMessage() {
             var dropDownItem = DropDownSuggestionItem(self.options.emptyMessageTemplate, {name: 'empty'});
             dropDownItem.render();
             self._suggestionsWrapper.append(dropDownItem.uiElement.element);
