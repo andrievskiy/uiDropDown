@@ -1,7 +1,7 @@
 ;(function (window) {
     var DEFAULT_SUGGESTION_TEMPLATE =
-        '<div class="ui-drop-down-multiple-item" data-user-id="{uid}">' +
-        '<p>{name::html}</p>' +
+        '<div class="ui-drop-down-suggestion-item" data-user-id="{uid}">' +
+        '   <p>{name::html}</p>' +
         '</div>';
 
     var DEFAULT_MULTIPLE_SELECTED_ITEM_TEMPLATE =
@@ -16,12 +16,18 @@
         '    <a class="ui-drop-down-selected-single-remove-btn" data-user-id="{uid}" data-is-remove-button="true">x</a>' +
     '</div>';
 
+    var DEFAULT_EMPTY_MESSAGE =
+        '<div class="ui-drop-down-suggestion-item">' +
+        '   <p>Пользователь не найден</p>' +
+        '</div>';
+
     var DEFAULT_OPTIONS = {
         multiple: true,
         suggestionTemplateWithAvatar: DEFAULT_SUGGESTION_TEMPLATE,
         suggestionTemplateWithoutAvatar: DEFAULT_SUGGESTION_TEMPLATE,
         selectedMultipleItemTemplate: DEFAULT_MULTIPLE_SELECTED_ITEM_TEMPLATE,
         selectedSingleItemTemplate: DEFAULT_SINGLE_SELECTED_ITEM_TEMPLATE,
+        emptyMessageTemplate: DEFAULT_EMPTY_MESSAGE,
         limit: 10,
         serverSide: false,
         serverSideUrl: '/',
@@ -50,6 +56,7 @@
 
         self._cache = {};
         self._lastVal = null;
+        self._serverQuryIsRunning = false;
 
         self._suggestionTemplate = getSuggestionTemplate();
         self._selectedItemTemplate = getSelectedItemTemplate();
@@ -66,11 +73,8 @@
         self._dropDownInputWrapper = createDropDownInputWrapper();
         self._suggestionsWrapper = createSuggestionWrapper();
         self._selectedContainer = createSelectedSuggestionsContainer();
+        appendElementsToDom();
 
-        self.inputElement.wrap(self._dropDownInputWrapper);
-
-        self._dropDownInputWrapper.append(self._suggestionsWrapper.element);
-        self._dropDownInputWrapper.element.insertBefore(self._selectedContainer.element, self.inputElement.element);
 
         self.inputElement.on('focus', onFocusInputHandler);
         self.inputElement.on('keyup', deBounce(onKeyUpInputHandler, 300));
@@ -82,6 +86,12 @@
         self._suggestionsWrapper.on('mouseleave', onMouseLeaveSuggestionsWrapper);
 
         self._selectedContainer.on('click', onClickSelectedContainer);
+
+        function appendElementsToDom() {
+            self.inputElement.wrap(self._dropDownInputWrapper);
+            document.body.appendChild(self._suggestionsWrapper.element);
+            self._dropDownInputWrapper.element.insertBefore(self._selectedContainer.element, self.inputElement.element);
+        }
 
 
         function getSuggestionTemplate() {
@@ -126,10 +136,10 @@
                     activateInputElement();
                 }
             } else {
-                activateInputElement();
                 if (!self.options.multiple) {
                     hideSelectedContainer();
                 }
+                activateInputElement();
             }
 
         }
@@ -147,10 +157,10 @@
 
         function onClickWrapper(event) {
             if (event.target === this) {
-                activateInputElement();
                 if (!self.options.multiple) {
                     hideSelectedContainer();
                 }
+                activateInputElement();
             }
         }
 
@@ -161,6 +171,10 @@
             hideSuggestionList();
             if (self.options.multiple && self.getSelected().length) {
                 hideInputElement();
+            }
+            if(!self.options.multiple && self.getSelected().length){
+                hideInputElement();
+                showSelectedContainer();
             }
         }
 
@@ -194,7 +208,7 @@
             hideSuggestionList();
             renderSelectedSuggestion(item);
             hideInputElement();
-            // Соббытие не будет послано брузером. Поэтому нужно простваить руками.
+            // Событие не будет послано брузером. Поэтому нужно простваить руками.
             self._suggestionsWrapper.hovered = false;
             showSelectedContainer();
         }
@@ -226,13 +240,17 @@
         }
 
         function createDropDownInputWrapper() {
-            function setWidth(wrapper) {
-                wrapper.style.width = self.inputElement.offsetWidth() + 'px';
+            function setStyles(wrapper) {
+                var position = self.inputElement.css().position;
+                wrapper.css({
+                    width: self.inputElement.offsetWidth() + 'px',
+                    position: position
+                });
             }
 
             var element = UiElement.create('div');
             element.addClass('ui-drop-down-input-wrapper');
-            setWidth(element);
+            setStyles(element);
 
             return element;
         }
@@ -253,20 +271,21 @@
             self._suggestionsWrapper.removeClass('show');
         }
 
+
         /**
          * Прозводит позиционирование блока предложений относительно эелемента
+         * В зависимости от его позиционирования(static/relative)
          */
         function positionSuggestionList() {
             var inputWrapperCoordinates = self._dropDownInputWrapper.getCoordinates();
 
             self._suggestionsWrapper.style.top =
-                inputWrapperCoordinates.bottom + self._dropDownInputWrapper.clientTop() + 'px';
+                inputWrapperCoordinates.bottom - self._dropDownInputWrapper.clientTop()  + 'px';
 
             self._suggestionsWrapper.style.left = inputWrapperCoordinates.left + 'px';
 
             self._suggestionsWrapper.style.width =
-                self._dropDownInputWrapper.offsetWidth() - self._suggestionsWrapper.clientLeft()
-                - self._suggestionsWrapper.clientRight() + 'px';
+                self._dropDownInputWrapper.offsetWidth() - self._suggestionsWrapper.clientLeft() - self._suggestionsWrapper.clientRight() + 'px';
         }
 
         function clearMatchedSuggestionsList() {
@@ -278,7 +297,19 @@
         }
 
         function renderAllMatchedSuggestions() {
-            clearMatchedSuggestionsList();
+            // Если пачка предложений пуста, то производить очистку и показвать сообщение нужно только
+            // Если предложения не смогут появиться с сервера
+            if(!self.matchedSuggestions.length && !self._serverQuryIsRunning){
+                 clearMatchedSuggestionsList();
+                 showEmptySuggestionMessage();
+                 return;
+            }
+
+            // Если запрос еще выпоняется, то очистку списка нужно производить
+            // Только если есть записи
+            if(self.matchedSuggestions.length){
+                clearMatchedSuggestionsList();
+            }
             self.matchedSuggestions.forEach(function (item) {
                 renderMatchedSuggestion(item);
             });
@@ -297,7 +328,7 @@
             dropDownItem.uiElement.on('click', function () {
                 onSelectSuggestion(suggestion, this);
             });
-            self._suggestionsWrapper.append(dropDownItem.uiElement.element);
+            self._suggestionsWrapper.append(dropDownItem.uiElement);
         }
 
 
@@ -382,8 +413,14 @@
 
         function onServerLookUpLoaded(prefix, response) {
             self._cache[prefix] = response.result;
+            if(!self.matchedSuggestions.length){
+                clearMatchedSuggestionsList();
+            }
             if (response.result.length) {
                 appendMatchedSuggestionsFromServer(response.result);
+            } else if(!self.matchedSuggestions.length){
+                showEmptySuggestionMessage();
+                self._lastIsEmpty = true;
             }
         }
 
@@ -391,11 +428,13 @@
             if (prefix == '') {
                 return;
             }
+            self._serverQuryIsRunning = true;
             var _cached = self._cache[prefix];
             var findParams = {};
 
             if (_cached) {
                 appendMatchedSuggestionsFromServer(_cached);
+                self._serverQuryIsRunning = false;
                 return;
             }
 
@@ -408,10 +447,15 @@
                 data: findParams,
                 params: findParams,
                 onError: function (xrh) {
-                    console.log('ERROR', xrh.statusText)
+                    console.log('ERROR', xrh.statusText);
+                    if(!self.matchedSuggestions.length){
+                        showEmptySuggestionMessage();
+                    }
+                    self._serverQuryIsRunning = false;
                 },
                 onSuccess: function (response) {
-                    onServerLookUpLoaded(prefix, response)
+                    onServerLookUpLoaded(prefix, response);
+                    self._serverQuryIsRunning = false;
                 }
             });
         }
@@ -433,6 +477,11 @@
                     func.apply(context, args);
                 }
             };
+        }
+        function showEmptySuggestionMessage(){
+            var dropDownItem = DropDownSuggestionItem(self.options.emptyMessageTemplate, {name: 'empty'});
+            dropDownItem.render();
+            self._suggestionsWrapper.append(dropDownItem.uiElement.element);
         }
     }
 

@@ -8,7 +8,7 @@
 </head>
 <body>
 <div>
-    <input type="text" id="test" placeholder="Введите имя или адрес страницы">
+    <input type="text" id="test" style="position: relative;" placeholder="Введите имя или адрес страницы">
 
     <a onclick="showSelected()">Show Selected</a>
     <p style="height: 20px">
@@ -23,11 +23,11 @@
     for(var i=0; i < 300; i++){
         suggestions.push({
             name: i + 'Тестовый ' + i + 'Пользователь',
-            uid: '' + i
+            uid: '' + i + 2000
         });
         suggestions2.push({
             name: i + 'Test2 ' + i + 'User',
-            uid: '' + i
+            uid: '' + i + 2000
         })
     }
 
@@ -35,7 +35,7 @@
         suggestions: suggestions,
         limit: 10,
         serverSide: true,
-        serverSideUrl: 'http://127.0.0.1:5000/find',
+        serverSideUrl: 'http://127.0.0.1:5001/find',
         serverSideFindProperty: 'domain'
     });
 
