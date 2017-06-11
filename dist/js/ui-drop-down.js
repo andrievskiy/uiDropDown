@@ -926,6 +926,7 @@ if (!Object.assign) {
         serverSideMethod: 'GET',
         serverSideFindProperty: 'domain',
         suggestionIdentifierProperty: 'uid',
+        serverLimit: 1000,
 
         suggestionTemplateWithAvatar: DEFAULT_SUGGESTION_TEMPLATE,
         suggestionTemplateWithoutAvatar: DEFAULT_SUGGESTION_TEMPLATE_WITHOUT_AVATARS,
@@ -1440,7 +1441,7 @@ if (!Object.assign) {
 
         function _appendMatchedSuggestionsFromServer(suggestions) {
             suggestions.forEach(function (suggestion) {
-                if (!_isSelected(suggestion) && !_isInMatched(suggestion)) {
+                if (!_isSelected(suggestion) && !_isInMatched(suggestion) && self.matchedSuggestions.length < self.options.limit) {
                     _addToMatched(suggestion);
                     _renderMatchedSuggestion(suggestion);
                 }
@@ -1454,9 +1455,11 @@ if (!Object.assign) {
             }
             if (response.result.length) {
                 _appendMatchedSuggestionsFromServer(response.result);
-            } else if (!self.matchedSuggestions.length) {
-                _showEmptySuggestionMessage();
-                self._lastIsEmpty = true;
+            } else  {
+                if (!self.matchedSuggestions.length){
+                    _showEmptySuggestionMessage();
+                }
+
             }
         }
 
@@ -1475,8 +1478,10 @@ if (!Object.assign) {
                 return;
             }
 
+            // Нужноиспользовать достаточно большой лимит для запроса на сервер
+            // Чтобы не столкнуться с проблеиой недоступности данных по првефиксу
             findParams[self.options.serverSideFindProperty] = prefix;
-            findParams['limit'] = self.options.limit;
+            findParams['limit'] = self.options.serverLimit;
 
             uiDropDownajax({
                 method: self.options.serverSideMethod,
