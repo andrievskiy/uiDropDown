@@ -33,124 +33,6 @@ if (!Object.assign) {
     });
 }
 /**
- * Простая обертка к XMLHttpRequest
- */
-(function (window) {
-    function _makeGetArgs(params) {
-        var parts = [];
-        Object.keys(params).forEach(function (key) {
-            parts.push(key + '=' + params[key]);
-        });
-        return '?' + parts.join('&');
-    }
-
-    function isOkStatusCode(code){
-        return code >= 200 && code < 300;
-    }
-
-    /**
-     * Совершает ajax запрос
-     * @param options {object} - параметры запроса
-     * @param options.method {string} - HTTP метод запроса (GET|POST|PUT|DELETE)
-     * @param options.url {string} - Url для запрсоа
-     * @param options.params {object} - Uri (GET) параметра запроса
-     * @param options.onError {Function} - Функция-обработчик ошибок
-     * @param options.onSuccess {Function} -  Функция-обработчик успешного запроса
-     * @param options.data {object} - Данные для загрузки (payload)
-     * @returns {XMLHttpRequest}
-     */
-    function uiDropDownAjax(options) {
-        var xhr = new XMLHttpRequest();
-        var url = options.url + _makeGetArgs(options.params);
-        xhr.open(options.method.toUpperCase(), url);
-
-        xhr.onerror = function () {
-            console.error(xhr.status, xhr.statusText);
-            if (options.onError) {
-                options.onError(xhr);
-            }
-        };
-
-        xhr.onload = function () {
-            var response;
-            if (isOkStatusCode(xhr.status)) {
-                if (options.onSuccess) {
-                    if (~xhr.getResponseHeader('Content-Type').indexOf('application/json')) {
-                        try {
-                            response = JSON.parse(xhr.responseText);
-                        } catch (e) {
-                            console.error(e);
-                            response = null;
-                        }
-                    } else {
-                        response = xhr.responseText;
-                    }
-                    options.onSuccess(response);
-                }
-            } else{
-                console.error('Unexpected response code: ', xhr.status);
-            }
-        };
-
-        if (options.method.toUpperCase() != 'GET') {
-            xhr.send(options.data);
-        } else {
-            xhr.send();
-        }
-        return xhr;
-    }
-
-    window.uiDropDownajax = uiDropDownAjax;
-})(window);
-/**
- * Утилиты для работы с html
- */
-(function (window) {
-
-    var ESCAPE_CHARS = {
-        '¢': 'cent',
-        '£': 'pound',
-        '¥': 'yen',
-        '€': 'euro',
-        '©': 'copy',
-        '®': 'reg',
-        '<': 'lt',
-        '>': 'gt',
-        '"': 'quot',
-        '&': 'amp',
-        '\'': '#39'
-    }, regex;
-
-    function _makeRegexpString() {
-        var regexString = '[';
-
-        for (var key in ESCAPE_CHARS) {
-            regexString += key;
-        }
-        regexString += ']';
-
-        return regexString;
-    }
-
-    regex = new RegExp(_makeRegexpString(), 'g');
-
-    /**
-     * Производит экранирование html символов
-     * @param str
-     * @returns {*}
-     */
-    function uiDropDownHtmlEscaping(str) {
-        if(typeof str != 'string'){
-            return str;
-        }
-        return str.replace(regex, function (m) {
-            return '&' + ESCAPE_CHARS[m] + ';';
-        });
-    }
-
-    window.uiDropDownHtmlEscaping = uiDropDownHtmlEscaping;
-})(window);
-/**
  * Модуль для работы с DOM
  */
 (function (window) {
@@ -430,6 +312,124 @@ if (!Object.assign) {
 
     window.UiElement = UiElement;
 
+})(window);
+/**
+ * Простая обертка к XMLHttpRequest
+ */
+(function (window) {
+    function _makeGetArgs(params) {
+        var parts = [];
+        Object.keys(params).forEach(function (key) {
+            parts.push(key + '=' + params[key]);
+        });
+        return '?' + parts.join('&');
+    }
+
+    function isOkStatusCode(code){
+        return code >= 200 && code < 300;
+    }
+
+    /**
+     * Совершает ajax запрос
+     * @param options {object} - параметры запроса
+     * @param options.method {string} - HTTP метод запроса (GET|POST|PUT|DELETE)
+     * @param options.url {string} - Url для запрсоа
+     * @param options.params {object} - Uri (GET) параметра запроса
+     * @param options.onError {Function} - Функция-обработчик ошибок
+     * @param options.onSuccess {Function} -  Функция-обработчик успешного запроса
+     * @param options.data {object} - Данные для загрузки (payload)
+     * @returns {XMLHttpRequest}
+     */
+    function uiDropDownAjax(options) {
+        var xhr = new XMLHttpRequest();
+        var url = options.url + _makeGetArgs(options.params);
+        xhr.open(options.method.toUpperCase(), url);
+
+        xhr.onerror = function () {
+            console.error(xhr.status, xhr.statusText);
+            if (options.onError) {
+                options.onError(xhr);
+            }
+        };
+
+        xhr.onload = function () {
+            var response;
+            if (isOkStatusCode(xhr.status)) {
+                if (options.onSuccess) {
+                    if (~xhr.getResponseHeader('Content-Type').indexOf('application/json')) {
+                        try {
+                            response = JSON.parse(xhr.responseText);
+                        } catch (e) {
+                            console.error(e);
+                            response = null;
+                        }
+                    } else {
+                        response = xhr.responseText;
+                    }
+                    options.onSuccess(response);
+                }
+            } else{
+                console.error('Unexpected response code: ', xhr.status);
+            }
+        };
+
+        if (options.method.toUpperCase() != 'GET') {
+            xhr.send(options.data);
+        } else {
+            xhr.send();
+        }
+        return xhr;
+    }
+
+    window.uiDropDownajax = uiDropDownAjax;
+})(window);
+/**
+ * Утилиты для работы с html
+ */
+(function (window) {
+
+    var ESCAPE_CHARS = {
+        '¢': 'cent',
+        '£': 'pound',
+        '¥': 'yen',
+        '€': 'euro',
+        '©': 'copy',
+        '®': 'reg',
+        '<': 'lt',
+        '>': 'gt',
+        '"': 'quot',
+        '&': 'amp',
+        '\'': '#39'
+    }, regex;
+
+    function _makeRegexpString() {
+        var regexString = '[';
+
+        for (var key in ESCAPE_CHARS) {
+            regexString += key;
+        }
+        regexString += ']';
+
+        return regexString;
+    }
+
+    regex = new RegExp(_makeRegexpString(), 'g');
+
+    /**
+     * Производит экранирование html символов
+     * @param str
+     * @returns {*}
+     */
+    function uiDropDownHtmlEscaping(str) {
+        if(typeof str != 'string'){
+            return str;
+        }
+        return str.replace(regex, function (m) {
+            return '&' + ESCAPE_CHARS[m] + ';';
+        });
+    }
+
+    window.uiDropDownHtmlEscaping = uiDropDownHtmlEscaping;
 })(window);
 /**
  * Константы для работы с различными расладками.
@@ -974,8 +974,11 @@ if (!Object.assign) {
             _initBindings();
         }
 
+        // Управление
+
 
         function open() {
+            self._hoveredIdx = 0;
             if ((!self.options.multiple && self.options.autocomplete) || !self.getSelected().length) {
                 _hideSelectedContainer();
             }
@@ -984,11 +987,13 @@ if (!Object.assign) {
         }
 
         function search() {
+            self._hoveredIdx = -1;
             _lookup();
             _renderAllMatchedSuggestions();
         }
 
         function close() {
+            self._hoveredIdx = -1;
             _hideSuggestionsList();
             if (self.options.multiple && self.getSelected().length) {
                 _hideInputElement();
@@ -999,10 +1004,12 @@ if (!Object.assign) {
             }
         }
 
+
         self._cache = {};
         self._lastVal = null;
         self._serverQuryIsRunning = false;
         self._matchesSuggestionIds = Object.create(null);
+        self._hoveredIdx = -1;
 
         init();
 
@@ -1124,6 +1131,35 @@ if (!Object.assign) {
             _focusInputElement();
         }
 
+        // ------------------------------------
+        // Управление
+        // ------------------------------------
+
+        function _clearAllHovered() {
+            var suggestionElements = Array.prototype.slice.apply(self._suggestionsWrapper.element.children);
+            suggestionElements.forEach(function (suggestionElement) {
+                suggestionElement = UiElement(suggestionElement);
+                suggestionElement.removeClass('ui-drop-down-hovered');
+            })
+        }
+
+        function _hoveSuggestionByIdx(idx) {
+            _clearAllHovered();
+            var suggestionElements = Array.prototype.slice.apply(self._suggestionsWrapper.element.children);
+            var suggestion = suggestionElements[idx];
+            if(suggestion){
+                suggestion = UiElement(suggestion);
+                suggestion.addClass('ui-drop-down-hovered');
+                self._hoveredSuggestion = suggestion;
+            }
+        }
+
+        function _selectSuggestionByIdx(idx) {
+            var suggestion = self.matchedSuggestions[idx];
+            if(suggestion){
+                onSelectSuggestion(suggestion, self._hoveredSuggestion.element);
+            }
+        }
 
         /**
          * Прозводит позиционирование блока предложений относительно эелемента
@@ -1143,7 +1179,7 @@ if (!Object.assign) {
 
 
         /*************************************************
-         * Обработка событий
+         * Обработка событий. Events
          ************************************************/
 
         function _initBindings() {
@@ -1155,8 +1191,32 @@ if (!Object.assign) {
 
             self._suggestionsWrapper.on('mouseenter', onHoverSuggestionsWrapperHandler);
             self._suggestionsWrapper.on('mouseleave', onMouseLeaveSuggestionsWrapperHandler);
+            self._dropDownInputWrapper.on('keyup', _onKeyDownWrapperHandler, true);
         }
 
+
+        function _onKeyDownWrapperHandler(event) {
+            console.log(event);
+            if(event.keyCode == 40 || event.key == 'ArrowDown'){
+                self._hoveredIdx = Math.min(self._hoveredIdx + 1,  self.matchedSuggestions.length);
+                _hoveSuggestionByIdx(self._hoveredIdx);
+                event.stopPropagation();
+            }
+
+            if(event.key == 'ArrowUp'){
+                self._hoveredIdx = Math.max(self._hoveredIdx - 1, 0);
+                _hoveSuggestionByIdx(self._hoveredIdx);
+                event.stopPropagation();
+            }
+
+            if(event.keyCode == 13){
+                _selectSuggestionByIdx(self._hoveredIdx);
+            }
+
+            if(event.key == 'Escape'){
+                close();
+            }
+        }
 
         function _onFocusInputHandler() {
             open();

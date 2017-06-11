@@ -85,8 +85,11 @@
             _initBindings();
         }
 
+        // Управление
+
 
         function open() {
+            self._hoveredIdx = 0;
             if ((!self.options.multiple && self.options.autocomplete) || !self.getSelected().length) {
                 _hideSelectedContainer();
             }
@@ -95,11 +98,13 @@
         }
 
         function search() {
+            self._hoveredIdx = -1;
             _lookup();
             _renderAllMatchedSuggestions();
         }
 
         function close() {
+            self._hoveredIdx = -1;
             _hideSuggestionsList();
             if (self.options.multiple && self.getSelected().length) {
                 _hideInputElement();
@@ -110,10 +115,12 @@
             }
         }
 
+
         self._cache = {};
         self._lastVal = null;
         self._serverQuryIsRunning = false;
         self._matchesSuggestionIds = Object.create(null);
+        self._hoveredIdx = -1;
 
         init();
 
@@ -235,6 +242,35 @@
             _focusInputElement();
         }
 
+        // ------------------------------------
+        // Управление
+        // ------------------------------------
+
+        function _clearAllHovered() {
+            var suggestionElements = Array.prototype.slice.apply(self._suggestionsWrapper.element.children);
+            suggestionElements.forEach(function (suggestionElement) {
+                suggestionElement = UiElement(suggestionElement);
+                suggestionElement.removeClass('ui-drop-down-hovered');
+            })
+        }
+
+        function _hoveSuggestionByIdx(idx) {
+            _clearAllHovered();
+            var suggestionElements = Array.prototype.slice.apply(self._suggestionsWrapper.element.children);
+            var suggestion = suggestionElements[idx];
+            if(suggestion){
+                suggestion = UiElement(suggestion);
+                suggestion.addClass('ui-drop-down-hovered');
+                self._hoveredSuggestion = suggestion;
+            }
+        }
+
+        function _selectSuggestionByIdx(idx) {
+            var suggestion = self.matchedSuggestions[idx];
+            if(suggestion){
+                onSelectSuggestion(suggestion, self._hoveredSuggestion.element);
+            }
+        }
 
         /**
          * Прозводит позиционирование блока предложений относительно эелемента
@@ -254,7 +290,7 @@
 
 
         /*************************************************
-         * Обработка событий
+         * Обработка событий. Events
          ************************************************/
 
         function _initBindings() {
@@ -266,8 +302,32 @@
 
             self._suggestionsWrapper.on('mouseenter', onHoverSuggestionsWrapperHandler);
             self._suggestionsWrapper.on('mouseleave', onMouseLeaveSuggestionsWrapperHandler);
+            self._dropDownInputWrapper.on('keyup', _onKeyDownWrapperHandler, true);
         }
 
+
+        function _onKeyDownWrapperHandler(event) {
+            console.log(event);
+            if(event.keyCode == 40 || event.key == 'ArrowDown'){
+                self._hoveredIdx = Math.min(self._hoveredIdx + 1,  self.matchedSuggestions.length);
+                _hoveSuggestionByIdx(self._hoveredIdx);
+                event.stopPropagation();
+            }
+
+            if(event.key == 'ArrowUp'){
+                self._hoveredIdx = Math.max(self._hoveredIdx - 1, 0);
+                _hoveSuggestionByIdx(self._hoveredIdx);
+                event.stopPropagation();
+            }
+
+            if(event.keyCode == 13){
+                _selectSuggestionByIdx(self._hoveredIdx);
+            }
+
+            if(event.key == 'Escape'){
+                close();
+            }
+        }
 
         function _onFocusInputHandler() {
             open();
