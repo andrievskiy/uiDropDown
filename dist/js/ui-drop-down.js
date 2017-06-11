@@ -449,6 +449,8 @@ if (!Object.assign) {
         'o': 'щ',
         'p': 'з',
         '{': 'х',
+        '[': 'х',
+        ']': 'ъ',
         '}': 'ъ',
         'a': 'ф',
         's': 'ы',
@@ -460,7 +462,9 @@ if (!Object.assign) {
         'k': 'л',
         'l': 'д',
         ';': 'ж',
+        ':': 'ж',
         "'": 'э',
+        '"': 'э',
         'z': 'я',
         'x': 'ч',
         'c': 'с',
@@ -469,6 +473,8 @@ if (!Object.assign) {
         'n': 'т',
         'm': 'ь',
         ',': 'б',
+        '<': 'б',
+        '>': 'ю',
         '.': 'ю'
     };
 
@@ -821,17 +827,23 @@ if (!Object.assign) {
 (function (window) {
     /**
      * Производит сравнение по префиксу с учетом раскладок и транслитерации
-     * @param prefix {String}
-     * @param suggestion {Object}
-     * @param selectedSuggestions {Array}
-     * @param options {Object}
+     * @param prefix {String} - префикс по которому производится поиск
+     * @param suggestion {Object} - предложение, котрое нужно проверить
+     * @param selectedSuggestions {Array} - уже выбранные предложения
+     * @param options {Object} - список опций
      * @param options.byProperty {String} - свойтво по которму производится сравненение
      * @param options.uidProperty {String} - свойтво уникальный идентификатор
-     * @returns {Object}
+     * @returns {Object} - результат поиска
+     *    {
+     *      matched: {Boolean} - флаг подходит или нет объект под префикс,
+     *      matchedBy: {string} - подстрока по которой произошло совпадение
+     *    }
      */
 
+
     function uiDropDownUsersMatcher(prefix, suggestion, selectedSuggestions, options) {
-        // TODO: произветси оптимизацию поиска
+        // TODO: Скорость работы через регулярные выражения оказалась ниже
+        // TODO: Придумать способ повысить эффективность поиска
         options = options || { byProperty: 'name', uidProperty: 'uid' };
 
         var result = {
@@ -986,8 +998,6 @@ if (!Object.assign) {
             self._dropDownInputWrapper.element.insertBefore(self._selectedContainer.element, self.inputElement.element);
 
             var originInputElementW = self.inputElement.clientWidth();
-            console.log(originInputElementW);
-            console.log('offsetWidth', self._dropDownIcon.offsetWidth());
 
             self.inputElement.css({
                 width: originInputElementW - self._dropDownIcon.offsetWidth()- 15 + 'px'
@@ -1269,7 +1279,6 @@ if (!Object.assign) {
             var uid = element.getAttribute('data-user-id');
             var container = element.parentNode;
             container = container.parentNode;
-            console.log(container);
             delete self.selectedItems[uid];
             container.parentNode.removeChild(container);
 

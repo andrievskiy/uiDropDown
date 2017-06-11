@@ -112,8 +112,6 @@
             self._dropDownInputWrapper.element.insertBefore(self._selectedContainer.element, self.inputElement.element);
 
             var originInputElementW = self.inputElement.clientWidth();
-            console.log(originInputElementW);
-            console.log('offsetWidth', self._dropDownIcon.offsetWidth());
 
             self.inputElement.css({
                 width: originInputElementW - self._dropDownIcon.offsetWidth()- 15 + 'px'
@@ -395,7 +393,6 @@
             var uid = element.getAttribute('data-user-id');
             var container = element.parentNode;
             container = container.parentNode;
-            console.log(container);
             delete self.selectedItems[uid];
             container.parentNode.removeChild(container);
 
