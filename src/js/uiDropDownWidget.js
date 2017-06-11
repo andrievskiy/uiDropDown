@@ -64,117 +64,31 @@
             });
         };
 
+
         self.options = Object.assign({}, DEFAULT_OPTIONS, options);
-
-        self._cache = {};
-        self._lastVal = null;
-        self._serverQuryIsRunning = false;
-
-        self._suggestionTemplate = getSuggestionTemplate();
-        self._selectedItemTemplate = getSelectedItemTemplate();
-
-        self.inputElement = UiElement(selector);
-        self.inputElement.addClass('ui-drop-down-input');
-        if (!self.options.autocomplete) {
-            self.inputElement.element.setAttribute('readonly', 'true');
-        }
-
-        self.suggestions = self.options.suggestions || [];
         self.matcher = self.options.matcher || uiDropDownUsersMatcher;
-
+        self.suggestions = self.options.suggestions || [];
         self.matchedSuggestions = [];
-        self._matchesSuggestionIds = Object.create(null);
         self.selectedItems = Object.create(null);
 
-        self._dropDownInputWrapper = createDropDownInputWrapper();
-        self._suggestionsWrapper = createSuggestionWrapper();
-        self._selectedContainer = createSelectedSuggestionsContainer();
-        self._dropDownIcon = createDropDownIcon();
-        appendElementsToDom();
+        function init() {
+            self._suggestionTemplate = _getSuggestionTemplate();
+            self._selectedItemTemplate = _getSelectedItemTemplate();
+            _initInputElement();
 
-
-        self.inputElement.on('focus', onFocusInputHandler);
-        self.inputElement.on('keyup', deBounce(onKeyUpInputHandler, 300));
-        self.inputElement.on('blur', onBlurInputElement);
-
-        self._dropDownInputWrapper.on('click', onClickWrapper);
-
-        self._suggestionsWrapper.on('mouseenter', onHoverSuggestionsWrapper);
-        self._suggestionsWrapper.on('mouseleave', onMouseLeaveSuggestionsWrapper);
-
-        self._selectedContainer.on('click', onClickSelectedContainer);
-
-        function appendElementsToDom() {
-            self.inputElement.wrap(self._dropDownInputWrapper);
-            document.body.appendChild(self._suggestionsWrapper.element);
-
-            self._dropDownInputWrapper.element.insertBefore(self._dropDownIcon.element, self.inputElement.element);
-            self._dropDownInputWrapper.element.insertBefore(self._selectedContainer.element, self.inputElement.element);
-
-            var originInputElementW = self.inputElement.clientWidth();
-
-            self.inputElement.css({
-                width: originInputElementW - self._dropDownIcon.offsetWidth()- 15 + 'px'
-            });
+            self._dropDownInputWrapper = _createDropDownInputWrapper();
+            self._suggestionsWrapper = _createSuggestionWrapper();
+            self._selectedContainer = _createSelectedSuggestionsContainer();
+            self._dropDownIcon = _createDropDownIcon();
+            _appendElementsToDom();
+            _initBindings();
         }
 
-        function createDropDownIcon(){
-            var e = UiElement.create('div');
-            e.addClass('ui-widget-drop-down-icon');
-            return e;
-        }
-
-
-        function getSuggestionTemplate() {
-            if (self.options.showAvatars) {
-                return self.options.suggestionTemplateWithAvatar;
-            }
-            return self.options.suggestionTemplateWithoutAvatar;
-        }
-
-        function getSelectedItemTemplate() {
-            if (self.options.multiple) {
-                return self.options.selectedMultipleItemTemplate;
-            }
-            return self.options.selectedSingleItemTemplate;
-        }
-
-        function isSelected(item) {
-            return Boolean(self.selectedItems[item[self.options.suggestionIdentifierProperty]]);
-        }
-
-        function addItemToSelected(item) {
-            self.selectedItems[item[self.options.suggestionIdentifierProperty]] = item;
-        }
-
-        function isInMatchedSuggestions(item) {
-            return Boolean(self._matchesSuggestionIds[item[self.options.suggestionIdentifierProperty]]);
-        }
-
-        function addToMatchedSuggestions(item) {
-            self.matchedSuggestions.push(item);
-            self._matchesSuggestionIds[item[self.options.suggestionIdentifierProperty]] = true;
-        }
-
-        function onClickSelectedContainer(event) {
-            var target = event.target;
-            if (target.getAttribute('data-is-remove-button') == 'true') {
-                removeSelectedSuggestion(target);
-                if (!self.getSelected().length) {
-                    hideSelectedContainer();
-                    showInputElement();
-                }
-            } else {
-                activateInputElement();
-            }
-
-        }
 
         function open() {
             if ((!self.options.multiple && self.options.autocomplete) || !self.getSelected().length) {
                 hideSelectedContainer();
             }
-
             showSuggestionList();
             search();
         }
@@ -185,10 +99,7 @@
         }
 
         function close() {
-            if (self._suggestionsWrapper.hovered) {
-                return;
-            }
-            hideSuggestiosnList();
+            hideSuggestionsList();
             if (self.options.multiple && self.getSelected().length) {
                 hideInputElement();
             }
@@ -196,6 +107,89 @@
                 hideInputElement();
                 showSelectedContainer();
             }
+        }
+
+        self._cache = {};
+        self._lastVal = null;
+        self._serverQuryIsRunning = false;
+        self._matchesSuggestionIds = Object.create(null);
+
+        init();
+
+
+        // Dom methods. Init elements
+
+        function _initInputElement() {
+            self.inputElement = UiElement(selector);
+            self.inputElement.addClass('ui-drop-down-input');
+            if (!self.options.autocomplete) {
+                self.inputElement.element.setAttribute('readonly', 'true');
+            }
+        }
+
+        function _createDropDownIcon() {
+            var e = UiElement.create('div');
+            e.addClass('ui-widget-drop-down-icon');
+            return e;
+        }
+
+
+        function _createSuggestionWrapper() {
+            var element = UiElement.create('div');
+            element.addClass('ui-drop-down-autocomplete-suggestions');
+            return element;
+        }
+
+        function _createDropDownInputWrapper() {
+            function setStyles(wrapper) {
+                var position = self.inputElement.css().position;
+                wrapper.css({
+                    width: self.inputElement.offsetWidth() + 'px',
+                    position: position
+                });
+            }
+
+            var element = UiElement.create('div');
+            element.addClass('ui-drop-down-input-wrapper');
+            setStyles(element);
+
+            return element;
+        }
+
+
+        function _createSelectedSuggestionsContainer() {
+            var element = UiElement.create('div');
+            element.addClass('ui-drop-down-selected-container');
+
+            return element;
+        }
+
+
+        function _appendElementsToDom() {
+            self.inputElement.wrap(self._dropDownInputWrapper);
+            document.body.appendChild(self._suggestionsWrapper.element);
+
+            self._dropDownInputWrapper.element.insertBefore(self._dropDownIcon.element, self.inputElement.element);
+            self._dropDownInputWrapper.element.insertBefore(self._selectedContainer.element, self.inputElement.element);
+
+            var originInputElementW = self.inputElement.clientWidth();
+
+            self.inputElement.css({
+                width: originInputElementW - self._dropDownIcon.offsetWidth() - 15 + 'px'
+            });
+        }
+
+        // Events
+
+        function _initBindings() {
+            self.inputElement.on('focus', onFocusInputHandler);
+            self.inputElement.on('keyup', deBounce(onKeyUpInputHandler, 300));
+            self.inputElement.on('blur', onBlurInputElement);
+
+            self._dropDownInputWrapper.on('click', onClickWrapper);
+
+            self._suggestionsWrapper.on('mouseenter', onHoverSuggestionsWrapper);
+            self._suggestionsWrapper.on('mouseleave', onMouseLeaveSuggestionsWrapper);
         }
 
         function onFocusInputHandler() {
@@ -207,15 +201,34 @@
         }
 
         function onClickWrapper(event) {
+            var target = event.target;
+
             if (event.target === this) {
                 activateInputElement();
+                return;
             }
-            if(event.target == self._dropDownIcon.element){
+
+            if (event.target == self._dropDownIcon.element) {
                 activateInputElement();
+                return;
             }
+
+            if (target.getAttribute('data-is-remove-button') == 'true') {
+                removeSelectedSuggestion(target);
+                if (!self.getSelected().length) {
+                    hideSelectedContainer();
+                    showInputElement();
+                }
+                return;
+            }
+
+            activateInputElement();
         }
 
         function onBlurInputElement() {
+            if (self._suggestionsWrapper.hovered) {
+                return;
+            }
             close();
         }
 
@@ -226,6 +239,38 @@
         function onMouseLeaveSuggestionsWrapper() {
             self._suggestionsWrapper.hovered = false;
         }
+
+        function _getSuggestionTemplate() {
+            if (self.options.showAvatars) {
+                return self.options.suggestionTemplateWithAvatar;
+            }
+            return self.options.suggestionTemplateWithoutAvatar;
+        }
+
+        function _getSelectedItemTemplate() {
+            if (self.options.multiple) {
+                return self.options.selectedMultipleItemTemplate;
+            }
+            return self.options.selectedSingleItemTemplate;
+        }
+
+        function _isSelected(item) {
+            return Boolean(self.selectedItems[item[self.options.suggestionIdentifierProperty]]);
+        }
+
+        function _addItemToSelected(item) {
+            self.selectedItems[item[self.options.suggestionIdentifierProperty]] = item;
+        }
+
+        function _isInMatchedSuggestions(item) {
+            return Boolean(self._matchesSuggestionIds[item[self.options.suggestionIdentifierProperty]]);
+        }
+
+        function _addToMatchedSuggestions(item) {
+            self.matchedSuggestions.push(item);
+            self._matchesSuggestionIds[item[self.options.suggestionIdentifierProperty]] = true;
+        }
+
 
         function _clearLastSelected() {
             Object.keys(self.selectedItems).forEach(function (prop) {
@@ -242,12 +287,16 @@
             if (!self.options.multiple) {
                 _clearLastSelected();
             }
-            addItemToSelected(item);
+
+            _addItemToSelected(item);
+
             element.parentNode.removeChild(element);
             self.inputElement.val('');
-            hideSuggestiosnList();
+
+            hideSuggestionsList();
             renderSelectedSuggestion(item);
             hideInputElement();
+
             // Событие не будет послано брузером. Поэтому нужно простваить руками.
             self._suggestionsWrapper.hovered = false;
             showSelectedContainer();
@@ -287,41 +336,12 @@
             focusInputElement();
         }
 
-        function createSuggestionWrapper() {
-            var element = UiElement.create('div');
-            element.addClass('ui-drop-down-autocomplete-suggestions');
-            return element;
-        }
-
-        function createDropDownInputWrapper() {
-            function setStyles(wrapper) {
-                var position = self.inputElement.css().position;
-                wrapper.css({
-                    width: self.inputElement.offsetWidth() + 'px',
-                    position: position
-                });
-            }
-
-            var element = UiElement.create('div');
-            element.addClass('ui-drop-down-input-wrapper');
-            setStyles(element);
-
-            return element;
-        }
-
-        function createSelectedSuggestionsContainer() {
-            var element = UiElement.create('div');
-            element.addClass('ui-drop-down-selected-container');
-
-            return element;
-        }
-
         function showSuggestionList() {
             self._suggestionsWrapper.addClass('show');
-            positionSuggestionList();
+            _positionSuggestionList();
         }
 
-        function hideSuggestiosnList() {
+        function hideSuggestionsList() {
             self._suggestionsWrapper.removeClass('show');
         }
 
@@ -330,7 +350,7 @@
          * Прозводит позиционирование блока предложений относительно эелемента
          * В зависимости от его позиционирования(static/relative)
          */
-        function positionSuggestionList() {
+        function _positionSuggestionList() {
             var inputWrapperCoordinates = self._dropDownInputWrapper.getCoordinates();
 
             self._suggestionsWrapper.style.top =
@@ -342,6 +362,7 @@
                 self._dropDownInputWrapper.offsetWidth() - self._suggestionsWrapper.clientLeft() - self._suggestionsWrapper.clientRight() + 'px';
         }
 
+
         function clearMatchedSuggestionsList() {
             var children = Array.prototype.slice.apply(self._suggestionsWrapper.element.children);
 
@@ -350,9 +371,12 @@
             });
         }
 
+
         function renderAllMatchedSuggestions() {
+
             // Если пачка предложений пуста, то производить очистку и показвать сообщение нужно только
             // Если предложения не смогут появиться с сервера
+
             if (!self.matchedSuggestions.length && !self._serverQuryIsRunning) {
                 clearMatchedSuggestionsList();
                 showEmptySuggestionMessage();
@@ -361,6 +385,7 @@
 
             // Если запрос еще выпоняется, то очистку списка нужно производить
             // Только если есть записи
+
             if (self.matchedSuggestions.length) {
                 clearMatchedSuggestionsList();
             }
@@ -370,21 +395,19 @@
         }
 
         function renderMatchedSuggestion(suggestion) {
-            // TODO: Исправить проброс matchedBy
             var matchedBy = suggestion.mathedBy;
             delete suggestion.mathedBy;
 
-            var dropDownItem = DropDownSuggestionItem(
+            var dropDownSuggestionItem = DropDownSuggestionItem(
                 self._suggestionTemplate, suggestion, matchedBy, self.options.defaultAvatarUrl
             );
-            dropDownItem.render();
-            // TODO: пернести обработчик на suggestion-list. Испрользовать делегирование,
-            // TODO: чтообы избавиться от лишних обработчиков
-            // TODO: С ходу мешает необходимость ссылки на item(suggestion)
-            dropDownItem.uiElement.on('click', function () {
+            dropDownSuggestionItem.render();
+
+            dropDownSuggestionItem.uiElement.on('click', function () {
                 onSelectSuggestion(suggestion, this);
             });
-            self._suggestionsWrapper.append(dropDownItem.uiElement);
+
+            self._suggestionsWrapper.append(dropDownSuggestionItem.uiElement);
         }
 
 
@@ -395,8 +418,6 @@
             container = container.parentNode;
             delete self.selectedItems[uid];
             container.parentNode.removeChild(container);
-
-
         }
 
         function renderSelectedSuggestion(suggestion) {
@@ -412,12 +433,11 @@
             var idx = 0;
             while (counter < self.options.limit && idx < self.suggestions.length) {
                 var item = self.suggestions[idx];
-                if (isSelected(item)) {
+                if (_isSelected(item)) {
                     idx++;
                     continue;
                 }
-
-                addToMatchedSuggestions(item);
+                _addToMatchedSuggestions(item);
                 counter++;
                 idx++;
             }
@@ -447,7 +467,7 @@
                 var matchResult = self.matcher(prefix, self.suggestions[idx], self.selectedItems);
                 if (matchResult.matched) {
                     self.suggestions[idx].mathedBy = matchResult.matchedBy;
-                    addToMatchedSuggestions(self.suggestions[idx]);
+                    _addToMatchedSuggestions(self.suggestions[idx]);
                     counter++;
                 }
                 idx++;
@@ -462,8 +482,8 @@
 
         function appendMatchedSuggestionsFromServer(suggestions) {
             suggestions.forEach(function (suggestion) {
-                if (!isSelected(suggestion) && !isInMatchedSuggestions(suggestion)) {
-                    addToMatchedSuggestions(suggestion);
+                if (!_isSelected(suggestion) && !_isInMatchedSuggestions(suggestion)) {
+                    _addToMatchedSuggestions(suggestion);
                     renderMatchedSuggestion(suggestion);
                 }
             });
