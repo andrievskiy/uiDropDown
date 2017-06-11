@@ -1,0 +1,12 @@
+.ui-drop-down-input{
+  display: inline-block;
+  width: 400px;
+  border: none;
+  outline: none;
+  height: 21px;
+  padding: 3px;
+}
+
+.ui-drop-down-input::-ms-clear {
+    display: none;
+}

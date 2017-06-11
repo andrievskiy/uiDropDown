@@ -9,7 +9,6 @@
 <body>
 <div>
     <input type="text" id="test" style="position: relative;" placeholder="Введите имя или адрес страницы">
-
     <a onclick="showSelected()">Show Selected</a>
     <p style="height: 20px">
     </p>
@@ -26,9 +25,10 @@
     var suggestions2 = [];
     for(var i=0; i < 300; i++){
         suggestions.push({
-            name: i + 'Тестовый ' + i + 'Пользователь',
+            name: i + 'Тестовый ' + i + 'ПользовательПользовательПользовательПользователь',
             uid: '' + i + 2000,
-            avatarUrl: 'https://vk.com/images/deactivated_50.png'
+            avatarUrl: 'https://vk.com/images/deactivated_50.png',
+            extra: 'Extra' + i
         });
         suggestions2.push({
             name: i + 'Test2 ' + i + 'User',
@@ -39,7 +39,7 @@
 
     var widget1 = new UiDropDown('#test', {
         suggestions: suggestions,
-        limit: 10,
+        limit: 20,
         serverSide: true,
         showAvatars: true,
         serverSideUrl: 'http://127.0.0.1:5001/find',
@@ -49,7 +49,7 @@
     var widget2 = new UiDropDown('#test2', {
         suggestions: suggestions2,
         showAvatars: false,
-        limit: 10,
+        limit: 20,
         multiple: false
     });
 
@@ -61,7 +61,7 @@
 
     var widet4 = new UiDropDown('#test4', {
         suggestions: suggestions2,
-        limit: 10,
+        limit: 100,
         autocomplete: false,
         multiple: false
     });

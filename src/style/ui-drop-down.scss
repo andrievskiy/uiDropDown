@@ -1,106 +1,20 @@
 $color-blue-background: #6285af;
 $color-white: #fff;
 
-.ui-drop-down-input-wrapper{
-  border: 1px solid #ccc;
-  font-family: 'Roboto', serif;
-  font-size: 12px;
-  padding: 3px;
-  position: relative;
-  background: $color-white;
-}
-
-.ui-drop-down-autocomplete-suggestions{
-  position: absolute;
-  max-height: 300px;
-  display: none;
-  border: 1px solid #ccc;
-  overflow-y: auto;
-  background: #fff;
-  z-index: 1;
-  font-family: 'Roboto', serif;
-  font-size: 12px;
-
-    /*scroll */
-  ::-webkit-scrollbar {
-      width: 7px;
-  }
-
-  ::-webkit-scrollbar-track {
-     background: rgba(0, 0, 0, 0.01);
-  }
-
-  ::-webkit-scrollbar-thumb {
-      background: rgba(0, 0, 0, 0.05);
-
-  }
+@import "input";
+@import "wrappers/ui-drop-down-input-wrapper";
+@import "wrappers/ui-drop-down-suggestions-wrapper";
+@import "wrappers/ui-drop-down-selected-container";
+@import "items/ui-drop-down-suggestion-item";
+@import "items/ui-drop-down-selected-suggestions";
 
 
-}
 
-.ui-drop-down-autocomplete-suggestions.show{
-  display: block;
-}
-
-.ui-drop-down-item-container{
-  border-bottom: 1px solid #cccccc;
-  padding: 2px;
-  cursor: pointer;
-}
-.ui-drop-down-highlight{
-  color: red;
-}
-
-.ui-drop-down-selected-item{
-  display: inline-block;
-  background: $color-blue-background;
-  color: $color-white;
-  margin: 3px;
-  padding: 3px;
-}
-
-.ui-drop-down-selected-remove-btn{
-  cursor: pointer;
-}
-
-.ui-drop-down-selected-name{
-  display: inline-block;
-}
-.ui-drop-down-selected-suggestion{
-  display: inline-block;
-}
-
-input[type="text"]{
-  display: inline-block;
-  width: 400px;
-  border: none;
-  outline: none;
-  height: 20px;
-  padding: 3px;
-}
-.ui-drop-down-selected-container{
-  display: none;
-}
-.ui-drop-down-selected-container.show{
-   display: inline-block;
-}
 
 body{
   padding-left: 99px;
 }
-.ui-drop-down-single-selected-item{
-  display: block;
-}
-.ui-drop-down-single-selected-name{
-  display: inline-block;
-}
-.ui-drop-down-selected-single-remove-btn{
-  display: inline-block;
-  margin-left: 10px;
-}
-.ui-drop-down-single-selected-item{
-  padding: 6px;
-}
+
 .ui-drop-down-input-hidden{
   padding: 0!important;
   height: 0!important;

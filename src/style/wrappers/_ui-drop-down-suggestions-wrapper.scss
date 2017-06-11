@@ -1,0 +1,40 @@
+@import "../vars";
+
+.ui-drop-down-autocomplete-suggestions {
+  position: absolute;
+  max-height: $suggestions-list-max-height;
+  display: none;
+  border: 1px solid $border-color;
+  overflow-y: auto;
+  background: $bg-color;
+  z-index: 1;
+  font-family: 'Roboto', serif;
+  font-size: 12px;
+
+  scrollbar-base-color: #dae1e8;
+  scrollbar-highlight-color: #fff;
+  scrollbar-face-color: #dae1e8;
+  scrollbar-3dlight-color: #dae1e8;
+  scrollbar-track-color: transparent;
+  scrollbar-arrow-color: #dae1e8;
+  scrollbar-shadow-color: #dae1e8;
+
+
+}
+
+.ui-drop-down-autocomplete-suggestions::-webkit-scrollbar {
+  width: 7px;
+}
+
+.ui-drop-down-autocomplete-suggestions::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.ui-drop-down-autocomplete-suggestions::-webkit-scrollbar-thumb {
+  background: #dae1e8;
+  border-radius: 5px;
+}
+
+.ui-drop-down-autocomplete-suggestions.show {
+  display: block;
+}

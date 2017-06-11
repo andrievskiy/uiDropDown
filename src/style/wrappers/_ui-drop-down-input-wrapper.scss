@@ -1,0 +1,20 @@
+@import "../vars";
+
+.ui-drop-down-input-wrapper{
+  border: 1px solid $border-color;
+  font-family: 'Roboto', serif;
+  font-size: 12px;
+  position: relative;
+  background: $bg-color;
+  padding: 3px 3px 3px 3px;
+}
+
+
+.ui-widget-drop-down-icon{
+  float: right;
+  width: 21px;
+  height: 25px;
+  overflow: hidden;
+  cursor: pointer;
+  background: url(../img/dropdown_arrow.png) no-repeat 2px 50%;
+}

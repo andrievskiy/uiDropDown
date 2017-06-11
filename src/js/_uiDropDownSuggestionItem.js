@@ -4,6 +4,7 @@
     }
 
     function _DropDownSuggestionItem(template, data, matchedBy, defaultAvatarUrl) {
+        var self = this;
         this.uiElement = UiElement.create('div');
         this.uiElement.addClass('ui-drop-down-item-container');
 
@@ -15,6 +16,13 @@
         this.name = this.name.replace(this.matchedBy, '<span class="ui-drop-down-highlight">' + this.matchedBy + '</span>');
         this.uid = this.data.uid;
         this.avatarUrl = this.data.avatarUrl || this.data.avatar || defaultAvatarUrl || '';
+
+
+        Object.keys(this.data).forEach(function (dataKey) {
+            if(!self[dataKey]){
+                self[dataKey] = self.data[dataKey];
+            }
+        });
     }
     
     _DropDownSuggestionItem.prototype.render = function () {
