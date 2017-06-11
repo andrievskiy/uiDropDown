@@ -32,61 +32,6 @@ if (!Object.assign) {
         }
     });
 }
-(function (window) {
-    function _makeGetArgs(params) {
-        var parts = [];
-        Object.keys(params).forEach(function (key) {
-            parts.push(key + '=' + params[key]);
-        });
-        return '?' + parts.join('&');
-    }
-
-    function isOkStatusCode(code){
-        return code >= 200 && code < 300;
-    }
-
-    function uiDropDownAjax(options) {
-        var xhr = new XMLHttpRequest();
-        var url = options.url + _makeGetArgs(options.params);
-        xhr.open(options.method.toUpperCase(), url);
-
-        xhr.onerror = function () {
-            console.error(xhr.status, xhr.statusText);
-            if (options.onError) {
-                options.onError(xhr);
-            }
-        };
-
-        xhr.onload = function () {
-            var response;
-            if (isOkStatusCode(xhr.status)) {
-                if (options.onSuccess) {
-                    if (~xhr.getResponseHeader('Content-Type').indexOf('application/json')) {
-                        try {
-                            response = JSON.parse(xhr.responseText);
-                        } catch (e) {
-                            console.error(e);
-                        }
-                    } else {
-                        response = xhr.responseText;
-                    }
-                    options.onSuccess(response);
-                }
-            } else{
-                console.error('Unexpected response code: ', xhr.status);
-            }
-        };
-
-        if (options.method.toUpperCase() != 'GET') {
-            xhr.send(options.data);
-        } else {
-            xhr.send();
-        }
-        return xhr;
-    }
-
-    window.uiDropDownajax = uiDropDownAjax;
-})(window);
 /**
  * Модуль для работы с DOM
  */
@@ -113,7 +58,7 @@ if (!Object.assign) {
 
 
     /**
-     * Класс враппера для работы с DOM елементами
+     * Класс враппера для работы с DOM элементами
      * @param selectorOrElement
      * @private
      */
@@ -154,7 +99,7 @@ if (!Object.assign) {
     };
 
     /**
-     *
+     * clientLeft
      * @returns {number}
      */
     _UiElement.prototype.clientLeft = function () {
@@ -162,7 +107,7 @@ if (!Object.assign) {
     };
 
     /**
-     *
+     * clientRight = в реалльности borderRightWidth
      * @returns {number}
      */
     _UiElement.prototype.clientRight = function () {
@@ -173,7 +118,7 @@ if (!Object.assign) {
     };
 
     /**
-     *
+     * clientTop
      * @returns {number}
      */
     _UiElement.prototype.clientTop = function () {
@@ -182,7 +127,7 @@ if (!Object.assign) {
 
 
     /**
-     *
+     * offsetWidth
      * @returns {number}
      */
     _UiElement.prototype.offsetWidth = function () {
@@ -190,17 +135,25 @@ if (!Object.assign) {
     };
 
     /**
-     *
+     *clientWidth
      * @returns {number}
      */
     _UiElement.prototype.clientWidth = function () {
         return this.element.clientWidth;
     };
 
+    /**
+     * offsetHeight
+     * @returns {number}
+     */
     _UiElement.prototype.offsetHeight = function () {
         return this.element.offsetHeight;
     };
 
+    /**
+     * clientHeight
+     * @returns {number}
+     */
     _UiElement.prototype.clientHeight = function () {
         return this.element.clientHeight;
     };
@@ -216,16 +169,16 @@ if (!Object.assign) {
     };
 
     /**
-     *
-     * @param cls
+     * Добавить класс
+     * @param cls {str}
      */
     _UiElement.prototype.addClass = function (cls) {
         this.element.classList.add(cls);
     };
 
     /**
-     *
-     * @param cls
+     * Удалить класс
+     * @param cls {str}
      */
     _UiElement.prototype.removeClass = function (cls) {
       this.element.classList.remove(cls);
@@ -256,7 +209,7 @@ if (!Object.assign) {
 
     /**
      *
-     * @param value
+     * @param value {string | Number}
      * @returns {*|string|Number|undefined}
      */
     _UiElement.prototype.val = function (value) {
@@ -268,9 +221,9 @@ if (!Object.assign) {
     };
 
     /**
-     *
-     * @param eventKey
-     * @param callback
+     * Подписка на событие
+     * @param eventKey {string}
+     * @param callback {Function}
      * @param stage
      */
     _UiElement.prototype.on = function (eventKey, callback, stage) {
@@ -278,26 +231,30 @@ if (!Object.assign) {
     };
 
     /**
-     *
-     * @param evenKey
-     * @param callback
+     * Отмена подписки на событие
+     * @param evenKey {string}
+     * @param callback {Function}
      * @param stage
      */
     _UiElement.prototype.off = function (evenKey, callback, stage) {
         this.element.removeEventListener(evenKey, callback, stage);
     };
+
     /**
      * Удалить потомка
-     * @param child
+     * @param child {UiElement | Node}
      * @returns {Node}
      */
     _UiElement.prototype.removeChild =function (child) {
+        if(child instanceof _UiElement){
+            child = child.element;
+        }
         return this.element.removeChild(child);
     };
 
     /**
      * Добаить потомка к элементу
-     * @param child
+     * @param child {UiElement | Node}
      * @returns {Node}
      */
     _UiElement.prototype.append = function (child) {
@@ -307,6 +264,11 @@ if (!Object.assign) {
         return this.element.appendChild(child);
     };
 
+    /**
+     * Установаить или поллучить innerHtml
+     * @param val {string}
+     * @returns {string | undefined}
+     */
     _UiElement.prototype.html = function (val) {
         if(val != undefined){
             this.element.innerHTML = val;
@@ -315,10 +277,18 @@ if (!Object.assign) {
         return this.element.innerHTML;
     };
 
+    /**
+     * Удаление элемента из DOM
+     */
     _UiElement.prototype.remove = function(){
         this.element.parentNode.removeChild(this.element);
     };
 
+    /**
+     * Установить или получить css свойства
+     * @param css {object}
+     * @returns {CSSStyleDeclaration}
+     */
     _UiElement.prototype.css = function (css) {
         var self = this;
         if(!css){
@@ -343,7 +313,81 @@ if (!Object.assign) {
     window.UiElement = UiElement;
 
 })(window);
+/**
+ * Простая обертка к XMLHttpRequest
+ */
 (function (window) {
+    function _makeGetArgs(params) {
+        var parts = [];
+        Object.keys(params).forEach(function (key) {
+            parts.push(key + '=' + params[key]);
+        });
+        return '?' + parts.join('&');
+    }
+
+    function isOkStatusCode(code){
+        return code >= 200 && code < 300;
+    }
+
+    /**
+     * Совершает ajax запрос
+     * @param options {object} - параметры запроса
+     * @param options.method {string} - HTTP метод запроса (GET|POST|PUT|DELETE)
+     * @param options.url {string} - Url для запрсоа
+     * @param options.params {object} - Uri (GET) параметра запроса
+     * @param options.onError {Function} - Функция-обработчик ошибок
+     * @param options.onSuccess {Function} -  Функция-обработчик успешного запроса
+     * @param options.data {object} - Данные для загрузки (payload)
+     * @returns {XMLHttpRequest}
+     */
+    function uiDropDownAjax(options) {
+        var xhr = new XMLHttpRequest();
+        var url = options.url + _makeGetArgs(options.params);
+        xhr.open(options.method.toUpperCase(), url);
+
+        xhr.onerror = function () {
+            console.error(xhr.status, xhr.statusText);
+            if (options.onError) {
+                options.onError(xhr);
+            }
+        };
+
+        xhr.onload = function () {
+            var response;
+            if (isOkStatusCode(xhr.status)) {
+                if (options.onSuccess) {
+                    if (~xhr.getResponseHeader('Content-Type').indexOf('application/json')) {
+                        try {
+                            response = JSON.parse(xhr.responseText);
+                        } catch (e) {
+                            console.error(e);
+                            response = null;
+                        }
+                    } else {
+                        response = xhr.responseText;
+                    }
+                    options.onSuccess(response);
+                }
+            } else{
+                console.error('Unexpected response code: ', xhr.status);
+            }
+        };
+
+        if (options.method.toUpperCase() != 'GET') {
+            xhr.send(options.data);
+        } else {
+            xhr.send();
+        }
+        return xhr;
+    }
+
+    window.uiDropDownajax = uiDropDownAjax;
+})(window);
+/**
+ * Утилиты для работы с html
+ */
+(function (window) {
+
     var ESCAPE_CHARS = {
         '¢': 'cent',
         '£': 'pound',
@@ -371,6 +415,11 @@ if (!Object.assign) {
 
     regex = new RegExp(_makeRegexpString(), 'g');
 
+    /**
+     * Производит экранирование html символов
+     * @param str
+     * @returns {*}
+     */
     function uiDropDownHtmlEscaping(str) {
         if(typeof str != 'string'){
             return str;
@@ -381,20 +430,6 @@ if (!Object.assign) {
     }
 
     window.uiDropDownHtmlEscaping = uiDropDownHtmlEscaping;
-})(window);
-;(function (window) {
-    function renderTemplate(template, data) {
-        return template.replace(/{([\w|:]+)}/g, function (match, key) {
-
-            var isHtml = ~key.indexOf('::html');
-            if(isHtml){
-                key = key.split('::')[0];
-                return data[key] || '';
-            }
-            return uiDropDownHtmlEscaping(data[key] || '');
-        })
-    }
-    window.uiRenderTemplate = renderTemplate;
 })(window);
 /**
  * Константы для работы с различными расладками.
@@ -526,8 +561,8 @@ if (!Object.assign) {
 
     /**
      * _latinToCyrillicVariants -> возвращает возможные варианты раскладки для латнских букв по строке
-     * @param str
-     * @returns {Array|*}
+     * @param str {string}
+     * @returns {Array}
      * @private
      */
     function _latinToCyrillicVariants(str) {
@@ -559,8 +594,8 @@ if (!Object.assign) {
         /**
          * Производит расширение вариантов для  символов соответствующих нескольким русским буквам
          * при условии что символ находится в конце строки (т.е. невозиожно определить к чему он приводится)
-         * @param chars
-         * @returns {*[]}
+         * @param chars {string}
+         * @returns {Array}
          * @private
          */
         function _extendVariants(chars) {
@@ -601,7 +636,7 @@ if (!Object.assign) {
 
     /**
      * toCyrillicKeyboard -> Производит замену латинской раскладки на кириллицу
-     * @param str
+     * @param str {string}
      * @returns {string}
      */
     function toCyrillicKeyboard(str) {
@@ -616,7 +651,7 @@ if (!Object.assign) {
 
     /**
      * toLatinKeyboard -> Производит замену кириллической раскладки на латинскую
-     * @param str
+     * @param str {string}
      * @returns {string}
      */
     function toLatinKeyboard(str) {
@@ -632,7 +667,7 @@ if (!Object.assign) {
     /**
      * getPrefixVariables -> Возвращает все варианты представления по строке
      *
-     * @param prefix
+     * @param prefix {string}
      * @returns {Array}
      * @private
      */
@@ -687,6 +722,33 @@ if (!Object.assign) {
         getPrefixVariables: getKeyboardsVariables
     };
 
+})(window);
+/**
+ * Модуль для работы с шаблонами
+ */
+;(function (window) {
+
+    /**
+     * Рендеринг шаблонов
+     * @param template {string} - Шаблон для рендеринга
+     *                            Подстановки производяться по швблону {name}
+     *                            При этом при указании {name::html} для данного значения не будет производиться экранирование
+     * @param data {object} - Даные для рендеринга. Поиск даныных для подставновок производится по ключам этого объекта
+     * @returns {string}
+     */
+    function renderTemplate(template, data) {
+        return template.replace(/{([\w|:]+)}/g, function (match, key) {
+
+            var isHtml = ~key.indexOf('::html');
+            if(isHtml){
+                key = key.split('::')[0];
+                return data[key] || '';
+            }
+            return uiDropDownHtmlEscaping(data[key] || '');
+        })
+    }
+
+    window.uiRenderTemplate = renderTemplate;
 })(window);
 ;(function (window) {
     function DropDownSuggestionItem(template, data, matchedBy) {
