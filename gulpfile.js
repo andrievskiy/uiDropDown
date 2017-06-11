@@ -19,17 +19,22 @@ var PATCHES = {
         'src/js/_uiDropDownUsersMatcher.js',
         'src/js/uiDropDownWidget.js'
     ],
-    'style': 'src/style/**/*.scss'
+    'style': 'src/style/**/*.scss',
+    'img': 'src/img/**/*'
 };
 
 
-var jsDistPath = function () {
+function jsDistPath() {
     return DIST_PATH + 'js';
-};
+}
 
-var styleDistPath = function () {
+function styleDistPath() {
     return DIST_PATH + 'css'
-};
+}
+
+function imgDistPath() {
+    return DIST_PATH + 'img'
+}
 
 
 function makeBundle(src, targetFileName, targetDir) {
@@ -53,7 +58,12 @@ gulp.task('buildStyle', function () {
         .pipe(livereload());
 });
 
-gulp.task('build', ['buildJs', 'buildStyle']);
+gulp.task('buildImg', function () {
+    return gulp.src(PATCHES.img).pipe(gulp.dest(imgDistPath()));
+});
+
+
+gulp.task('build', ['buildJs', 'buildStyle', 'buildImg']);
 
 gulp.task('watch', function () {
     livereload.listen();
