@@ -6,6 +6,9 @@
   height: 20px;
   padding: 3px; }
 
+.ui-drop-down-input::-ms-clear {
+  display: none; }
+
 .ui-drop-down-input-wrapper {
   border: 1px solid #d3d9de;
   font-family: 'Roboto', serif;
@@ -31,7 +34,14 @@
   background: #fff;
   z-index: 1;
   font-family: 'Roboto', serif;
-  font-size: 12px; }
+  font-size: 12px;
+  scrollbar-base-color: #dae1e8;
+  scrollbar-highlight-color: #fff;
+  scrollbar-face-color: #dae1e8;
+  scrollbar-3dlight-color: #dae1e8;
+  scrollbar-track-color: transparent;
+  scrollbar-arrow-color: #dae1e8;
+  scrollbar-shadow-color: #dae1e8; }
 
 .ui-drop-down-autocomplete-suggestions::-webkit-scrollbar {
   width: 7px; }

@@ -10,6 +10,16 @@
   z-index: 1;
   font-family: 'Roboto', serif;
   font-size: 12px;
+
+  scrollbar-base-color: #dae1e8;
+  scrollbar-highlight-color: #fff;
+  scrollbar-face-color: #dae1e8;
+  scrollbar-3dlight-color: #dae1e8;
+  scrollbar-track-color: transparent;
+  scrollbar-arrow-color: #dae1e8;
+  scrollbar-shadow-color: #dae1e8;
+
+
 }
 
 .ui-drop-down-autocomplete-suggestions::-webkit-scrollbar {

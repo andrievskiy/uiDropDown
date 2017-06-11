@@ -6,3 +6,7 @@
   height: 20px;
   padding: 3px;
 }
+
+.ui-drop-down-input::-ms-clear {
+    display: none;
+}
