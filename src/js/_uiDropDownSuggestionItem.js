@@ -12,8 +12,6 @@
         this.data = data;
         this.matchedBy = matchedBy;
 
-        this.name = uiDropDownHtmlEscaping(this.data.name);
-        this.name = this.name.replace(this.matchedBy, '<span class="ui-drop-down-highlight">' + this.matchedBy + '</span>');
         this.uid = this.data.uid;
         this.avatarUrl = this.data.avatarUrl || this.data.avatar || defaultAvatarUrl || '';
 
@@ -26,10 +24,15 @@
     }
     
     _DropDownSuggestionItem.prototype.render = function () {
+        this.highlight();
         var html = uiRenderTemplate(this.template, this);
         this.uiElement.html(html);
         return this.uiElement;
     };
 
+    _DropDownSuggestionItem.prototype.highlight = function () {
+        this.name = uiDropDownHtmlEscaping(this.data.name);
+        this.name = this.name.replace(this.matchedBy, '<span class="ui-drop-down-highlight">' + this.matchedBy + '</span>');
+    };
     window.DropDownSuggestionItem = DropDownSuggestionItem;
 })(window);

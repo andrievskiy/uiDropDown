@@ -24,7 +24,7 @@
 
 
     /**
-     * Класс враппера для работы с DOM елементами
+     * Класс враппера для работы с DOM элементами
      * @param selectorOrElement
      * @private
      */
@@ -65,7 +65,7 @@
     };
 
     /**
-     *
+     * clientLeft
      * @returns {number}
      */
     _UiElement.prototype.clientLeft = function () {
@@ -73,7 +73,7 @@
     };
 
     /**
-     *
+     * clientRight = в реалльности borderRightWidth
      * @returns {number}
      */
     _UiElement.prototype.clientRight = function () {
@@ -84,7 +84,7 @@
     };
 
     /**
-     *
+     * clientTop
      * @returns {number}
      */
     _UiElement.prototype.clientTop = function () {
@@ -93,7 +93,7 @@
 
 
     /**
-     *
+     * offsetWidth
      * @returns {number}
      */
     _UiElement.prototype.offsetWidth = function () {
@@ -101,17 +101,25 @@
     };
 
     /**
-     *
+     *clientWidth
      * @returns {number}
      */
     _UiElement.prototype.clientWidth = function () {
         return this.element.clientWidth;
     };
 
+    /**
+     * offsetHeight
+     * @returns {number}
+     */
     _UiElement.prototype.offsetHeight = function () {
         return this.element.offsetHeight;
     };
 
+    /**
+     * clientHeight
+     * @returns {number}
+     */
     _UiElement.prototype.clientHeight = function () {
         return this.element.clientHeight;
     };
@@ -127,16 +135,16 @@
     };
 
     /**
-     *
-     * @param cls
+     * Добавить класс
+     * @param cls {str}
      */
     _UiElement.prototype.addClass = function (cls) {
         this.element.classList.add(cls);
     };
 
     /**
-     *
-     * @param cls
+     * Удалить класс
+     * @param cls {str}
      */
     _UiElement.prototype.removeClass = function (cls) {
       this.element.classList.remove(cls);
@@ -167,7 +175,7 @@
 
     /**
      *
-     * @param value
+     * @param value {string | Number}
      * @returns {*|string|Number|undefined}
      */
     _UiElement.prototype.val = function (value) {
@@ -179,9 +187,9 @@
     };
 
     /**
-     *
-     * @param eventKey
-     * @param callback
+     * Подписка на событие
+     * @param eventKey {string}
+     * @param callback {Function}
      * @param stage
      */
     _UiElement.prototype.on = function (eventKey, callback, stage) {
@@ -189,26 +197,30 @@
     };
 
     /**
-     *
-     * @param evenKey
-     * @param callback
+     * Отмена подписки на событие
+     * @param evenKey {string}
+     * @param callback {Function}
      * @param stage
      */
     _UiElement.prototype.off = function (evenKey, callback, stage) {
         this.element.removeEventListener(evenKey, callback, stage);
     };
+
     /**
      * Удалить потомка
-     * @param child
+     * @param child {UiElement | Node}
      * @returns {Node}
      */
     _UiElement.prototype.removeChild =function (child) {
+        if(child instanceof _UiElement){
+            child = child.element;
+        }
         return this.element.removeChild(child);
     };
 
     /**
      * Добаить потомка к элементу
-     * @param child
+     * @param child {UiElement | Node}
      * @returns {Node}
      */
     _UiElement.prototype.append = function (child) {
@@ -218,6 +230,11 @@
         return this.element.appendChild(child);
     };
 
+    /**
+     * Установаить или поллучить innerHtml
+     * @param val {string}
+     * @returns {string | undefined}
+     */
     _UiElement.prototype.html = function (val) {
         if(val != undefined){
             this.element.innerHTML = val;
@@ -226,10 +243,18 @@
         return this.element.innerHTML;
     };
 
+    /**
+     * Удаление элемента из DOM
+     */
     _UiElement.prototype.remove = function(){
         this.element.parentNode.removeChild(this.element);
     };
 
+    /**
+     * Установить или получить css свойства
+     * @param css {object}
+     * @returns {CSSStyleDeclaration}
+     */
     _UiElement.prototype.css = function (css) {
         var self = this;
         if(!css){

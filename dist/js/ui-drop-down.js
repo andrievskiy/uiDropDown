@@ -32,6 +32,9 @@ if (!Object.assign) {
         }
     });
 }
+/**
+ * Простая обертка к XMLHttpRequest
+ */
 (function (window) {
     function _makeGetArgs(params) {
         var parts = [];
@@ -45,6 +48,17 @@ if (!Object.assign) {
         return code >= 200 && code < 300;
     }
 
+    /**
+     * Совершает ajax запрос
+     * @param options {object} - параметры запроса
+     * @param options.method {string} - HTTP метод запроса (GET|POST|PUT|DELETE)
+     * @param options.url {string} - Url для запрсоа
+     * @param options.params {object} - Uri (GET) параметра запроса
+     * @param options.onError {Function} - Функция-обработчик ошибок
+     * @param options.onSuccess {Function} -  Функция-обработчик успешного запроса
+     * @param options.data {object} - Данные для загрузки (payload)
+     * @returns {XMLHttpRequest}
+     */
     function uiDropDownAjax(options) {
         var xhr = new XMLHttpRequest();
         var url = options.url + _makeGetArgs(options.params);
@@ -66,6 +80,7 @@ if (!Object.assign) {
                             response = JSON.parse(xhr.responseText);
                         } catch (e) {
                             console.error(e);
+                            response = null;
                         }
                     } else {
                         response = xhr.responseText;
@@ -86,6 +101,54 @@ if (!Object.assign) {
     }
 
     window.uiDropDownajax = uiDropDownAjax;
+})(window);
+/**
+ * Утилиты для работы с html
+ */
+(function (window) {
+
+    var ESCAPE_CHARS = {
+        '¢': 'cent',
+        '£': 'pound',
+        '¥': 'yen',
+        '€': 'euro',
+        '©': 'copy',
+        '®': 'reg',
+        '<': 'lt',
+        '>': 'gt',
+        '"': 'quot',
+        '&': 'amp',
+        '\'': '#39'
+    }, regex;
+
+    function _makeRegexpString() {
+        var regexString = '[';
+
+        for (var key in ESCAPE_CHARS) {
+            regexString += key;
+        }
+        regexString += ']';
+
+        return regexString;
+    }
+
+    regex = new RegExp(_makeRegexpString(), 'g');
+
+    /**
+     * Производит экранирование html символов
+     * @param str
+     * @returns {*}
+     */
+    function uiDropDownHtmlEscaping(str) {
+        if(typeof str != 'string'){
+            return str;
+        }
+        return str.replace(regex, function (m) {
+            return '&' + ESCAPE_CHARS[m] + ';';
+        });
+    }
+
+    window.uiDropDownHtmlEscaping = uiDropDownHtmlEscaping;
 })(window);
 /**
  * Модуль для работы с DOM
@@ -113,7 +176,7 @@ if (!Object.assign) {
 
 
     /**
-     * Класс враппера для работы с DOM елементами
+     * Класс враппера для работы с DOM элементами
      * @param selectorOrElement
      * @private
      */
@@ -154,7 +217,7 @@ if (!Object.assign) {
     };
 
     /**
-     *
+     * clientLeft
      * @returns {number}
      */
     _UiElement.prototype.clientLeft = function () {
@@ -162,7 +225,7 @@ if (!Object.assign) {
     };
 
     /**
-     *
+     * clientRight = в реалльности borderRightWidth
      * @returns {number}
      */
     _UiElement.prototype.clientRight = function () {
@@ -173,7 +236,7 @@ if (!Object.assign) {
     };
 
     /**
-     *
+     * clientTop
      * @returns {number}
      */
     _UiElement.prototype.clientTop = function () {
@@ -182,7 +245,7 @@ if (!Object.assign) {
 
 
     /**
-     *
+     * offsetWidth
      * @returns {number}
      */
     _UiElement.prototype.offsetWidth = function () {
@@ -190,17 +253,25 @@ if (!Object.assign) {
     };
 
     /**
-     *
+     *clientWidth
      * @returns {number}
      */
     _UiElement.prototype.clientWidth = function () {
         return this.element.clientWidth;
     };
 
+    /**
+     * offsetHeight
+     * @returns {number}
+     */
     _UiElement.prototype.offsetHeight = function () {
         return this.element.offsetHeight;
     };
 
+    /**
+     * clientHeight
+     * @returns {number}
+     */
     _UiElement.prototype.clientHeight = function () {
         return this.element.clientHeight;
     };
@@ -216,16 +287,16 @@ if (!Object.assign) {
     };
 
     /**
-     *
-     * @param cls
+     * Добавить класс
+     * @param cls {str}
      */
     _UiElement.prototype.addClass = function (cls) {
         this.element.classList.add(cls);
     };
 
     /**
-     *
-     * @param cls
+     * Удалить класс
+     * @param cls {str}
      */
     _UiElement.prototype.removeClass = function (cls) {
       this.element.classList.remove(cls);
@@ -256,7 +327,7 @@ if (!Object.assign) {
 
     /**
      *
-     * @param value
+     * @param value {string | Number}
      * @returns {*|string|Number|undefined}
      */
     _UiElement.prototype.val = function (value) {
@@ -268,9 +339,9 @@ if (!Object.assign) {
     };
 
     /**
-     *
-     * @param eventKey
-     * @param callback
+     * Подписка на событие
+     * @param eventKey {string}
+     * @param callback {Function}
      * @param stage
      */
     _UiElement.prototype.on = function (eventKey, callback, stage) {
@@ -278,26 +349,30 @@ if (!Object.assign) {
     };
 
     /**
-     *
-     * @param evenKey
-     * @param callback
+     * Отмена подписки на событие
+     * @param evenKey {string}
+     * @param callback {Function}
      * @param stage
      */
     _UiElement.prototype.off = function (evenKey, callback, stage) {
         this.element.removeEventListener(evenKey, callback, stage);
     };
+
     /**
      * Удалить потомка
-     * @param child
+     * @param child {UiElement | Node}
      * @returns {Node}
      */
     _UiElement.prototype.removeChild =function (child) {
+        if(child instanceof _UiElement){
+            child = child.element;
+        }
         return this.element.removeChild(child);
     };
 
     /**
      * Добаить потомка к элементу
-     * @param child
+     * @param child {UiElement | Node}
      * @returns {Node}
      */
     _UiElement.prototype.append = function (child) {
@@ -307,6 +382,11 @@ if (!Object.assign) {
         return this.element.appendChild(child);
     };
 
+    /**
+     * Установаить или поллучить innerHtml
+     * @param val {string}
+     * @returns {string | undefined}
+     */
     _UiElement.prototype.html = function (val) {
         if(val != undefined){
             this.element.innerHTML = val;
@@ -315,10 +395,18 @@ if (!Object.assign) {
         return this.element.innerHTML;
     };
 
+    /**
+     * Удаление элемента из DOM
+     */
     _UiElement.prototype.remove = function(){
         this.element.parentNode.removeChild(this.element);
     };
 
+    /**
+     * Установить или получить css свойства
+     * @param css {object}
+     * @returns {CSSStyleDeclaration}
+     */
     _UiElement.prototype.css = function (css) {
         var self = this;
         if(!css){
@@ -343,46 +431,317 @@ if (!Object.assign) {
     window.UiElement = UiElement;
 
 })(window);
+/**
+ * Константы для работы с различными расладками.
+ * Используются в uiDropDownKeyBoardUtil
+ */
 (function (window) {
-    var ESCAPE_CHARS = {
-        '¢': 'cent',
-        '£': 'pound',
-        '¥': 'yen',
-        '€': 'euro',
-        '©': 'copy',
-        '®': 'reg',
-        '<': 'lt',
-        '>': 'gt',
-        '"': 'quot',
-        '&': 'amp',
-        '\'': '#39'
-    }, regex;
+    'use strict';
+    var LATIN_TO_CYRILLIC_KEYBOARD = {
+        'q': 'й',
+        'w': 'ц',
+        'e': 'у',
+        'r': 'к',
+        't': 'е',
+        'y': 'н',
+        'u': 'г',
+        'i': 'ш',
+        'o': 'щ',
+        'p': 'з',
+        '{': 'х',
+        '[': 'х',
+        ']': 'ъ',
+        '}': 'ъ',
+        'a': 'ф',
+        's': 'ы',
+        'd': 'в',
+        'f': 'а',
+        'g': 'п',
+        'h': 'р',
+        'j': 'о',
+        'k': 'л',
+        'l': 'д',
+        ';': 'ж',
+        ':': 'ж',
+        "'": 'э',
+        '"': 'э',
+        'z': 'я',
+        'x': 'ч',
+        'c': 'с',
+        'v': 'м',
+        'b': 'и',
+        'n': 'т',
+        'm': 'ь',
+        ',': 'б',
+        '<': 'б',
+        '>': 'ю',
+        '.': 'ю'
+    };
 
-    function _makeRegexpString() {
-        var regexString = '[';
+    var CYRILLIC_TO_LATIN_KEYBOARD = {};
 
-        for (var key in ESCAPE_CHARS) {
-            regexString += key;
-        }
-        regexString += ']';
+    Object.keys(LATIN_TO_CYRILLIC_KEYBOARD).map(function (key) {
+        var k = LATIN_TO_CYRILLIC_KEYBOARD[key];
+        CYRILLIC_TO_LATIN_KEYBOARD[k] = key;
+    });
 
-        return regexString;
-    }
+    var LATIN_TO_CYRILLIC_FIRST_REPLACE_MAP = {
+        'shch': 'щ',
+        'sch': 'щ',
+        'yo': 'ё',
+        'zh': 'ж',
+        'kh': 'х',
+        'ts': 'ц',
+        'ch': 'ч',
+        'sh': 'ш',
+        'eh': 'э',
+        'yu': 'ю',
+        'ya': 'я',
+        "'": 'ь'
+    };
 
-    regex = new RegExp(_makeRegexpString(), 'g');
+    var CYRILLIC_TO_LATIN_FIRST_REPLACE_MAP = {};
 
-    function uiDropDownHtmlEscaping(str) {
-        if(typeof str != 'string'){
-            return str;
-        }
-        return str.replace(regex, function (m) {
-            return '&' + ESCAPE_CHARS[m] + ';';
-        });
-    }
+    Object.keys(LATIN_TO_CYRILLIC_FIRST_REPLACE_MAP).map(function (key) {
+        var k = LATIN_TO_CYRILLIC_FIRST_REPLACE_MAP[key];
+        CYRILLIC_TO_LATIN_FIRST_REPLACE_MAP[k] = key;
+    });
 
-    window.uiDropDownHtmlEscaping = uiDropDownHtmlEscaping;
+
+    var MULTIPLE_LATIN_CHARS = {
+        'y': ['ы', 'ё', 'ю', 'я'],
+        'z': ['ж', 'з'],
+        'k': ['х', 'к'],
+        't': ['ц', 'т'],
+        'c': ['ц', 'ч', 'щ'],
+        's': ['ш', 'щ', 'с'],
+        'e': ['е', 'э']
+    };
+
+    var LATIN_ALPHABET = 'abvgdezijklmnoprstufhcyABVGDEZIJKLMNOPRSTUFHCYёЁ';
+    var CYRILLIC_ALPHABET = 'абвгдезийклмнопрстуфхцыАБВГДЕЗИЙКЛМНОПРСТУФХЦЫеЕ';
+
+    window.uiDropDownKeyboardConstants = {
+        LATIN_TO_CYRILLIC_KEYBOARD: LATIN_TO_CYRILLIC_KEYBOARD,
+        CYRILLIC_TO_LATIN_KEYBOARD: CYRILLIC_TO_LATIN_KEYBOARD,
+        LATIN_TO_CYRILLIC_FIRST_REPLACE_MAP: LATIN_TO_CYRILLIC_FIRST_REPLACE_MAP,
+        CYRILLIC_TO_LATIN_FIRST_REPLACE_MAP: CYRILLIC_TO_LATIN_FIRST_REPLACE_MAP,
+        MULTIPLE_LATIN_CHARS: MULTIPLE_LATIN_CHARS,
+        LATIN_ALPHABET: LATIN_ALPHABET,
+        CYRILLIC_ALPHABET: CYRILLIC_ALPHABET
+    };
+
 })(window);
+/**
+ * Модуль для работы с вариантами различных расладок.
+ * Осуществляет поиск всех возможных преставлений строки.
+ * Например кщпщя -> rogoz -> рогоз
+ *
+ */
+(function (window) {
+    'use strict';
+
+    /**
+     * Производит сортировку по длине строки.
+     * @param a
+     * @param b
+     * @returns {number}
+     * @private
+     */
+    function _sortKeysComparator(a, b) {
+        if (a.length < b.length) {
+            return -1;
+        }
+        if (a.length > b.length) {
+            return 1;
+        }
+        return 0;
+    }
+
+    function _replaceAlaphabet(str, srcAlphabet, dstAlphabet) {
+        for (var i = 0; i < srcAlphabet.length; i++) {
+            str = str.split(srcAlphabet.charAt(i)).join(dstAlphabet.charAt(i));
+        }
+        return str;
+    }
+
+    /**
+     * _latinToCyrillicVariants -> возвращает возможные варианты раскладки для латнских букв по строке
+     * @param str {string}
+     * @returns {Array}
+     * @private
+     */
+    function _latinToCyrillicVariants(str) {
+
+        var variants;
+        var chars;
+        var firstChars;
+
+        // Сначала происходит замена "букв" из нескольких символов
+
+        firstChars = Object.keys(uiDropDownKeyboardConstants.LATIN_TO_CYRILLIC_FIRST_REPLACE_MAP);
+        firstChars.sort(_sortKeysComparator);
+        firstChars.forEach(function (char) {
+            str = str.split(char).join(uiDropDownKeyboardConstants.LATIN_TO_CYRILLIC_FIRST_REPLACE_MAP[char]);
+        });
+
+        chars = str.split('');
+        variants = _extendVariants(chars);
+
+        variants = variants.map(function (variant) {
+            return _replaceAlaphabet(
+                variant.join(''), uiDropDownKeyboardConstants.LATIN_ALPHABET, uiDropDownKeyboardConstants.CYRILLIC_ALPHABET
+            );
+        });
+
+        return variants;
+
+
+        /**
+         * Производит расширение вариантов для  символов соответствующих нескольким русским буквам
+         * при условии что символ находится в конце строки (т.е. невозиожно определить к чему он приводится)
+         * @param chars {string}
+         * @returns {Array}
+         * @private
+         */
+        function _extendVariants(chars) {
+            var variants = [chars];
+            var lastChart = chars[chars.length - 1];
+            var chartVariants;
+
+            if (uiDropDownKeyboardConstants.MULTIPLE_LATIN_CHARS[lastChart]) {
+                variants = [];
+                chartVariants = uiDropDownKeyboardConstants.MULTIPLE_LATIN_CHARS[lastChart];
+                chartVariants.forEach(function (chartVar) {
+
+                    var newVariant = chars.slice(0, chars.length - 1);
+                    newVariant.push(chartVar);
+                    variants.push(newVariant);
+                });
+            }
+            return variants;
+        }
+    }
+
+
+    function _cyrillicToLatinVariants(str) {
+
+        var firstChars = Object.keys(uiDropDownKeyboardConstants.CYRILLIC_TO_LATIN_FIRST_REPLACE_MAP);
+        firstChars.sort(_sortKeysComparator);
+
+        // Сначала происходит замена "букв" из нескольких символов
+        firstChars.forEach(function (char) {
+            str = str.split(char).join(uiDropDownKeyboardConstants.CYRILLIC_TO_LATIN_FIRST_REPLACE_MAP[char]);
+        });
+
+        var variant = _replaceAlaphabet(str, uiDropDownKeyboardConstants.CYRILLIC_ALPHABET, uiDropDownKeyboardConstants.LATIN_ALPHABET);
+
+        return [variant];
+    }
+
+
+    /**
+     * toCyrillicKeyboard -> Производит замену латинской раскладки на кириллицу
+     * @param str {string}
+     * @returns {string}
+     */
+    function toCyrillicKeyboard(str) {
+        var result = '';
+        var chars = str.split('');
+        chars.forEach(function (chart) {
+            result += uiDropDownKeyboardConstants.LATIN_TO_CYRILLIC_KEYBOARD[chart] || chart;
+        });
+
+        return result;
+    }
+
+    /**
+     * toLatinKeyboard -> Производит замену кириллической раскладки на латинскую
+     * @param str {string}
+     * @returns {string}
+     */
+    function toLatinKeyboard(str) {
+        var result = '';
+        var chars = str.split('');
+        chars.forEach(function (chart) {
+            result += uiDropDownKeyboardConstants.CYRILLIC_TO_LATIN_KEYBOARD[chart] || chart;
+        });
+        return result;
+    }
+
+
+    /**
+     * getPrefixVariables -> Возвращает все варианты представления по строке
+     *
+     * @param prefix {string}
+     * @returns {Array}
+     * @private
+     */
+    function getKeyboardsVariables(prefix) {
+        var variables = [];
+        var cyrillicKeyboard;
+        var latinKeyboard;
+
+        // Получение всех кирилических вариантов по латинице
+        // За счет того, что латиница уже, то одну строку на ней
+        // Можжно представить несколькими на кирилице
+        // Например: z = ж | z = з
+
+        variables = variables.concat(_latinToCyrillicVariants(prefix));
+
+        // Приведение кириллицы к латинице
+        // Например: юа => yoa
+        variables.concat(_cyrillicToLatinVariants(prefix));
+
+        // Приведение расладок
+
+        cyrillicKeyboard = toCyrillicKeyboard(prefix);
+        latinKeyboard = toLatinKeyboard(prefix);
+        variables.push(cyrillicKeyboard);
+        variables.push(latinKeyboard);
+
+        // Транслитерация для раскладок
+        // Например: кщпщя -> rogoz -> рогоз
+
+        variables.push(_cyrillicToLatinVariants(cyrillicKeyboard));
+        variables = variables.concat(_latinToCyrillicVariants(latinKeyboard));
+
+        // Вывод уникальных валидаторов
+        variables = variables.filter(function (item, idx, array) {
+            return array.indexOf(item) === idx;
+        });
+
+        return variables;
+    }
+
+
+    /**
+     * Набор утилит для работы с раскладкми.
+     * toCyrillicKeyboard -> Производит замену латинской раскладки на кириллицу
+     * toLatinKeyboard -> Производит замену кириллической раскладки на латиницу
+     * getPrefixVariables -> Возвращает все варианты представления по строке
+     * @type {{toCyrillicKeyboard: toCyrillicKeyboard, toLatinKeyboard: toLatinKeyboard, getPrefixVariables: getKeyboardsVariables}}
+     */
+    window.uiDropDownKeyBoardUtil = {
+        toCyrillicKeyboard: toCyrillicKeyboard,
+        toLatinKeyboard: toLatinKeyboard,
+        getPrefixVariables: getKeyboardsVariables
+    };
+
+})(window);
+/**
+ * Модуль для работы с шаблонами
+ */
 ;(function (window) {
+
+    /**
+     * Рендеринг шаблонов
+     * @param template {string} - Шаблон для рендеринга
+     *                            Подстановки производяться по швблону {name}
+     *                            При этом при указании {name::html} для данного значения не будет производиться экранирование
+     * @param data {object} - Даные для рендеринга. Поиск даныных для подставновок производится по ключам этого объекта
+     * @returns {string}
+     */
     function renderTemplate(template, data) {
         return template.replace(/{([\w|:]+)}/g, function (match, key) {
 
@@ -394,6 +753,7 @@ if (!Object.assign) {
             return uiDropDownHtmlEscaping(data[key] || '');
         })
     }
+
     window.uiRenderTemplate = renderTemplate;
 })(window);
 ;(function (window) {
@@ -410,8 +770,6 @@ if (!Object.assign) {
         this.data = data;
         this.matchedBy = matchedBy;
 
-        this.name = uiDropDownHtmlEscaping(this.data.name);
-        this.name = this.name.replace(this.matchedBy, '<span class="ui-drop-down-highlight">' + this.matchedBy + '</span>');
         this.uid = this.data.uid;
         this.avatarUrl = this.data.avatarUrl || this.data.avatar || defaultAvatarUrl || '';
 
@@ -424,11 +782,16 @@ if (!Object.assign) {
     }
     
     _DropDownSuggestionItem.prototype.render = function () {
+        this.highlight();
         var html = uiRenderTemplate(this.template, this);
         this.uiElement.html(html);
         return this.uiElement;
     };
 
+    _DropDownSuggestionItem.prototype.highlight = function () {
+        this.name = uiDropDownHtmlEscaping(this.data.name);
+        this.name = this.name.replace(this.matchedBy, '<span class="ui-drop-down-highlight">' + this.matchedBy + '</span>');
+    };
     window.DropDownSuggestionItem = DropDownSuggestionItem;
 })(window);
 ;(function (window) {
@@ -465,230 +828,25 @@ if (!Object.assign) {
     window.DropDownSelectedSuggestionItem = DropDownSelectedSuggestionItem;
 })(window);
 (function (window) {
-    'use strict';
-    var LATIN_TO_CYRILLIC_KEYBOARD = {
-        'q': 'й',
-        'w': 'ц',
-        'e': 'у',
-        'r': 'к',
-        't': 'е',
-        'y': 'н',
-        'u': 'г',
-        'i': 'ш',
-        'o': 'щ',
-        'p': 'з',
-        '{': 'х',
-        '}': 'ъ',
-        'a': 'ф',
-        's': 'ы',
-        'd': 'в',
-        'f': 'а',
-        'g': 'п',
-        'h': 'р',
-        'j': 'о',
-        'k': 'л',
-        'l': 'д',
-        ';': 'ж',
-        "'": 'э',
-        'z': 'я',
-        'x': 'ч',
-        'c': 'с',
-        'v': 'м',
-        'b': 'и',
-        'n': 'т',
-        'm': 'ь',
-        ',': 'б',
-        '.': 'ю'
-    };
-    var CYRILLIC_TO_LATIN_KEYBOARD = {};
-
-    Object.keys(LATIN_TO_CYRILLIC_KEYBOARD).map(function (key) {
-        var k = LATIN_TO_CYRILLIC_KEYBOARD[key];
-        CYRILLIC_TO_LATIN_KEYBOARD[k] = key;
-    });
-
-
-    var LATIN_TO_CYRILLIC_FIRST_REPLACE_MAP = {
-        'shch': 'щ',
-        'sch': 'щ',
-        'yo': 'ё',
-        'zh': 'ж',
-        'kh': 'х',
-        'ts': 'ц',
-        'ch': 'ч',
-        'sh': 'ш',
-        'eh': 'э',
-        'yu': 'ю',
-        'ya': 'я',
-        "'": 'ь'
-    };
-
-    var CYRILLIC_TO_LATIN_FIRST_REPLACE_MAP = {};
-
-    Object.keys(LATIN_TO_CYRILLIC_FIRST_REPLACE_MAP).map(function (key) {
-        var k = LATIN_TO_CYRILLIC_FIRST_REPLACE_MAP[key];
-        CYRILLIC_TO_LATIN_FIRST_REPLACE_MAP[k] = key;
-    });
-
-    var MULTIPLE_LATIN_CHARTS = {
-        'y': ['ы', 'ё', 'ю', 'я'],
-        'z': ['ж', 'з'],
-        'k': ['х', 'к'],
-        't': ['ц', 'т'],
-        'c': ['ц', 'ч',  'щ'],
-        's': ['ш', 'щ', 'с'],
-        'e': ['е', 'э']
-    };
-
-    var LATIN_ALPHABET = 'abvgdezijklmnoprstufhcyABVGDEZIJKLMNOPRSTUFHCYёЁ';
-    var CYRILLIC_ALPHABET = 'абвгдезийклмнопрстуфхцыАБВГДЕЗИЙКЛМНОПРСТУФХЦЫеЕ';
-
-
-    function _toCyrillicKeyboard(str) {
-        var result = '';
-        var charts = str.split('');
-        charts.forEach(function (chart) {
-            result += LATIN_TO_CYRILLIC_KEYBOARD[chart] || chart;
-        });
-
-        return result;
-    }
-
-    function _toLatinKeyboard(str) {
-        var result = '';
-        var charts = str.split('');
-        charts.forEach(function (chart) {
-            result += CYRILLIC_TO_LATIN_KEYBOARD[chart] || chart;
-        });
-        return result;
-    }
-
-    /**
-     * Получение всех возможных уникальных вариантов для поиска
-     *
-     * @param prefix
-     * @returns {Array}
-     * @private
-     */
-    function _getPrefixVariables(prefix) {
-        var variables = [];
-        var cyrillicKeyboard;
-        var latinKeyboard;
-
-        // Получение всех кирилических вариантов по латинице
-        // За счет того, что латиница уже, то одну строку на ней
-        // Можжно представить несколькими на кирилице
-        // Например: z = ж/z = з
-        variables = variables.concat(_latinToCyrillicVariants(prefix));
-
-        // Приведение кириллицы к латинице
-        // Например: юа => yoa
-        variables.concat(_cyrillicToLatinVariants(prefix));
-
-        // Приведение расладок
-
-        cyrillicKeyboard = _toCyrillicKeyboard(prefix);
-        latinKeyboard = _toLatinKeyboard(prefix);
-        variables.push(cyrillicKeyboard);
-        variables.push(latinKeyboard);
-
-        // Транслитерация для раскладок
-        // Например: кщпщя -> rogoz -> рогоз
-        variables.push(_cyrillicToLatinVariants(cyrillicKeyboard));
-        variables = variables.concat(_latinToCyrillicVariants(latinKeyboard));
-
-        // Вывод уникальных валидаторов
-        // TODO: Оптимизироввать через set
-        variables = variables.filter(function (item, idx, array) {
-            return array.indexOf(item) === idx;
-        });
-
-        return variables;
-    }
-
-
-    function _latinToCyrillicVariants(str) {
-        var variants;
-        var charts;
-
-        // Сначала происходит замена "букв" из нескольких символов
-        // TODO: Добавить сортировку ключей
-        Object.keys(LATIN_TO_CYRILLIC_FIRST_REPLACE_MAP).forEach(function (char) {
-           str = str.split(char).join(LATIN_TO_CYRILLIC_FIRST_REPLACE_MAP[char]);
-        });
-
-        charts = str.split('');
-
-        variants = _extendVariants(charts);
-        variants = variants.map(function (variant) {
-            return _replace(variant.join(''));
-        });
-
-        return variants;
-
-        /**
-         * Производит расширение вариантов для  символов соответствующих нескольким русским буквам
-         * при условии что символ находится в конце строки (т.е. невозиожно определить к чему он приводится)
-         * @param charts
-         * @returns {*[]}
-         * @private
-         */
-        function _extendVariants(charts) {
-            var variants = [charts];
-            var lastChart = charts[charts.length - 1];
-            var chartVariants;
-
-            if(MULTIPLE_LATIN_CHARTS[lastChart]){
-                variants = [];
-                chartVariants = MULTIPLE_LATIN_CHARTS[lastChart];
-                chartVariants.forEach(function (chartVar) {
-
-                    var newVariant = charts.slice(0, charts.length - 1);
-                    newVariant.push(chartVar);
-                    variants.push(newVariant);
-                });
-            }
-            return variants;
-        }
-
-        function _replace(str) {
-            for (var i = 0; i < LATIN_ALPHABET.length; i++) {
-                str = str.split(LATIN_ALPHABET.charAt(i)).join(CYRILLIC_ALPHABET.charAt(i));
-            }
-            return str;
-        }
-    }
-
-
-    function _cyrillicToLatinVariants(str) {
-        // TODO: Добавить сортировку ключей
-        // Сначала происходит замена "букв" из нескольких символов
-        Object.keys(CYRILLIC_TO_LATIN_FIRST_REPLACE_MAP).forEach(function (char) {
-           str = str.split(char).join(CYRILLIC_TO_LATIN_FIRST_REPLACE_MAP[char]);
-        });
-
-        function _replace(str) {
-            for (var i = 0; i < CYRILLIC_ALPHABET.length; i++) {
-                str = str.split(CYRILLIC_ALPHABET.charAt(i)).join(LATIN_ALPHABET.charAt(i));
-            }
-            return str;
-        }
-        return [_replace(str)];
-    }
-
-
     /**
      * Производит сравнение по префиксу с учетом раскладок и транслитерации
-     * @param prefix {String}
-     * @param suggestion {Object}
-     * @param selectedSuggestions {Array}
-     * @param options {Object}
+     * @param prefix {String} - префикс по которому производится поиск
+     * @param suggestion {Object} - предложение, котрое нужно проверить
+     * @param selectedSuggestions {Array} - уже выбранные предложения
+     * @param options {Object} - список опций
      * @param options.byProperty {String} - свойтво по которму производится сравненение
      * @param options.uidProperty {String} - свойтво уникальный идентификатор
-     * @returns {Object}
+     * @returns {Object} - результат поиска
+     *    {
+     *      matched: {Boolean} - флаг подходит или нет объект под префикс,
+     *      matchedBy: {string} - подстрока по которой произошло совпадение
+     *    }
      */
+
+
     function uiDropDownUsersMatcher(prefix, suggestion, selectedSuggestions, options) {
-        // TODO: произветси оптимизацию поиска
+        // TODO: Скорость работы через регулярные выражения оказалась ниже
+        // TODO: Придумать способ повысить эффективность поиска
         options = options || { byProperty: 'name', uidProperty: 'uid' };
 
         var result = {
@@ -703,7 +861,7 @@ if (!Object.assign) {
 
         prefix = prefix.trim().toLowerCase();
 
-        prefixes = _getPrefixVariables(prefix);
+        prefixes = uiDropDownKeyBoardUtil.getPrefixVariables(prefix);
 
         suggestionParts = suggestion[options.byProperty].split(' ');
 
@@ -771,6 +929,7 @@ if (!Object.assign) {
         serverSideMethod: 'GET',
         serverSideFindProperty: 'domain',
         suggestionIdentifierProperty: 'uid',
+        serverLimit: 1000,
 
         suggestionTemplateWithAvatar: DEFAULT_SUGGESTION_TEMPLATE,
         suggestionTemplateWithoutAvatar: DEFAULT_SUGGESTION_TEMPLATE_WITHOUT_AVATARS,
@@ -795,238 +954,91 @@ if (!Object.assign) {
             });
         };
 
+
         self.options = Object.assign({}, DEFAULT_OPTIONS, options);
+        self.matcher = self.options.matcher || uiDropDownUsersMatcher;
+        self.suggestions = self.options.suggestions || [];
+        self.matchedSuggestions = [];
+        self.selectedItems = Object.create(null);
+
+        function init() {
+            self._suggestionTemplate = _getSuggestionTemplate();
+            self._selectedItemTemplate = _getSelectedItemTemplate();
+            _initInputElement();
+
+            self._dropDownInputWrapper = _createDropDownInputWrapper();
+            self._suggestionsWrapper = _createSuggestionWrapper();
+            self._selectedContainer = _createSelectedSuggestionsContainer();
+            self._dropDownIcon = _createDropDownIcon();
+            _appendElementsToDom();
+            _initBindings();
+        }
+
+
+        function open() {
+            if ((!self.options.multiple && self.options.autocomplete) || !self.getSelected().length) {
+                _hideSelectedContainer();
+            }
+            _showSuggestionList();
+            search();
+        }
+
+        function search() {
+            _lookup();
+            _renderAllMatchedSuggestions();
+        }
+
+        function close() {
+            _hideSuggestionsList();
+            if (self.options.multiple && self.getSelected().length) {
+                _hideInputElement();
+            }
+            if (!self.options.multiple && self.getSelected().length) {
+                _hideInputElement();
+                _showSelectedContainer();
+            }
+        }
 
         self._cache = {};
         self._lastVal = null;
         self._serverQuryIsRunning = false;
-
-        self._suggestionTemplate = getSuggestionTemplate();
-        self._selectedItemTemplate = getSelectedItemTemplate();
-
-        self.inputElement = UiElement(selector);
-        self.inputElement.addClass('ui-drop-down-input');
-        if (!self.options.autocomplete) {
-            self.inputElement.element.setAttribute('readonly', 'true');
-        }
-
-        self.suggestions = self.options.suggestions || [];
-        self.matcher = self.options.matcher || uiDropDownUsersMatcher;
-
-        self.matchedSuggestions = [];
         self._matchesSuggestionIds = Object.create(null);
-        self.selectedItems = Object.create(null);
 
-        self._dropDownInputWrapper = createDropDownInputWrapper();
-        self._suggestionsWrapper = createSuggestionWrapper();
-        self._selectedContainer = createSelectedSuggestionsContainer();
-        self._dropDownIcon = createDropDownIcon();
-        appendElementsToDom();
+        init();
 
 
-        self.inputElement.on('focus', onFocusInputHandler);
-        self.inputElement.on('keyup', deBounce(onKeyUpInputHandler, 300));
-        self.inputElement.on('blur', onBlurInputElement);
+        /*************************************************
+         * Внутненние методы для работы с DOM.
+         * Созадние елементов и их отображение
+         ************************************************/
 
-        self._dropDownInputWrapper.on('click', onClickWrapper);
 
-        self._suggestionsWrapper.on('mouseenter', onHoverSuggestionsWrapper);
-        self._suggestionsWrapper.on('mouseleave', onMouseLeaveSuggestionsWrapper);
+        //  --------------------------
+        //  Инициализация и создание
+        //  --------------------------
 
-        self._selectedContainer.on('click', onClickSelectedContainer);
-
-        function appendElementsToDom() {
-            self.inputElement.wrap(self._dropDownInputWrapper);
-            document.body.appendChild(self._suggestionsWrapper.element);
-
-            self._dropDownInputWrapper.element.insertBefore(self._dropDownIcon.element, self.inputElement.element);
-            self._dropDownInputWrapper.element.insertBefore(self._selectedContainer.element, self.inputElement.element);
-
-            var originInputElementW = self.inputElement.clientWidth();
-            console.log(originInputElementW);
-            console.log('offsetWidth', self._dropDownIcon.offsetWidth());
-
-            self.inputElement.css({
-                width: originInputElementW - self._dropDownIcon.offsetWidth()- 15 + 'px'
-            });
+        function _initInputElement() {
+            self.inputElement = UiElement(selector);
+            self.inputElement.addClass('ui-drop-down-input');
+            if (!self.options.autocomplete) {
+                self.inputElement.element.setAttribute('readonly', 'true');
+            }
         }
 
-        function createDropDownIcon(){
+        function _createDropDownIcon() {
             var e = UiElement.create('div');
             e.addClass('ui-widget-drop-down-icon');
             return e;
         }
 
 
-        function getSuggestionTemplate() {
-            if (self.options.showAvatars) {
-                return self.options.suggestionTemplateWithAvatar;
-            }
-            return self.options.suggestionTemplateWithoutAvatar;
-        }
-
-        function getSelectedItemTemplate() {
-            if (self.options.multiple) {
-                return self.options.selectedMultipleItemTemplate;
-            }
-            return self.options.selectedSingleItemTemplate;
-        }
-
-        function isSelected(item) {
-            return Boolean(self.selectedItems[item[self.options.suggestionIdentifierProperty]]);
-        }
-
-        function addItemToSelected(item) {
-            self.selectedItems[item[self.options.suggestionIdentifierProperty]] = item;
-        }
-
-        function isInMatchedSuggestions(item) {
-            return Boolean(self._matchesSuggestionIds[item[self.options.suggestionIdentifierProperty]]);
-        }
-
-        function addToMatchedSuggestions(item) {
-            self.matchedSuggestions.push(item);
-            self._matchesSuggestionIds[item[self.options.suggestionIdentifierProperty]] = true;
-        }
-
-        function onClickSelectedContainer(event) {
-            var target = event.target;
-            if (target.getAttribute('data-is-remove-button') == 'true') {
-                removeSelectedSuggestion(target);
-                if (!self.getSelected().length) {
-                    hideSelectedContainer();
-                    showInputElement();
-                }
-            } else {
-                activateInputElement();
-            }
-
-        }
-
-        function open() {
-            if ((!self.options.multiple && self.options.autocomplete) || !self.getSelected().length) {
-                hideSelectedContainer();
-            }
-
-            showSuggestionList();
-            search();
-        }
-
-        function search() {
-            lookup();
-            renderAllMatchedSuggestions();
-        }
-
-        function close() {
-            if (self._suggestionsWrapper.hovered) {
-                return;
-            }
-            hideSuggestiosnList();
-            if (self.options.multiple && self.getSelected().length) {
-                hideInputElement();
-            }
-            if (!self.options.multiple && self.getSelected().length) {
-                hideInputElement();
-                showSelectedContainer();
-            }
-        }
-
-        function onFocusInputHandler() {
-            open();
-        }
-
-        function onKeyUpInputHandler() {
-            search();
-        }
-
-        function onClickWrapper(event) {
-            if (event.target === this) {
-                activateInputElement();
-            }
-            if(event.target == self._dropDownIcon.element){
-                activateInputElement();
-            }
-        }
-
-        function onBlurInputElement() {
-            close();
-        }
-
-        function onHoverSuggestionsWrapper() {
-            self._suggestionsWrapper.hovered = true;
-        }
-
-        function onMouseLeaveSuggestionsWrapper() {
-            self._suggestionsWrapper.hovered = false;
-        }
-
-        function _clearLastSelected() {
-            Object.keys(self.selectedItems).forEach(function (prop) {
-                delete self.selectedItems[prop];
-            });
-            var children = Array.prototype.slice.apply(self._selectedContainer.element.children);
-            children.forEach(function (child) {
-                child.parentNode.removeChild(child);
-            });
-
-        }
-
-        function onSelectSuggestion(item, element) {
-            if (!self.options.multiple) {
-                _clearLastSelected();
-            }
-            addItemToSelected(item);
-            element.parentNode.removeChild(element);
-            self.inputElement.val('');
-            hideSuggestiosnList();
-            renderSelectedSuggestion(item);
-            hideInputElement();
-            // Событие не будет послано брузером. Поэтому нужно простваить руками.
-            self._suggestionsWrapper.hovered = false;
-            showSelectedContainer();
-        }
-
-        function showSelectedContainer() {
-            self._selectedContainer.addClass('show');
-        }
-
-        function hideSelectedContainer() {
-            self._selectedContainer.removeClass('show');
-        }
-
-        function hideInputElement() {
-            if (self.getSelected().length) {
-                self.inputElement.style.display = 'none';
-            }
-        }
-
-        function showInputElement() {
-            self.inputElement.style.display = 'block';
-            if (!self.options.autocomplete && self.getSelected().length) {
-                self.inputElement.addClass('ui-drop-down-input-hidden');
-            } else {
-                self.inputElement.removeClass('ui-drop-down-input-hidden');
-            }
-        }
-
-        function focusInputElement() {
-            if (document.activeElement !== self.inputElement.element) {
-                self.inputElement.element.focus();
-            }
-        }
-
-        function activateInputElement() {
-            showInputElement();
-            focusInputElement();
-        }
-
-        function createSuggestionWrapper() {
+        function _createSuggestionWrapper() {
             var element = UiElement.create('div');
             element.addClass('ui-drop-down-autocomplete-suggestions');
             return element;
         }
 
-        function createDropDownInputWrapper() {
+        function _createDropDownInputWrapper() {
             function setStyles(wrapper) {
                 var position = self.inputElement.css().position;
                 wrapper.css({
@@ -1042,20 +1054,74 @@ if (!Object.assign) {
             return element;
         }
 
-        function createSelectedSuggestionsContainer() {
+
+        function _createSelectedSuggestionsContainer() {
             var element = UiElement.create('div');
             element.addClass('ui-drop-down-selected-container');
 
             return element;
         }
 
-        function showSuggestionList() {
-            self._suggestionsWrapper.addClass('show');
-            positionSuggestionList();
+
+        function _appendElementsToDom() {
+            self.inputElement.wrap(self._dropDownInputWrapper);
+            document.body.appendChild(self._suggestionsWrapper.element);
+
+            self._dropDownInputWrapper.element.insertBefore(self._dropDownIcon.element, self.inputElement.element);
+            self._dropDownInputWrapper.element.insertBefore(self._selectedContainer.element, self.inputElement.element);
+
+            var originInputElementW = self.inputElement.clientWidth();
+
+            self.inputElement.css({
+                width: originInputElementW - self._dropDownIcon.offsetWidth() - 15 + 'px'
+            });
         }
 
-        function hideSuggestiosnList() {
+        //  --------------------------
+        //  Управление отображением
+        //  ---------------------------
+
+        function _showSelectedContainer() {
+            self._selectedContainer.addClass('show');
+        }
+
+        function _hideSelectedContainer() {
+            self._selectedContainer.removeClass('show');
+        }
+
+        function _hideInputElement() {
+            if (self.getSelected().length) {
+                self.inputElement.style.display = 'none';
+            }
+        }
+
+        function _showInputElement() {
+            self.inputElement.style.display = 'block';
+            if (!self.options.autocomplete && self.getSelected().length) {
+                self.inputElement.addClass('ui-drop-down-input-hidden');
+            } else {
+                self.inputElement.removeClass('ui-drop-down-input-hidden');
+            }
+        }
+
+        function _focusInputElement() {
+            if (document.activeElement !== self.inputElement.element) {
+                self.inputElement.element.focus();
+            }
+        }
+
+        function _showSuggestionList() {
+            self._suggestionsWrapper.addClass('show');
+            _positionSuggestionList();
+        }
+
+        function _hideSuggestionsList() {
             self._suggestionsWrapper.removeClass('show');
+        }
+
+        function _activateInputElement() {
+            _showInputElement();
+            _focusInputElement();
         }
 
 
@@ -1063,7 +1129,7 @@ if (!Object.assign) {
          * Прозводит позиционирование блока предложений относительно эелемента
          * В зависимости от его позиционирования(static/relative)
          */
-        function positionSuggestionList() {
+        function _positionSuggestionList() {
             var inputWrapperCoordinates = self._dropDownInputWrapper.getCoordinates();
 
             self._suggestionsWrapper.style.top =
@@ -1075,65 +1141,202 @@ if (!Object.assign) {
                 self._dropDownInputWrapper.offsetWidth() - self._suggestionsWrapper.clientLeft() - self._suggestionsWrapper.clientRight() + 'px';
         }
 
-        function clearMatchedSuggestionsList() {
-            var children = Array.prototype.slice.apply(self._suggestionsWrapper.element.children);
 
-            children.forEach(function (childNode) {
-                self._suggestionsWrapper.removeChild(childNode);
-            });
+        /*************************************************
+         * Обработка событий
+         ************************************************/
+
+        function _initBindings() {
+            self.inputElement.on('focus', _onFocusInputHandler);
+            self.inputElement.on('keyup', _deBounce(_onKeyUpInputHandler, 300));
+            self.inputElement.on('blur', onBlurInputElementHandler);
+
+            self._dropDownInputWrapper.on('click', _onClickWrapperHandler);
+
+            self._suggestionsWrapper.on('mouseenter', onHoverSuggestionsWrapperHandler);
+            self._suggestionsWrapper.on('mouseleave', onMouseLeaveSuggestionsWrapperHandler);
         }
 
-        function renderAllMatchedSuggestions() {
+
+        function _onFocusInputHandler() {
+            open();
+        }
+
+        function _onKeyUpInputHandler() {
+            search();
+        }
+
+        function _onClickWrapperHandler(event) {
+            var target = event.target;
+
+            if (event.target === this) {
+                _activateInputElement();
+                return;
+            }
+
+            if (event.target == self._dropDownIcon.element) {
+                _activateInputElement();
+                return;
+            }
+
+            if (target.getAttribute('data-is-remove-button') == 'true') {
+                _removeSelectedSuggestionByElement(target);
+                if (!self.getSelected().length) {
+                    _hideSelectedContainer();
+                    _showInputElement();
+                }
+                return;
+            }
+
+            _activateInputElement();
+        }
+
+
+        function onBlurInputElementHandler() {
+            if (self._suggestionsWrapper.hovered) {
+                return;
+            }
+            close();
+        }
+
+        function onHoverSuggestionsWrapperHandler() {
+            self._suggestionsWrapper.hovered = true;
+        }
+
+        function onMouseLeaveSuggestionsWrapperHandler() {
+            self._suggestionsWrapper.hovered = false;
+        }
+
+        function onSelectSuggestion(suggestion, element) {
+            if (!self.options.multiple) {
+                _clearLastSelected();
+            }
+
+            _addItemToSelected(suggestion);
+
+            element.parentNode.removeChild(element);
+            self.inputElement.val('');
+
+            _hideSuggestionsList();
+            _renderSelectedSuggestion(suggestion);
+            _hideInputElement();
+
+            // Событие не будет послано брузером. Поэтому нужно простваить руками.
+            self._suggestionsWrapper.hovered = false;
+            _showSelectedContainer();
+        }
+
+        /*************************************************
+         * Утилиты
+         ************************************************/
+
+        //  -------------------------
+        //  Инициализация
+        //  -------------------------
+
+        function _getSuggestionTemplate() {
+            if (self.options.showAvatars) {
+                return self.options.suggestionTemplateWithAvatar;
+            }
+            return self.options.suggestionTemplateWithoutAvatar;
+        }
+
+        function _getSelectedItemTemplate() {
+            if (self.options.multiple) {
+                return self.options.selectedMultipleItemTemplate;
+            }
+            return self.options.selectedSingleItemTemplate;
+        }
+
+        //  -------------------------
+        //  Работа с вариантами
+        //  -------------------------
+
+        function _isSelected(item) {
+            return Boolean(self.selectedItems[item[self.options.suggestionIdentifierProperty]]);
+        }
+
+        function _addItemToSelected(item) {
+            self.selectedItems[item[self.options.suggestionIdentifierProperty]] = item;
+        }
+
+        function _isInMatched(item) {
+            return Boolean(self._matchesSuggestionIds[item[self.options.suggestionIdentifierProperty]]);
+        }
+
+        function _addToMatched(item) {
+            self.matchedSuggestions.push(item);
+            self._matchesSuggestionIds[item[self.options.suggestionIdentifierProperty]] = true;
+        }
+
+        //  -----------------------
+        //  Общее
+        //  -----------------------
+
+        function _deBounce(func, wait, immediate) {
+            var timeout;
+            return function () {
+                var context = this, args = arguments;
+
+                var later = function () {
+                    timeout = null;
+                    if (!immediate) func.apply(context, args);
+                };
+
+                var callNow = immediate && !timeout;
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+                if (callNow) {
+                    func.apply(context, args);
+                }
+            };
+        }
+
+        // ------------------------------------
+        // Отображаение вариантов и выбранных
+        // ------------------------------------
+
+
+        function _renderAllMatchedSuggestions() {
+
             // Если пачка предложений пуста, то производить очистку и показвать сообщение нужно только
             // Если предложения не смогут появиться с сервера
+
             if (!self.matchedSuggestions.length && !self._serverQuryIsRunning) {
-                clearMatchedSuggestionsList();
-                showEmptySuggestionMessage();
+                _clearMatchedSuggestionsList();
+                _showEmptySuggestionMessage();
                 return;
             }
 
             // Если запрос еще выпоняется, то очистку списка нужно производить
             // Только если есть записи
+
             if (self.matchedSuggestions.length) {
-                clearMatchedSuggestionsList();
+                _clearMatchedSuggestionsList();
             }
             self.matchedSuggestions.forEach(function (item) {
-                renderMatchedSuggestion(item);
+                _renderMatchedSuggestion(item);
             });
         }
 
-        function renderMatchedSuggestion(suggestion) {
-            // TODO: Исправить проброс matchedBy
+
+        function _renderMatchedSuggestion(suggestion) {
             var matchedBy = suggestion.mathedBy;
             delete suggestion.mathedBy;
 
-            var dropDownItem = DropDownSuggestionItem(
+            var dropDownSuggestionItem = DropDownSuggestionItem(
                 self._suggestionTemplate, suggestion, matchedBy, self.options.defaultAvatarUrl
             );
-            dropDownItem.render();
-            // TODO: пернести обработчик на suggestion-list. Испрользовать делегирование,
-            // TODO: чтообы избавиться от лишних обработчиков
-            // TODO: С ходу мешает необходимость ссылки на item(suggestion)
-            dropDownItem.uiElement.on('click', function () {
+            dropDownSuggestionItem.render();
+
+            dropDownSuggestionItem.uiElement.on('click', function () {
                 onSelectSuggestion(suggestion, this);
             });
-            self._suggestionsWrapper.append(dropDownItem.uiElement);
+
+            self._suggestionsWrapper.append(dropDownSuggestionItem.uiElement);
         }
 
-
-        function removeSelectedSuggestion(element) {
-            // TODO: Добавить id. Чтобы не зависеть от верстки
-            var uid = element.getAttribute('data-user-id');
-            var container = element.parentNode;
-            container = container.parentNode;
-            console.log(container);
-            delete self.selectedItems[uid];
-            container.parentNode.removeChild(container);
-
-
-        }
-
-        function renderSelectedSuggestion(suggestion) {
+        function _renderSelectedSuggestion(suggestion) {
             var selectedItem = DropDownSelectedSuggestionItem(
                 self._selectedItemTemplate, suggestion, self.options.multiple
             );
@@ -1141,26 +1344,66 @@ if (!Object.assign) {
             self._selectedContainer.append(selectedItem.uiElement);
         }
 
+        function _clearLastSelected() {
+            Object.keys(self.selectedItems).forEach(function (prop) {
+                delete self.selectedItems[prop];
+            });
+            var children = Array.prototype.slice.apply(self._selectedContainer.element.children);
+            children.forEach(function (child) {
+                child.parentNode.removeChild(child);
+            });
+        }
+
+        function _clearMatchedSuggestionsList() {
+            var children = Array.prototype.slice.apply(self._suggestionsWrapper.element.children);
+
+            children.forEach(function (childNode) {
+                self._suggestionsWrapper.removeChild(childNode);
+            });
+        }
+
+        function _showEmptySuggestionMessage() {
+            var dropDownItem = DropDownSuggestionItem(self.options.emptyMessageTemplate, {name: 'empty'});
+            dropDownItem.render();
+            self._suggestionsWrapper.append(dropDownItem.uiElement.element);
+        }
+
+        function _removeSelectedSuggestionByElement(element) {
+            // TODO: Добавить id. Чтобы не зависеть от верстки
+            var uid = element.getAttribute('data-user-id');
+            var container = element.parentNode;
+            container = container.parentNode;
+            delete self.selectedItems[uid];
+            container.parentNode.removeChild(container);
+        }
+
+        /***********************************************
+         * Поиск
+         ************************************************/
+
+
+        //  ---------------------------------------------
+        //  Локальный поиск на клиенте
+        //  ---------------------------------------------
+
         function _lookUpEmptyPrefix() {
             var counter = 0;
             var idx = 0;
             while (counter < self.options.limit && idx < self.suggestions.length) {
                 var item = self.suggestions[idx];
-                if (isSelected(item)) {
+                if (_isSelected(item)) {
                     idx++;
                     continue;
                 }
-
-                addToMatchedSuggestions(item);
+                _addToMatched(item);
                 counter++;
                 idx++;
             }
         }
 
-        function lookup() {
+        function _lookup() {
             var counter = 0;
             var idx = 0;
-
             var prefix = self.inputElement.val();
 
             if (prefix == self._lastVal && prefix !== '') {
@@ -1181,7 +1424,7 @@ if (!Object.assign) {
                 var matchResult = self.matcher(prefix, self.suggestions[idx], self.selectedItems);
                 if (matchResult.matched) {
                     self.suggestions[idx].mathedBy = matchResult.matchedBy;
-                    addToMatchedSuggestions(self.suggestions[idx]);
+                    _addToMatched(self.suggestions[idx]);
                     counter++;
                 }
                 idx++;
@@ -1189,49 +1432,56 @@ if (!Object.assign) {
             console.timeEnd('lookUp');
 
             if (self.options.serverSide) {
-                serverLookUp(prefix);
+                _serverLookUp(prefix);
             }
         }
 
 
-        function appendMatchedSuggestionsFromServer(suggestions) {
+        //  ---------------------------------------------
+        //  Поиск с сервера
+        //  ---------------------------------------------
+
+
+        function _appendMatchedSuggestionsFromServer(suggestions) {
             suggestions.forEach(function (suggestion) {
-                if (!isSelected(suggestion) && !isInMatchedSuggestions(suggestion)) {
-                    addToMatchedSuggestions(suggestion);
-                    renderMatchedSuggestion(suggestion);
+                if (!_isSelected(suggestion) && !_isInMatched(suggestion) && self.matchedSuggestions.length < self.options.limit) {
+                    _addToMatched(suggestion);
+                    _renderMatchedSuggestion(suggestion);
                 }
             });
         }
 
-        function onServerLookUpLoaded(prefix, response) {
+        function _onServerLookUpLoaded(prefix, response) {
             self._cache[prefix] = response.result;
             if (!self.matchedSuggestions.length) {
-                clearMatchedSuggestionsList();
+                _clearMatchedSuggestionsList();
             }
             if (response.result.length) {
-                appendMatchedSuggestionsFromServer(response.result);
+                _appendMatchedSuggestionsFromServer(response.result);
             } else if (!self.matchedSuggestions.length) {
-                showEmptySuggestionMessage();
-                self._lastIsEmpty = true;
+                _showEmptySuggestionMessage();
             }
         }
 
-        function serverLookUp(prefix) {
+        function _serverLookUp(prefix) {
             if (prefix == '') {
                 return;
             }
+
             self._serverQuryIsRunning = true;
             var _cached = self._cache[prefix];
             var findParams = {};
 
             if (_cached) {
-                appendMatchedSuggestionsFromServer(_cached);
+                _appendMatchedSuggestionsFromServer(_cached);
                 self._serverQuryIsRunning = false;
                 return;
             }
 
+            // Нужноиспользовать достаточно большой лимит для запроса на сервер
+            // Чтобы не столкнуться с проблеиой недоступности данных по првефиксу
             findParams[self.options.serverSideFindProperty] = prefix;
-            findParams['limit'] = self.options.limit;
+            findParams['limit'] = self.options.serverLimit;
 
             uiDropDownajax({
                 method: self.options.serverSideMethod,
@@ -1241,42 +1491,18 @@ if (!Object.assign) {
                 onError: function (xrh) {
                     console.log('ERROR', xrh.statusText);
                     if (!self.matchedSuggestions.length) {
-                        clearMatchedSuggestionsList();
-                        showEmptySuggestionMessage();
+                        _clearMatchedSuggestionsList();
+                        _showEmptySuggestionMessage();
                     }
                     self._serverQuryIsRunning = false;
                 },
                 onSuccess: function (response) {
-                    onServerLookUpLoaded(prefix, response);
+                    _onServerLookUpLoaded(prefix, response);
                     self._serverQuryIsRunning = false;
                 }
             });
         }
 
-        function deBounce(func, wait, immediate) {
-            var timeout;
-            return function () {
-                var context = this, args = arguments;
-
-                var later = function () {
-                    timeout = null;
-                    if (!immediate) func.apply(context, args);
-                };
-
-                var callNow = immediate && !timeout;
-                clearTimeout(timeout);
-                timeout = setTimeout(later, wait);
-                if (callNow) {
-                    func.apply(context, args);
-                }
-            };
-        }
-
-        function showEmptySuggestionMessage() {
-            var dropDownItem = DropDownSuggestionItem(self.options.emptyMessageTemplate, {name: 'empty'});
-            dropDownItem.render();
-            self._suggestionsWrapper.append(dropDownItem.uiElement.element);
-        }
     }
 
     window.UiDropDown = UiDropDown;

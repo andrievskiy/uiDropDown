@@ -40,6 +40,7 @@
         serverSideMethod: 'GET',
         serverSideFindProperty: 'domain',
         suggestionIdentifierProperty: 'uid',
+        serverLimit: 1000,
 
         suggestionTemplateWithAvatar: DEFAULT_SUGGESTION_TEMPLATE,
         suggestionTemplateWithoutAvatar: DEFAULT_SUGGESTION_TEMPLATE_WITHOUT_AVATARS,
@@ -64,238 +65,91 @@
             });
         };
 
+
         self.options = Object.assign({}, DEFAULT_OPTIONS, options);
+        self.matcher = self.options.matcher || uiDropDownUsersMatcher;
+        self.suggestions = self.options.suggestions || [];
+        self.matchedSuggestions = [];
+        self.selectedItems = Object.create(null);
+
+        function init() {
+            self._suggestionTemplate = _getSuggestionTemplate();
+            self._selectedItemTemplate = _getSelectedItemTemplate();
+            _initInputElement();
+
+            self._dropDownInputWrapper = _createDropDownInputWrapper();
+            self._suggestionsWrapper = _createSuggestionWrapper();
+            self._selectedContainer = _createSelectedSuggestionsContainer();
+            self._dropDownIcon = _createDropDownIcon();
+            _appendElementsToDom();
+            _initBindings();
+        }
+
+
+        function open() {
+            if ((!self.options.multiple && self.options.autocomplete) || !self.getSelected().length) {
+                _hideSelectedContainer();
+            }
+            _showSuggestionList();
+            search();
+        }
+
+        function search() {
+            _lookup();
+            _renderAllMatchedSuggestions();
+        }
+
+        function close() {
+            _hideSuggestionsList();
+            if (self.options.multiple && self.getSelected().length) {
+                _hideInputElement();
+            }
+            if (!self.options.multiple && self.getSelected().length) {
+                _hideInputElement();
+                _showSelectedContainer();
+            }
+        }
 
         self._cache = {};
         self._lastVal = null;
         self._serverQuryIsRunning = false;
-
-        self._suggestionTemplate = getSuggestionTemplate();
-        self._selectedItemTemplate = getSelectedItemTemplate();
-
-        self.inputElement = UiElement(selector);
-        self.inputElement.addClass('ui-drop-down-input');
-        if (!self.options.autocomplete) {
-            self.inputElement.element.setAttribute('readonly', 'true');
-        }
-
-        self.suggestions = self.options.suggestions || [];
-        self.matcher = self.options.matcher || uiDropDownUsersMatcher;
-
-        self.matchedSuggestions = [];
         self._matchesSuggestionIds = Object.create(null);
-        self.selectedItems = Object.create(null);
 
-        self._dropDownInputWrapper = createDropDownInputWrapper();
-        self._suggestionsWrapper = createSuggestionWrapper();
-        self._selectedContainer = createSelectedSuggestionsContainer();
-        self._dropDownIcon = createDropDownIcon();
-        appendElementsToDom();
+        init();
 
 
-        self.inputElement.on('focus', onFocusInputHandler);
-        self.inputElement.on('keyup', deBounce(onKeyUpInputHandler, 300));
-        self.inputElement.on('blur', onBlurInputElement);
+        /*************************************************
+         * Внутненние методы для работы с DOM.
+         * Созадние елементов и их отображение
+         ************************************************/
 
-        self._dropDownInputWrapper.on('click', onClickWrapper);
 
-        self._suggestionsWrapper.on('mouseenter', onHoverSuggestionsWrapper);
-        self._suggestionsWrapper.on('mouseleave', onMouseLeaveSuggestionsWrapper);
+        //  --------------------------
+        //  Инициализация и создание
+        //  --------------------------
 
-        self._selectedContainer.on('click', onClickSelectedContainer);
-
-        function appendElementsToDom() {
-            self.inputElement.wrap(self._dropDownInputWrapper);
-            document.body.appendChild(self._suggestionsWrapper.element);
-
-            self._dropDownInputWrapper.element.insertBefore(self._dropDownIcon.element, self.inputElement.element);
-            self._dropDownInputWrapper.element.insertBefore(self._selectedContainer.element, self.inputElement.element);
-
-            var originInputElementW = self.inputElement.clientWidth();
-            console.log(originInputElementW);
-            console.log('offsetWidth', self._dropDownIcon.offsetWidth());
-
-            self.inputElement.css({
-                width: originInputElementW - self._dropDownIcon.offsetWidth()- 15 + 'px'
-            });
+        function _initInputElement() {
+            self.inputElement = UiElement(selector);
+            self.inputElement.addClass('ui-drop-down-input');
+            if (!self.options.autocomplete) {
+                self.inputElement.element.setAttribute('readonly', 'true');
+            }
         }
 
-        function createDropDownIcon(){
+        function _createDropDownIcon() {
             var e = UiElement.create('div');
             e.addClass('ui-widget-drop-down-icon');
             return e;
         }
 
 
-        function getSuggestionTemplate() {
-            if (self.options.showAvatars) {
-                return self.options.suggestionTemplateWithAvatar;
-            }
-            return self.options.suggestionTemplateWithoutAvatar;
-        }
-
-        function getSelectedItemTemplate() {
-            if (self.options.multiple) {
-                return self.options.selectedMultipleItemTemplate;
-            }
-            return self.options.selectedSingleItemTemplate;
-        }
-
-        function isSelected(item) {
-            return Boolean(self.selectedItems[item[self.options.suggestionIdentifierProperty]]);
-        }
-
-        function addItemToSelected(item) {
-            self.selectedItems[item[self.options.suggestionIdentifierProperty]] = item;
-        }
-
-        function isInMatchedSuggestions(item) {
-            return Boolean(self._matchesSuggestionIds[item[self.options.suggestionIdentifierProperty]]);
-        }
-
-        function addToMatchedSuggestions(item) {
-            self.matchedSuggestions.push(item);
-            self._matchesSuggestionIds[item[self.options.suggestionIdentifierProperty]] = true;
-        }
-
-        function onClickSelectedContainer(event) {
-            var target = event.target;
-            if (target.getAttribute('data-is-remove-button') == 'true') {
-                removeSelectedSuggestion(target);
-                if (!self.getSelected().length) {
-                    hideSelectedContainer();
-                    showInputElement();
-                }
-            } else {
-                activateInputElement();
-            }
-
-        }
-
-        function open() {
-            if ((!self.options.multiple && self.options.autocomplete) || !self.getSelected().length) {
-                hideSelectedContainer();
-            }
-
-            showSuggestionList();
-            search();
-        }
-
-        function search() {
-            lookup();
-            renderAllMatchedSuggestions();
-        }
-
-        function close() {
-            if (self._suggestionsWrapper.hovered) {
-                return;
-            }
-            hideSuggestiosnList();
-            if (self.options.multiple && self.getSelected().length) {
-                hideInputElement();
-            }
-            if (!self.options.multiple && self.getSelected().length) {
-                hideInputElement();
-                showSelectedContainer();
-            }
-        }
-
-        function onFocusInputHandler() {
-            open();
-        }
-
-        function onKeyUpInputHandler() {
-            search();
-        }
-
-        function onClickWrapper(event) {
-            if (event.target === this) {
-                activateInputElement();
-            }
-            if(event.target == self._dropDownIcon.element){
-                activateInputElement();
-            }
-        }
-
-        function onBlurInputElement() {
-            close();
-        }
-
-        function onHoverSuggestionsWrapper() {
-            self._suggestionsWrapper.hovered = true;
-        }
-
-        function onMouseLeaveSuggestionsWrapper() {
-            self._suggestionsWrapper.hovered = false;
-        }
-
-        function _clearLastSelected() {
-            Object.keys(self.selectedItems).forEach(function (prop) {
-                delete self.selectedItems[prop];
-            });
-            var children = Array.prototype.slice.apply(self._selectedContainer.element.children);
-            children.forEach(function (child) {
-                child.parentNode.removeChild(child);
-            });
-
-        }
-
-        function onSelectSuggestion(item, element) {
-            if (!self.options.multiple) {
-                _clearLastSelected();
-            }
-            addItemToSelected(item);
-            element.parentNode.removeChild(element);
-            self.inputElement.val('');
-            hideSuggestiosnList();
-            renderSelectedSuggestion(item);
-            hideInputElement();
-            // Событие не будет послано брузером. Поэтому нужно простваить руками.
-            self._suggestionsWrapper.hovered = false;
-            showSelectedContainer();
-        }
-
-        function showSelectedContainer() {
-            self._selectedContainer.addClass('show');
-        }
-
-        function hideSelectedContainer() {
-            self._selectedContainer.removeClass('show');
-        }
-
-        function hideInputElement() {
-            if (self.getSelected().length) {
-                self.inputElement.style.display = 'none';
-            }
-        }
-
-        function showInputElement() {
-            self.inputElement.style.display = 'block';
-            if (!self.options.autocomplete && self.getSelected().length) {
-                self.inputElement.addClass('ui-drop-down-input-hidden');
-            } else {
-                self.inputElement.removeClass('ui-drop-down-input-hidden');
-            }
-        }
-
-        function focusInputElement() {
-            if (document.activeElement !== self.inputElement.element) {
-                self.inputElement.element.focus();
-            }
-        }
-
-        function activateInputElement() {
-            showInputElement();
-            focusInputElement();
-        }
-
-        function createSuggestionWrapper() {
+        function _createSuggestionWrapper() {
             var element = UiElement.create('div');
             element.addClass('ui-drop-down-autocomplete-suggestions');
             return element;
         }
 
-        function createDropDownInputWrapper() {
+        function _createDropDownInputWrapper() {
             function setStyles(wrapper) {
                 var position = self.inputElement.css().position;
                 wrapper.css({
@@ -311,20 +165,74 @@
             return element;
         }
 
-        function createSelectedSuggestionsContainer() {
+
+        function _createSelectedSuggestionsContainer() {
             var element = UiElement.create('div');
             element.addClass('ui-drop-down-selected-container');
 
             return element;
         }
 
-        function showSuggestionList() {
-            self._suggestionsWrapper.addClass('show');
-            positionSuggestionList();
+
+        function _appendElementsToDom() {
+            self.inputElement.wrap(self._dropDownInputWrapper);
+            document.body.appendChild(self._suggestionsWrapper.element);
+
+            self._dropDownInputWrapper.element.insertBefore(self._dropDownIcon.element, self.inputElement.element);
+            self._dropDownInputWrapper.element.insertBefore(self._selectedContainer.element, self.inputElement.element);
+
+            var originInputElementW = self.inputElement.clientWidth();
+
+            self.inputElement.css({
+                width: originInputElementW - self._dropDownIcon.offsetWidth() - 15 + 'px'
+            });
         }
 
-        function hideSuggestiosnList() {
+        //  --------------------------
+        //  Управление отображением
+        //  ---------------------------
+
+        function _showSelectedContainer() {
+            self._selectedContainer.addClass('show');
+        }
+
+        function _hideSelectedContainer() {
+            self._selectedContainer.removeClass('show');
+        }
+
+        function _hideInputElement() {
+            if (self.getSelected().length) {
+                self.inputElement.style.display = 'none';
+            }
+        }
+
+        function _showInputElement() {
+            self.inputElement.style.display = 'block';
+            if (!self.options.autocomplete && self.getSelected().length) {
+                self.inputElement.addClass('ui-drop-down-input-hidden');
+            } else {
+                self.inputElement.removeClass('ui-drop-down-input-hidden');
+            }
+        }
+
+        function _focusInputElement() {
+            if (document.activeElement !== self.inputElement.element) {
+                self.inputElement.element.focus();
+            }
+        }
+
+        function _showSuggestionList() {
+            self._suggestionsWrapper.addClass('show');
+            _positionSuggestionList();
+        }
+
+        function _hideSuggestionsList() {
             self._suggestionsWrapper.removeClass('show');
+        }
+
+        function _activateInputElement() {
+            _showInputElement();
+            _focusInputElement();
         }
 
 
@@ -332,7 +240,7 @@
          * Прозводит позиционирование блока предложений относительно эелемента
          * В зависимости от его позиционирования(static/relative)
          */
-        function positionSuggestionList() {
+        function _positionSuggestionList() {
             var inputWrapperCoordinates = self._dropDownInputWrapper.getCoordinates();
 
             self._suggestionsWrapper.style.top =
@@ -344,65 +252,202 @@
                 self._dropDownInputWrapper.offsetWidth() - self._suggestionsWrapper.clientLeft() - self._suggestionsWrapper.clientRight() + 'px';
         }
 
-        function clearMatchedSuggestionsList() {
-            var children = Array.prototype.slice.apply(self._suggestionsWrapper.element.children);
 
-            children.forEach(function (childNode) {
-                self._suggestionsWrapper.removeChild(childNode);
-            });
+        /*************************************************
+         * Обработка событий
+         ************************************************/
+
+        function _initBindings() {
+            self.inputElement.on('focus', _onFocusInputHandler);
+            self.inputElement.on('keyup', _deBounce(_onKeyUpInputHandler, 300));
+            self.inputElement.on('blur', onBlurInputElementHandler);
+
+            self._dropDownInputWrapper.on('click', _onClickWrapperHandler);
+
+            self._suggestionsWrapper.on('mouseenter', onHoverSuggestionsWrapperHandler);
+            self._suggestionsWrapper.on('mouseleave', onMouseLeaveSuggestionsWrapperHandler);
         }
 
-        function renderAllMatchedSuggestions() {
+
+        function _onFocusInputHandler() {
+            open();
+        }
+
+        function _onKeyUpInputHandler() {
+            search();
+        }
+
+        function _onClickWrapperHandler(event) {
+            var target = event.target;
+
+            if (event.target === this) {
+                _activateInputElement();
+                return;
+            }
+
+            if (event.target == self._dropDownIcon.element) {
+                _activateInputElement();
+                return;
+            }
+
+            if (target.getAttribute('data-is-remove-button') == 'true') {
+                _removeSelectedSuggestionByElement(target);
+                if (!self.getSelected().length) {
+                    _hideSelectedContainer();
+                    _showInputElement();
+                }
+                return;
+            }
+
+            _activateInputElement();
+        }
+
+
+        function onBlurInputElementHandler() {
+            if (self._suggestionsWrapper.hovered) {
+                return;
+            }
+            close();
+        }
+
+        function onHoverSuggestionsWrapperHandler() {
+            self._suggestionsWrapper.hovered = true;
+        }
+
+        function onMouseLeaveSuggestionsWrapperHandler() {
+            self._suggestionsWrapper.hovered = false;
+        }
+
+        function onSelectSuggestion(suggestion, element) {
+            if (!self.options.multiple) {
+                _clearLastSelected();
+            }
+
+            _addItemToSelected(suggestion);
+
+            element.parentNode.removeChild(element);
+            self.inputElement.val('');
+
+            _hideSuggestionsList();
+            _renderSelectedSuggestion(suggestion);
+            _hideInputElement();
+
+            // Событие не будет послано брузером. Поэтому нужно простваить руками.
+            self._suggestionsWrapper.hovered = false;
+            _showSelectedContainer();
+        }
+
+        /*************************************************
+         * Утилиты
+         ************************************************/
+
+        //  -------------------------
+        //  Инициализация
+        //  -------------------------
+
+        function _getSuggestionTemplate() {
+            if (self.options.showAvatars) {
+                return self.options.suggestionTemplateWithAvatar;
+            }
+            return self.options.suggestionTemplateWithoutAvatar;
+        }
+
+        function _getSelectedItemTemplate() {
+            if (self.options.multiple) {
+                return self.options.selectedMultipleItemTemplate;
+            }
+            return self.options.selectedSingleItemTemplate;
+        }
+
+        //  -------------------------
+        //  Работа с вариантами
+        //  -------------------------
+
+        function _isSelected(item) {
+            return Boolean(self.selectedItems[item[self.options.suggestionIdentifierProperty]]);
+        }
+
+        function _addItemToSelected(item) {
+            self.selectedItems[item[self.options.suggestionIdentifierProperty]] = item;
+        }
+
+        function _isInMatched(item) {
+            return Boolean(self._matchesSuggestionIds[item[self.options.suggestionIdentifierProperty]]);
+        }
+
+        function _addToMatched(item) {
+            self.matchedSuggestions.push(item);
+            self._matchesSuggestionIds[item[self.options.suggestionIdentifierProperty]] = true;
+        }
+
+        //  -----------------------
+        //  Общее
+        //  -----------------------
+
+        function _deBounce(func, wait, immediate) {
+            var timeout;
+            return function () {
+                var context = this, args = arguments;
+
+                var later = function () {
+                    timeout = null;
+                    if (!immediate) func.apply(context, args);
+                };
+
+                var callNow = immediate && !timeout;
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+                if (callNow) {
+                    func.apply(context, args);
+                }
+            };
+        }
+
+        // ------------------------------------
+        // Отображаение вариантов и выбранных
+        // ------------------------------------
+
+
+        function _renderAllMatchedSuggestions() {
+
             // Если пачка предложений пуста, то производить очистку и показвать сообщение нужно только
             // Если предложения не смогут появиться с сервера
+
             if (!self.matchedSuggestions.length && !self._serverQuryIsRunning) {
-                clearMatchedSuggestionsList();
-                showEmptySuggestionMessage();
+                _clearMatchedSuggestionsList();
+                _showEmptySuggestionMessage();
                 return;
             }
 
             // Если запрос еще выпоняется, то очистку списка нужно производить
             // Только если есть записи
+
             if (self.matchedSuggestions.length) {
-                clearMatchedSuggestionsList();
+                _clearMatchedSuggestionsList();
             }
             self.matchedSuggestions.forEach(function (item) {
-                renderMatchedSuggestion(item);
+                _renderMatchedSuggestion(item);
             });
         }
 
-        function renderMatchedSuggestion(suggestion) {
-            // TODO: Исправить проброс matchedBy
+
+        function _renderMatchedSuggestion(suggestion) {
             var matchedBy = suggestion.mathedBy;
             delete suggestion.mathedBy;
 
-            var dropDownItem = DropDownSuggestionItem(
+            var dropDownSuggestionItem = DropDownSuggestionItem(
                 self._suggestionTemplate, suggestion, matchedBy, self.options.defaultAvatarUrl
             );
-            dropDownItem.render();
-            // TODO: пернести обработчик на suggestion-list. Испрользовать делегирование,
-            // TODO: чтообы избавиться от лишних обработчиков
-            // TODO: С ходу мешает необходимость ссылки на item(suggestion)
-            dropDownItem.uiElement.on('click', function () {
+            dropDownSuggestionItem.render();
+
+            dropDownSuggestionItem.uiElement.on('click', function () {
                 onSelectSuggestion(suggestion, this);
             });
-            self._suggestionsWrapper.append(dropDownItem.uiElement);
+
+            self._suggestionsWrapper.append(dropDownSuggestionItem.uiElement);
         }
 
-
-        function removeSelectedSuggestion(element) {
-            // TODO: Добавить id. Чтобы не зависеть от верстки
-            var uid = element.getAttribute('data-user-id');
-            var container = element.parentNode;
-            container = container.parentNode;
-            console.log(container);
-            delete self.selectedItems[uid];
-            container.parentNode.removeChild(container);
-
-
-        }
-
-        function renderSelectedSuggestion(suggestion) {
+        function _renderSelectedSuggestion(suggestion) {
             var selectedItem = DropDownSelectedSuggestionItem(
                 self._selectedItemTemplate, suggestion, self.options.multiple
             );
@@ -410,26 +455,66 @@
             self._selectedContainer.append(selectedItem.uiElement);
         }
 
+        function _clearLastSelected() {
+            Object.keys(self.selectedItems).forEach(function (prop) {
+                delete self.selectedItems[prop];
+            });
+            var children = Array.prototype.slice.apply(self._selectedContainer.element.children);
+            children.forEach(function (child) {
+                child.parentNode.removeChild(child);
+            });
+        }
+
+        function _clearMatchedSuggestionsList() {
+            var children = Array.prototype.slice.apply(self._suggestionsWrapper.element.children);
+
+            children.forEach(function (childNode) {
+                self._suggestionsWrapper.removeChild(childNode);
+            });
+        }
+
+        function _showEmptySuggestionMessage() {
+            var dropDownItem = DropDownSuggestionItem(self.options.emptyMessageTemplate, {name: 'empty'});
+            dropDownItem.render();
+            self._suggestionsWrapper.append(dropDownItem.uiElement.element);
+        }
+
+        function _removeSelectedSuggestionByElement(element) {
+            // TODO: Добавить id. Чтобы не зависеть от верстки
+            var uid = element.getAttribute('data-user-id');
+            var container = element.parentNode;
+            container = container.parentNode;
+            delete self.selectedItems[uid];
+            container.parentNode.removeChild(container);
+        }
+
+        /***********************************************
+         * Поиск
+         ************************************************/
+
+
+        //  ---------------------------------------------
+        //  Локальный поиск на клиенте
+        //  ---------------------------------------------
+
         function _lookUpEmptyPrefix() {
             var counter = 0;
             var idx = 0;
             while (counter < self.options.limit && idx < self.suggestions.length) {
                 var item = self.suggestions[idx];
-                if (isSelected(item)) {
+                if (_isSelected(item)) {
                     idx++;
                     continue;
                 }
-
-                addToMatchedSuggestions(item);
+                _addToMatched(item);
                 counter++;
                 idx++;
             }
         }
 
-        function lookup() {
+        function _lookup() {
             var counter = 0;
             var idx = 0;
-
             var prefix = self.inputElement.val();
 
             if (prefix == self._lastVal && prefix !== '') {
@@ -450,7 +535,7 @@
                 var matchResult = self.matcher(prefix, self.suggestions[idx], self.selectedItems);
                 if (matchResult.matched) {
                     self.suggestions[idx].mathedBy = matchResult.matchedBy;
-                    addToMatchedSuggestions(self.suggestions[idx]);
+                    _addToMatched(self.suggestions[idx]);
                     counter++;
                 }
                 idx++;
@@ -458,49 +543,56 @@
             console.timeEnd('lookUp');
 
             if (self.options.serverSide) {
-                serverLookUp(prefix);
+                _serverLookUp(prefix);
             }
         }
 
 
-        function appendMatchedSuggestionsFromServer(suggestions) {
+        //  ---------------------------------------------
+        //  Поиск с сервера
+        //  ---------------------------------------------
+
+
+        function _appendMatchedSuggestionsFromServer(suggestions) {
             suggestions.forEach(function (suggestion) {
-                if (!isSelected(suggestion) && !isInMatchedSuggestions(suggestion)) {
-                    addToMatchedSuggestions(suggestion);
-                    renderMatchedSuggestion(suggestion);
+                if (!_isSelected(suggestion) && !_isInMatched(suggestion) && self.matchedSuggestions.length < self.options.limit) {
+                    _addToMatched(suggestion);
+                    _renderMatchedSuggestion(suggestion);
                 }
             });
         }
 
-        function onServerLookUpLoaded(prefix, response) {
+        function _onServerLookUpLoaded(prefix, response) {
             self._cache[prefix] = response.result;
             if (!self.matchedSuggestions.length) {
-                clearMatchedSuggestionsList();
+                _clearMatchedSuggestionsList();
             }
             if (response.result.length) {
-                appendMatchedSuggestionsFromServer(response.result);
+                _appendMatchedSuggestionsFromServer(response.result);
             } else if (!self.matchedSuggestions.length) {
-                showEmptySuggestionMessage();
-                self._lastIsEmpty = true;
+                _showEmptySuggestionMessage();
             }
         }
 
-        function serverLookUp(prefix) {
+        function _serverLookUp(prefix) {
             if (prefix == '') {
                 return;
             }
+
             self._serverQuryIsRunning = true;
             var _cached = self._cache[prefix];
             var findParams = {};
 
             if (_cached) {
-                appendMatchedSuggestionsFromServer(_cached);
+                _appendMatchedSuggestionsFromServer(_cached);
                 self._serverQuryIsRunning = false;
                 return;
             }
 
+            // Нужноиспользовать достаточно большой лимит для запроса на сервер
+            // Чтобы не столкнуться с проблеиой недоступности данных по првефиксу
             findParams[self.options.serverSideFindProperty] = prefix;
-            findParams['limit'] = self.options.limit;
+            findParams['limit'] = self.options.serverLimit;
 
             uiDropDownajax({
                 method: self.options.serverSideMethod,
@@ -510,42 +602,18 @@
                 onError: function (xrh) {
                     console.log('ERROR', xrh.statusText);
                     if (!self.matchedSuggestions.length) {
-                        clearMatchedSuggestionsList();
-                        showEmptySuggestionMessage();
+                        _clearMatchedSuggestionsList();
+                        _showEmptySuggestionMessage();
                     }
                     self._serverQuryIsRunning = false;
                 },
                 onSuccess: function (response) {
-                    onServerLookUpLoaded(prefix, response);
+                    _onServerLookUpLoaded(prefix, response);
                     self._serverQuryIsRunning = false;
                 }
             });
         }
 
-        function deBounce(func, wait, immediate) {
-            var timeout;
-            return function () {
-                var context = this, args = arguments;
-
-                var later = function () {
-                    timeout = null;
-                    if (!immediate) func.apply(context, args);
-                };
-
-                var callNow = immediate && !timeout;
-                clearTimeout(timeout);
-                timeout = setTimeout(later, wait);
-                if (callNow) {
-                    func.apply(context, args);
-                }
-            };
-        }
-
-        function showEmptySuggestionMessage() {
-            var dropDownItem = DropDownSuggestionItem(self.options.emptyMessageTemplate, {name: 'empty'});
-            dropDownItem.render();
-            self._suggestionsWrapper.append(dropDownItem.uiElement.element);
-        }
     }
 
     window.UiDropDown = UiDropDown;

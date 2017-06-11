@@ -1,4 +1,8 @@
+/**
+ * Утилиты для работы с html
+ */
 (function (window) {
+
     var ESCAPE_CHARS = {
         '¢': 'cent',
         '£': 'pound',
@@ -26,6 +30,11 @@
 
     regex = new RegExp(_makeRegexpString(), 'g');
 
+    /**
+     * Производит экранирование html символов
+     * @param str
+     * @returns {*}
+     */
     function uiDropDownHtmlEscaping(str) {
         if(typeof str != 'string'){
             return str;
