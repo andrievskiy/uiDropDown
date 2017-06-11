@@ -33,7 +33,7 @@
 
     /**
      * _latinToCyrillicVariants -> возвращает возможные варианты раскладки для латнских букв по строке
-     * @param str
+     * @param str {string}
      * @returns {Array}
      * @private
      */
@@ -66,7 +66,7 @@
         /**
          * Производит расширение вариантов для  символов соответствующих нескольким русским буквам
          * при условии что символ находится в конце строки (т.е. невозиожно определить к чему он приводится)
-         * @param chars
+         * @param chars {string}
          * @returns {Array}
          * @private
          */
@@ -108,7 +108,7 @@
 
     /**
      * toCyrillicKeyboard -> Производит замену латинской раскладки на кириллицу
-     * @param str
+     * @param str {string}
      * @returns {string}
      */
     function toCyrillicKeyboard(str) {
@@ -123,7 +123,7 @@
 
     /**
      * toLatinKeyboard -> Производит замену кириллической раскладки на латинскую
-     * @param str
+     * @param str {string}
      * @returns {string}
      */
     function toLatinKeyboard(str) {
@@ -139,7 +139,7 @@
     /**
      * getPrefixVariables -> Возвращает все варианты представления по строке
      *
-     * @param prefix
+     * @param prefix {string}
      * @returns {Array}
      * @private
      */
