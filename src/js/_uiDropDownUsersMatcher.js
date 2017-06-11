@@ -1,17 +1,23 @@
 (function (window) {
     /**
      * Производит сравнение по префиксу с учетом раскладок и транслитерации
-     * @param prefix {String}
-     * @param suggestion {Object}
-     * @param selectedSuggestions {Array}
-     * @param options {Object}
+     * @param prefix {String} - префикс по которому производится поиск
+     * @param suggestion {Object} - предложение, котрое нужно проверить
+     * @param selectedSuggestions {Array} - уже выбранные предложения
+     * @param options {Object} - список опций
      * @param options.byProperty {String} - свойтво по которму производится сравненение
      * @param options.uidProperty {String} - свойтво уникальный идентификатор
-     * @returns {Object}
+     * @returns {Object} - результат поиска
+     *    {
+     *      matched: {Boolean} - флаг подходит или нет объект под префикс,
+     *      matchedBy: {string} - подстрока по которой произошло совпадение
+     *    }
      */
 
+
     function uiDropDownUsersMatcher(prefix, suggestion, selectedSuggestions, options) {
-        // TODO: произветси оптимизацию поиска
+        // TODO: Скорость работы через регулярные выражения оказалась ниже
+        // TODO: Придумать способ повысить эффективность поиска
         options = options || { byProperty: 'name', uidProperty: 'uid' };
 
         var result = {
