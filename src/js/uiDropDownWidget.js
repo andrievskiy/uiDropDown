@@ -87,25 +87,25 @@
 
         function open() {
             if ((!self.options.multiple && self.options.autocomplete) || !self.getSelected().length) {
-                hideSelectedContainer();
+                _hideSelectedContainer();
             }
-            showSuggestionList();
+            _showSuggestionList();
             search();
         }
 
         function search() {
-            lookup();
-            renderAllMatchedSuggestions();
+            _lookup();
+            _renderAllMatchedSuggestions();
         }
 
         function close() {
-            hideSuggestionsList();
+            _hideSuggestionsList();
             if (self.options.multiple && self.getSelected().length) {
-                hideInputElement();
+                _hideInputElement();
             }
             if (!self.options.multiple && self.getSelected().length) {
-                hideInputElement();
-                showSelectedContainer();
+                _hideInputElement();
+                _showSelectedContainer();
             }
         }
 
@@ -117,7 +117,15 @@
         init();
 
 
-        // Dom methods. Init elements
+        /*************************************************
+         * Внутненние методы для работы с DOM.
+         * Созадние елементов и их отображение
+         ************************************************/
+
+
+        //  --------------------------
+        //  Инициализация и создание
+        //  --------------------------
 
         function _initInputElement() {
             self.inputElement = UiElement(selector);
@@ -179,144 +187,25 @@
             });
         }
 
-        // Events
+        //  --------------------------
+        //  Управление отображением
+        //  ---------------------------
 
-        function _initBindings() {
-            self.inputElement.on('focus', onFocusInputHandler);
-            self.inputElement.on('keyup', deBounce(onKeyUpInputHandler, 300));
-            self.inputElement.on('blur', onBlurInputElement);
-
-            self._dropDownInputWrapper.on('click', onClickWrapper);
-
-            self._suggestionsWrapper.on('mouseenter', onHoverSuggestionsWrapper);
-            self._suggestionsWrapper.on('mouseleave', onMouseLeaveSuggestionsWrapper);
-        }
-
-        function onFocusInputHandler() {
-            open();
-        }
-
-        function onKeyUpInputHandler() {
-            search();
-        }
-
-        function onClickWrapper(event) {
-            var target = event.target;
-
-            if (event.target === this) {
-                activateInputElement();
-                return;
-            }
-
-            if (event.target == self._dropDownIcon.element) {
-                activateInputElement();
-                return;
-            }
-
-            if (target.getAttribute('data-is-remove-button') == 'true') {
-                removeSelectedSuggestion(target);
-                if (!self.getSelected().length) {
-                    hideSelectedContainer();
-                    showInputElement();
-                }
-                return;
-            }
-
-            activateInputElement();
-        }
-
-        function onBlurInputElement() {
-            if (self._suggestionsWrapper.hovered) {
-                return;
-            }
-            close();
-        }
-
-        function onHoverSuggestionsWrapper() {
-            self._suggestionsWrapper.hovered = true;
-        }
-
-        function onMouseLeaveSuggestionsWrapper() {
-            self._suggestionsWrapper.hovered = false;
-        }
-
-        function _getSuggestionTemplate() {
-            if (self.options.showAvatars) {
-                return self.options.suggestionTemplateWithAvatar;
-            }
-            return self.options.suggestionTemplateWithoutAvatar;
-        }
-
-        function _getSelectedItemTemplate() {
-            if (self.options.multiple) {
-                return self.options.selectedMultipleItemTemplate;
-            }
-            return self.options.selectedSingleItemTemplate;
-        }
-
-        function _isSelected(item) {
-            return Boolean(self.selectedItems[item[self.options.suggestionIdentifierProperty]]);
-        }
-
-        function _addItemToSelected(item) {
-            self.selectedItems[item[self.options.suggestionIdentifierProperty]] = item;
-        }
-
-        function _isInMatchedSuggestions(item) {
-            return Boolean(self._matchesSuggestionIds[item[self.options.suggestionIdentifierProperty]]);
-        }
-
-        function _addToMatchedSuggestions(item) {
-            self.matchedSuggestions.push(item);
-            self._matchesSuggestionIds[item[self.options.suggestionIdentifierProperty]] = true;
-        }
-
-
-        function _clearLastSelected() {
-            Object.keys(self.selectedItems).forEach(function (prop) {
-                delete self.selectedItems[prop];
-            });
-            var children = Array.prototype.slice.apply(self._selectedContainer.element.children);
-            children.forEach(function (child) {
-                child.parentNode.removeChild(child);
-            });
-
-        }
-
-        function onSelectSuggestion(item, element) {
-            if (!self.options.multiple) {
-                _clearLastSelected();
-            }
-
-            _addItemToSelected(item);
-
-            element.parentNode.removeChild(element);
-            self.inputElement.val('');
-
-            hideSuggestionsList();
-            renderSelectedSuggestion(item);
-            hideInputElement();
-
-            // Событие не будет послано брузером. Поэтому нужно простваить руками.
-            self._suggestionsWrapper.hovered = false;
-            showSelectedContainer();
-        }
-
-        function showSelectedContainer() {
+        function _showSelectedContainer() {
             self._selectedContainer.addClass('show');
         }
 
-        function hideSelectedContainer() {
+        function _hideSelectedContainer() {
             self._selectedContainer.removeClass('show');
         }
 
-        function hideInputElement() {
+        function _hideInputElement() {
             if (self.getSelected().length) {
                 self.inputElement.style.display = 'none';
             }
         }
 
-        function showInputElement() {
+        function _showInputElement() {
             self.inputElement.style.display = 'block';
             if (!self.options.autocomplete && self.getSelected().length) {
                 self.inputElement.addClass('ui-drop-down-input-hidden');
@@ -325,24 +214,24 @@
             }
         }
 
-        function focusInputElement() {
+        function _focusInputElement() {
             if (document.activeElement !== self.inputElement.element) {
                 self.inputElement.element.focus();
             }
         }
 
-        function activateInputElement() {
-            showInputElement();
-            focusInputElement();
-        }
-
-        function showSuggestionList() {
+        function _showSuggestionList() {
             self._suggestionsWrapper.addClass('show');
             _positionSuggestionList();
         }
 
-        function hideSuggestionsList() {
+        function _hideSuggestionsList() {
             self._suggestionsWrapper.removeClass('show');
+        }
+
+        function _activateInputElement() {
+            _showInputElement();
+            _focusInputElement();
         }
 
 
@@ -363,23 +252,169 @@
         }
 
 
-        function clearMatchedSuggestionsList() {
-            var children = Array.prototype.slice.apply(self._suggestionsWrapper.element.children);
+        /*************************************************
+         * Обработка событий
+         ************************************************/
 
-            children.forEach(function (childNode) {
-                self._suggestionsWrapper.removeChild(childNode);
-            });
+        function _initBindings() {
+            self.inputElement.on('focus', _onFocusInputHandler);
+            self.inputElement.on('keyup', _deBounce(_onKeyUpInputHandler, 300));
+            self.inputElement.on('blur', onBlurInputElementHandler);
+
+            self._dropDownInputWrapper.on('click', _onClickWrapperHandler);
+
+            self._suggestionsWrapper.on('mouseenter', onHoverSuggestionsWrapperHandler);
+            self._suggestionsWrapper.on('mouseleave', onMouseLeaveSuggestionsWrapperHandler);
         }
 
 
-        function renderAllMatchedSuggestions() {
+        function _onFocusInputHandler() {
+            open();
+        }
+
+        function _onKeyUpInputHandler() {
+            search();
+        }
+
+        function _onClickWrapperHandler(event) {
+            var target = event.target;
+
+            if (event.target === this) {
+                _activateInputElement();
+                return;
+            }
+
+            if (event.target == self._dropDownIcon.element) {
+                _activateInputElement();
+                return;
+            }
+
+            if (target.getAttribute('data-is-remove-button') == 'true') {
+                _removeSelectedSuggestionByElement(target);
+                if (!self.getSelected().length) {
+                    _hideSelectedContainer();
+                    _showInputElement();
+                }
+                return;
+            }
+
+            _activateInputElement();
+        }
+
+
+        function onBlurInputElementHandler() {
+            if (self._suggestionsWrapper.hovered) {
+                return;
+            }
+            close();
+        }
+
+        function onHoverSuggestionsWrapperHandler() {
+            self._suggestionsWrapper.hovered = true;
+        }
+
+        function onMouseLeaveSuggestionsWrapperHandler() {
+            self._suggestionsWrapper.hovered = false;
+        }
+
+        function onSelectSuggestion(suggestion, element) {
+            if (!self.options.multiple) {
+                _clearLastSelected();
+            }
+
+            _addItemToSelected(suggestion);
+
+            element.parentNode.removeChild(element);
+            self.inputElement.val('');
+
+            _hideSuggestionsList();
+            _renderSelectedSuggestion(suggestion);
+            _hideInputElement();
+
+            // Событие не будет послано брузером. Поэтому нужно простваить руками.
+            self._suggestionsWrapper.hovered = false;
+            _showSelectedContainer();
+        }
+
+        /*************************************************
+         * Утилиты
+         ************************************************/
+
+        //  -------------------------
+        //  Инициализация
+        //  -------------------------
+
+        function _getSuggestionTemplate() {
+            if (self.options.showAvatars) {
+                return self.options.suggestionTemplateWithAvatar;
+            }
+            return self.options.suggestionTemplateWithoutAvatar;
+        }
+
+        function _getSelectedItemTemplate() {
+            if (self.options.multiple) {
+                return self.options.selectedMultipleItemTemplate;
+            }
+            return self.options.selectedSingleItemTemplate;
+        }
+
+        //  -------------------------
+        //  Работа с вариантами
+        //  -------------------------
+
+        function _isSelected(item) {
+            return Boolean(self.selectedItems[item[self.options.suggestionIdentifierProperty]]);
+        }
+
+        function _addItemToSelected(item) {
+            self.selectedItems[item[self.options.suggestionIdentifierProperty]] = item;
+        }
+
+        function _isInMatched(item) {
+            return Boolean(self._matchesSuggestionIds[item[self.options.suggestionIdentifierProperty]]);
+        }
+
+        function _addToMatched(item) {
+            self.matchedSuggestions.push(item);
+            self._matchesSuggestionIds[item[self.options.suggestionIdentifierProperty]] = true;
+        }
+
+        //  -----------------------
+        //  Общее
+        //  -----------------------
+
+        function _deBounce(func, wait, immediate) {
+            var timeout;
+            return function () {
+                var context = this, args = arguments;
+
+                var later = function () {
+                    timeout = null;
+                    if (!immediate) func.apply(context, args);
+                };
+
+                var callNow = immediate && !timeout;
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+                if (callNow) {
+                    func.apply(context, args);
+                }
+            };
+        }
+
+        // ------------------------------------
+        // Отображаение вариантов и выбранных
+        // ------------------------------------
+
+
+        function _renderAllMatchedSuggestions() {
 
             // Если пачка предложений пуста, то производить очистку и показвать сообщение нужно только
             // Если предложения не смогут появиться с сервера
 
             if (!self.matchedSuggestions.length && !self._serverQuryIsRunning) {
-                clearMatchedSuggestionsList();
-                showEmptySuggestionMessage();
+                _clearMatchedSuggestionsList();
+                _showEmptySuggestionMessage();
                 return;
             }
 
@@ -387,14 +422,15 @@
             // Только если есть записи
 
             if (self.matchedSuggestions.length) {
-                clearMatchedSuggestionsList();
+                _clearMatchedSuggestionsList();
             }
             self.matchedSuggestions.forEach(function (item) {
-                renderMatchedSuggestion(item);
+                _renderMatchedSuggestion(item);
             });
         }
 
-        function renderMatchedSuggestion(suggestion) {
+
+        function _renderMatchedSuggestion(suggestion) {
             var matchedBy = suggestion.mathedBy;
             delete suggestion.mathedBy;
 
@@ -410,8 +446,39 @@
             self._suggestionsWrapper.append(dropDownSuggestionItem.uiElement);
         }
 
+        function _renderSelectedSuggestion(suggestion) {
+            var selectedItem = DropDownSelectedSuggestionItem(
+                self._selectedItemTemplate, suggestion, self.options.multiple
+            );
+            selectedItem.render();
+            self._selectedContainer.append(selectedItem.uiElement);
+        }
 
-        function removeSelectedSuggestion(element) {
+        function _clearLastSelected() {
+            Object.keys(self.selectedItems).forEach(function (prop) {
+                delete self.selectedItems[prop];
+            });
+            var children = Array.prototype.slice.apply(self._selectedContainer.element.children);
+            children.forEach(function (child) {
+                child.parentNode.removeChild(child);
+            });
+        }
+
+        function _clearMatchedSuggestionsList() {
+            var children = Array.prototype.slice.apply(self._suggestionsWrapper.element.children);
+
+            children.forEach(function (childNode) {
+                self._suggestionsWrapper.removeChild(childNode);
+            });
+        }
+
+        function _showEmptySuggestionMessage() {
+            var dropDownItem = DropDownSuggestionItem(self.options.emptyMessageTemplate, {name: 'empty'});
+            dropDownItem.render();
+            self._suggestionsWrapper.append(dropDownItem.uiElement.element);
+        }
+
+        function _removeSelectedSuggestionByElement(element) {
             // TODO: Добавить id. Чтобы не зависеть от верстки
             var uid = element.getAttribute('data-user-id');
             var container = element.parentNode;
@@ -420,13 +487,14 @@
             container.parentNode.removeChild(container);
         }
 
-        function renderSelectedSuggestion(suggestion) {
-            var selectedItem = DropDownSelectedSuggestionItem(
-                self._selectedItemTemplate, suggestion, self.options.multiple
-            );
-            selectedItem.render();
-            self._selectedContainer.append(selectedItem.uiElement);
-        }
+        /***********************************************
+         * Поиск
+         ************************************************/
+
+
+        //  ---------------------------------------------
+        //  Локальный поиск на клиенте
+        //  ---------------------------------------------
 
         function _lookUpEmptyPrefix() {
             var counter = 0;
@@ -437,16 +505,15 @@
                     idx++;
                     continue;
                 }
-                _addToMatchedSuggestions(item);
+                _addToMatched(item);
                 counter++;
                 idx++;
             }
         }
 
-        function lookup() {
+        function _lookup() {
             var counter = 0;
             var idx = 0;
-
             var prefix = self.inputElement.val();
 
             if (prefix == self._lastVal && prefix !== '') {
@@ -467,7 +534,7 @@
                 var matchResult = self.matcher(prefix, self.suggestions[idx], self.selectedItems);
                 if (matchResult.matched) {
                     self.suggestions[idx].mathedBy = matchResult.matchedBy;
-                    _addToMatchedSuggestions(self.suggestions[idx]);
+                    _addToMatched(self.suggestions[idx]);
                     counter++;
                 }
                 idx++;
@@ -475,43 +542,49 @@
             console.timeEnd('lookUp');
 
             if (self.options.serverSide) {
-                serverLookUp(prefix);
+                _serverLookUp(prefix);
             }
         }
 
 
-        function appendMatchedSuggestionsFromServer(suggestions) {
+        //  ---------------------------------------------
+        //  Поиск с сервера
+        //  ---------------------------------------------
+
+
+        function _appendMatchedSuggestionsFromServer(suggestions) {
             suggestions.forEach(function (suggestion) {
-                if (!_isSelected(suggestion) && !_isInMatchedSuggestions(suggestion)) {
-                    _addToMatchedSuggestions(suggestion);
-                    renderMatchedSuggestion(suggestion);
+                if (!_isSelected(suggestion) && !_isInMatched(suggestion)) {
+                    _addToMatched(suggestion);
+                    _renderMatchedSuggestion(suggestion);
                 }
             });
         }
 
-        function onServerLookUpLoaded(prefix, response) {
+        function _onServerLookUpLoaded(prefix, response) {
             self._cache[prefix] = response.result;
             if (!self.matchedSuggestions.length) {
-                clearMatchedSuggestionsList();
+                _clearMatchedSuggestionsList();
             }
             if (response.result.length) {
-                appendMatchedSuggestionsFromServer(response.result);
+                _appendMatchedSuggestionsFromServer(response.result);
             } else if (!self.matchedSuggestions.length) {
-                showEmptySuggestionMessage();
+                _showEmptySuggestionMessage();
                 self._lastIsEmpty = true;
             }
         }
 
-        function serverLookUp(prefix) {
+        function _serverLookUp(prefix) {
             if (prefix == '') {
                 return;
             }
+
             self._serverQuryIsRunning = true;
             var _cached = self._cache[prefix];
             var findParams = {};
 
             if (_cached) {
-                appendMatchedSuggestionsFromServer(_cached);
+                _appendMatchedSuggestionsFromServer(_cached);
                 self._serverQuryIsRunning = false;
                 return;
             }
@@ -527,42 +600,18 @@
                 onError: function (xrh) {
                     console.log('ERROR', xrh.statusText);
                     if (!self.matchedSuggestions.length) {
-                        clearMatchedSuggestionsList();
-                        showEmptySuggestionMessage();
+                        _clearMatchedSuggestionsList();
+                        _showEmptySuggestionMessage();
                     }
                     self._serverQuryIsRunning = false;
                 },
                 onSuccess: function (response) {
-                    onServerLookUpLoaded(prefix, response);
+                    _onServerLookUpLoaded(prefix, response);
                     self._serverQuryIsRunning = false;
                 }
             });
         }
 
-        function deBounce(func, wait, immediate) {
-            var timeout;
-            return function () {
-                var context = this, args = arguments;
-
-                var later = function () {
-                    timeout = null;
-                    if (!immediate) func.apply(context, args);
-                };
-
-                var callNow = immediate && !timeout;
-                clearTimeout(timeout);
-                timeout = setTimeout(later, wait);
-                if (callNow) {
-                    func.apply(context, args);
-                }
-            };
-        }
-
-        function showEmptySuggestionMessage() {
-            var dropDownItem = DropDownSuggestionItem(self.options.emptyMessageTemplate, {name: 'empty'});
-            dropDownItem.render();
-            self._suggestionsWrapper.append(dropDownItem.uiElement.element);
-        }
     }
 
     window.UiDropDown = UiDropDown;
