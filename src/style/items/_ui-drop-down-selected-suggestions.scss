@@ -6,7 +6,6 @@
   display: inline-block;
   cursor: default;
   margin: 2px;
-  max-width: calc(100% - 40px);
 }
 
 .ui-drop-down-selected-item {
@@ -20,8 +19,7 @@
 
 .ui-drop-down-selected-name {
   display: inline-block;
-  max-width: calc(100% - 24px);
-  min-width: calc(100% - 50px);
+  max-width: 300px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -44,7 +42,7 @@
   position: absolute;
   top: -20.5px;
   left: 4px;
-  opacity: 0.7;
+  opacity: 0.5;
 }
 .ui-drop-down-selected-remove-btn:hover:before {
   opacity: 1;
@@ -55,10 +53,36 @@
 .ui-drop-down-single-selected-suggestion {
   display: block;
   min-height: 20px;
+  max-width: calc(100% - 30px);
 }
-.ui-drop-down-single-selected-name{
-  padding: 5px;
-}
-.ui-drop-down-selected-single-remove-btn{
 
+.ui-drop-down-single-selected-item{
+  padding: 7px 3px 3px;
+  position: relative;
+}
+
+.ui-drop-down-single-selected-name{
+  display: inline-block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: calc(100% - 28px);
+}
+
+.ui-drop-down-selected-single-remove-btn{
+  display: inline-block;
+  margin-right: 5px;
+  width: 18px;
+  position: absolute;
+  cursor: pointer;
+  right: -65px;
+  top: 2px;
+  font-size: 23px;
+  transform: rotate(45deg);
+  color: #5e81a8;
+  opacity: 0.5;
+}
+
+.ui-drop-down-selected-single-remove-btn:hover{
+  opacity: 1;
 }

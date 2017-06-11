@@ -744,14 +744,14 @@ if (!Object.assign) {
 
     var DEFAULT_MULTIPLE_SELECTED_ITEM_TEMPLATE =
         '<div class="ui-drop-down-selected-item">' +
-        '   <div class="ui-drop-down-selected-name">{name}</div>' +
+        '   <div class="ui-drop-down-selected-name"><span>{name}</span></div>' +
         '   <a class="ui-drop-down-selected-remove-btn" data-user-id="{uid}" data-is-remove-button="true"></a>' +
         '</div>';
 
     var DEFAULT_SINGLE_SELECTED_ITEM_TEMPLATE =
         '<div class="ui-drop-down-single-selected-item">' +
         '    <div class="ui-drop-down-single-selected-name">{name}</div>' +
-        '    <a class="ui-drop-down-selected-single-remove-btn" data-user-id="{uid}" data-is-remove-button="true"></a>' +
+        '    <a class="ui-drop-down-selected-single-remove-btn" data-user-id="{uid}" data-is-remove-button="true">+</a>' +
         '</div>';
 
     var DEFAULT_EMPTY_MESSAGE =
