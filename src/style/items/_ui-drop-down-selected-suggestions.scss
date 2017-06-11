@@ -18,7 +18,7 @@
 
 .ui-drop-down-selected-name {
   display: inline-block;
-  max-width: 300px;
+  max-width: 325px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -47,10 +47,15 @@
   opacity: 1;
 }
 
+// Single
+
 .ui-drop-down-single-selected-suggestion {
   display: block;
   min-height: 20px;
 }
 .ui-drop-down-single-selected-name{
   padding: 5px;
+}
+.ui-drop-down-selected-single-remove-btn{
+
 }

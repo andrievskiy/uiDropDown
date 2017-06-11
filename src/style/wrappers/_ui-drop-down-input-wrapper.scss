@@ -6,7 +6,15 @@
   font-size: 12px;
   position: relative;
   background: $bg-color;
-  padding: 3px 30px 3px 3px;
+  padding: 3px 3px 3px 3px;
 }
 
 
+.ui-widget-drop-down-icon{
+  float: right;
+  width: 21px;
+  height: 25px;
+  overflow: hidden;
+  cursor: pointer;
+  background: url(https://vk.com/images/dropdown_arrow.png) no-repeat 2px 50%;
+}

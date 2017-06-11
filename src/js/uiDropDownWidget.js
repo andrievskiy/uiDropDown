@@ -89,6 +89,7 @@
         self._dropDownInputWrapper = createDropDownInputWrapper();
         self._suggestionsWrapper = createSuggestionWrapper();
         self._selectedContainer = createSelectedSuggestionsContainer();
+        self._dropDownIcon = createDropDownIcon();
         appendElementsToDom();
 
 
@@ -106,7 +107,23 @@
         function appendElementsToDom() {
             self.inputElement.wrap(self._dropDownInputWrapper);
             document.body.appendChild(self._suggestionsWrapper.element);
+
+            self._dropDownInputWrapper.element.insertBefore(self._dropDownIcon.element, self.inputElement.element);
             self._dropDownInputWrapper.element.insertBefore(self._selectedContainer.element, self.inputElement.element);
+
+            var originInputElementW = self.inputElement.clientWidth();
+            console.log(originInputElementW);
+            console.log('offsetWidth', self._dropDownIcon.offsetWidth());
+
+            self.inputElement.css({
+                width: originInputElementW - self._dropDownIcon.offsetWidth()- 15 + 'px'
+            });
+        }
+
+        function createDropDownIcon(){
+            var e = UiElement.create('div');
+            e.addClass('ui-widget-drop-down-icon');
+            return e;
         }
 
 
@@ -193,6 +210,9 @@
 
         function onClickWrapper(event) {
             if (event.target === this) {
+                activateInputElement();
+            }
+            if(event.target == self._dropDownIcon.element){
                 activateInputElement();
             }
         }
