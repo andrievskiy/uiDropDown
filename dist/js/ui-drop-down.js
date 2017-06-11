@@ -382,22 +382,26 @@ if (!Object.assign) {
 
     window.uiDropDownHtmlEscaping = uiDropDownHtmlEscaping;
 })(window);
-/**
- * Created by andrievskiy on 11.06.17.
- */
-(function (window) {
+;(function (window) {
+    function renderTemplate(template, data) {
+        return template.replace(/{([\w|:]+)}/g, function (match, key) {
 
-
-
+            var isHtml = ~key.indexOf('::html');
+            if(isHtml){
+                key = key.split('::')[0];
+                return data[key] || '';
+            }
+            return uiDropDownHtmlEscaping(data[key] || '');
+        })
+    }
+    window.uiRenderTemplate = renderTemplate;
 })(window);
 /**
- * Created by andrievskiy on 11.06.17.
+ * Константы для работы с различными расладками.
+ * Используются в uiDropDownKeyBoardUtil
  */
 (function (window) {
     'use strict';
-
-    // Constants
-
     var LATIN_TO_CYRILLIC_KEYBOARD = {
         'q': 'й',
         'w': 'ц',
@@ -463,7 +467,7 @@ if (!Object.assign) {
     });
 
 
-    var MULTIPLE_LATIN_CHARTS = {
+    var MULTIPLE_LATIN_CHARS = {
         'y': ['ы', 'ё', 'ю', 'я'],
         'z': ['ж', 'з'],
         'k': ['х', 'к'],
@@ -476,7 +480,33 @@ if (!Object.assign) {
     var LATIN_ALPHABET = 'abvgdezijklmnoprstufhcyABVGDEZIJKLMNOPRSTUFHCYёЁ';
     var CYRILLIC_ALPHABET = 'абвгдезийклмнопрстуфхцыАБВГДЕЗИЙКЛМНОПРСТУФХЦЫеЕ';
 
+    window.uiDropDownKeyboardConstants = {
+        LATIN_TO_CYRILLIC_KEYBOARD: LATIN_TO_CYRILLIC_KEYBOARD,
+        CYRILLIC_TO_LATIN_KEYBOARD: CYRILLIC_TO_LATIN_KEYBOARD,
+        LATIN_TO_CYRILLIC_FIRST_REPLACE_MAP: LATIN_TO_CYRILLIC_FIRST_REPLACE_MAP,
+        CYRILLIC_TO_LATIN_FIRST_REPLACE_MAP: CYRILLIC_TO_LATIN_FIRST_REPLACE_MAP,
+        MULTIPLE_LATIN_CHARS: MULTIPLE_LATIN_CHARS,
+        LATIN_ALPHABET: LATIN_ALPHABET,
+        CYRILLIC_ALPHABET: CYRILLIC_ALPHABET
+    };
 
+})(window);
+/**
+ * Модуль для работы с вариантами различных расладок.
+ * Осуществляет поиск всех возможных преставлений строки.
+ * Например кщпщя -> rogoz -> рогоз
+ *
+ */
+(function (window) {
+    'use strict';
+
+    /**
+     * Производит сортировку по длине строки.
+     * @param a
+     * @param b
+     * @returns {number}
+     * @private
+     */
     function _sortKeysComparator(a, b) {
         if (a.length < b.length) {
             return -1;
@@ -487,26 +517,117 @@ if (!Object.assign) {
         return 0;
     }
 
-    // Methods
+    function _replaceAlaphabet(str, srcAlphabet, dstAlphabet) {
+        for (var i = 0; i < srcAlphabet.length; i++) {
+            str = str.split(srcAlphabet.charAt(i)).join(dstAlphabet.charAt(i));
+        }
+        return str;
+    }
 
+    /**
+     * _latinToCyrillicVariants -> возвращает возможные варианты раскладки для латнских букв по строке
+     * @param str
+     * @returns {Array|*}
+     * @private
+     */
+    function _latinToCyrillicVariants(str) {
+
+        var variants;
+        var chars;
+        var firstChars;
+
+        // Сначала происходит замена "букв" из нескольких символов
+
+        firstChars = Object.keys(uiDropDownKeyboardConstants.LATIN_TO_CYRILLIC_FIRST_REPLACE_MAP);
+        firstChars.sort(_sortKeysComparator);
+        firstChars.forEach(function (char) {
+            str = str.split(char).join(uiDropDownKeyboardConstants.LATIN_TO_CYRILLIC_FIRST_REPLACE_MAP[char]);
+        });
+
+        chars = str.split('');
+        variants = _extendVariants(chars);
+
+        variants = variants.map(function (variant) {
+            return _replaceAlaphabet(
+                variant.join(''), uiDropDownKeyboardConstants.LATIN_ALPHABET, uiDropDownKeyboardConstants.CYRILLIC_ALPHABET
+            );
+        });
+
+        return variants;
+
+
+        /**
+         * Производит расширение вариантов для  символов соответствующих нескольким русским буквам
+         * при условии что символ находится в конце строки (т.е. невозиожно определить к чему он приводится)
+         * @param chars
+         * @returns {*[]}
+         * @private
+         */
+        function _extendVariants(chars) {
+            var variants = [chars];
+            var lastChart = chars[chars.length - 1];
+            var chartVariants;
+
+            if (uiDropDownKeyboardConstants.MULTIPLE_LATIN_CHARS[lastChart]) {
+                variants = [];
+                chartVariants = uiDropDownKeyboardConstants.MULTIPLE_LATIN_CHARS[lastChart];
+                chartVariants.forEach(function (chartVar) {
+
+                    var newVariant = chars.slice(0, chars.length - 1);
+                    newVariant.push(chartVar);
+                    variants.push(newVariant);
+                });
+            }
+            return variants;
+        }
+    }
+
+
+    function _cyrillicToLatinVariants(str) {
+
+        var firstChars = Object.keys(uiDropDownKeyboardConstants.CYRILLIC_TO_LATIN_FIRST_REPLACE_MAP);
+        firstChars.sort(_sortKeysComparator);
+
+        // Сначала происходит замена "букв" из нескольких символов
+        firstChars.forEach(function (char) {
+            str = str.split(char).join(uiDropDownKeyboardConstants.CYRILLIC_TO_LATIN_FIRST_REPLACE_MAP[char]);
+        });
+
+        var variant = _replaceAlaphabet(str, uiDropDownKeyboardConstants.CYRILLIC_ALPHABET, uiDropDownKeyboardConstants.LATIN_ALPHABET);
+
+        return [variant];
+    }
+
+
+    /**
+     * toCyrillicKeyboard -> Производит замену латинской раскладки на кириллицу
+     * @param str
+     * @returns {string}
+     */
     function toCyrillicKeyboard(str) {
         var result = '';
-        var charts = str.split('');
-        charts.forEach(function (chart) {
-            result += LATIN_TO_CYRILLIC_KEYBOARD[chart] || chart;
+        var chars = str.split('');
+        chars.forEach(function (chart) {
+            result += uiDropDownKeyboardConstants.LATIN_TO_CYRILLIC_KEYBOARD[chart] || chart;
         });
 
         return result;
     }
 
+    /**
+     * toLatinKeyboard -> Производит замену кириллической раскладки на латинскую
+     * @param str
+     * @returns {string}
+     */
     function toLatinKeyboard(str) {
         var result = '';
-        var charts = str.split('');
-        charts.forEach(function (chart) {
-            result += CYRILLIC_TO_LATIN_KEYBOARD[chart] || chart;
+        var chars = str.split('');
+        chars.forEach(function (chart) {
+            result += uiDropDownKeyboardConstants.CYRILLIC_TO_LATIN_KEYBOARD[chart] || chart;
         });
         return result;
     }
+
 
     /**
      * getPrefixVariables -> Возвращает все варианты представления по строке
@@ -523,7 +644,8 @@ if (!Object.assign) {
         // Получение всех кирилических вариантов по латинице
         // За счет того, что латиница уже, то одну строку на ней
         // Можжно представить несколькими на кирилице
-        // Например: z = ж/z = з
+        // Например: z = ж | z = з
+
         variables = variables.concat(_latinToCyrillicVariants(prefix));
 
         // Приведение кириллицы к латинице
@@ -539,11 +661,11 @@ if (!Object.assign) {
 
         // Транслитерация для раскладок
         // Например: кщпщя -> rogoz -> рогоз
+
         variables.push(_cyrillicToLatinVariants(cyrillicKeyboard));
         variables = variables.concat(_latinToCyrillicVariants(latinKeyboard));
 
         // Вывод уникальных валидаторов
-        // TODO: Оптимизироввать через set
         variables = variables.filter(function (item, idx, array) {
             return array.indexOf(item) === idx;
         });
@@ -551,83 +673,6 @@ if (!Object.assign) {
         return variables;
     }
 
-    function _latinToCyrillicVariants(str) {
-        var variants;
-        var chars;
-        var firstChars;
-
-        // Сначала происходит замена "букв" из нескольких символов
-
-        firstChars = Object.keys(LATIN_TO_CYRILLIC_FIRST_REPLACE_MAP);
-        firstChars.sort(_sortKeysComparator);
-
-        firstChars.forEach(function (char) {
-            str = str.split(char).join(LATIN_TO_CYRILLIC_FIRST_REPLACE_MAP[char]);
-        });
-
-
-        chars = str.split('');
-
-        variants = _extendVariants(chars);
-        variants = variants.map(function (variant) {
-            return _replace(variant.join(''));
-        });
-
-        return variants;
-
-        /**
-         * Производит расширение вариантов для  символов соответствующих нескольким русским буквам
-         * при условии что символ находится в конце строки (т.е. невозиожно определить к чему он приводится)
-         * @param charts
-         * @returns {*[]}
-         * @private
-         */
-        function _extendVariants(charts) {
-            var variants = [charts];
-            var lastChart = charts[charts.length - 1];
-            var chartVariants;
-
-            if (MULTIPLE_LATIN_CHARTS[lastChart]) {
-                variants = [];
-                chartVariants = MULTIPLE_LATIN_CHARTS[lastChart];
-                chartVariants.forEach(function (chartVar) {
-
-                    var newVariant = charts.slice(0, charts.length - 1);
-                    newVariant.push(chartVar);
-                    variants.push(newVariant);
-                });
-            }
-            return variants;
-        }
-
-        function _replace(str) {
-            for (var i = 0; i < LATIN_ALPHABET.length; i++) {
-                str = str.split(LATIN_ALPHABET.charAt(i)).join(CYRILLIC_ALPHABET.charAt(i));
-            }
-            return str;
-        }
-    }
-
-
-    function _cyrillicToLatinVariants(str) {
-
-        var firstChars = Object.keys(CYRILLIC_TO_LATIN_FIRST_REPLACE_MAP);
-        firstChars.sort(_sortKeysComparator);
-
-        // Сначала происходит замена "букв" из нескольких символов
-        firstChars.forEach(function (char) {
-            str = str.split(char).join(CYRILLIC_TO_LATIN_FIRST_REPLACE_MAP[char]);
-        });
-
-        function _replace(str) {
-            for (var i = 0; i < CYRILLIC_ALPHABET.length; i++) {
-                str = str.split(CYRILLIC_ALPHABET.charAt(i)).join(LATIN_ALPHABET.charAt(i));
-            }
-            return str;
-        }
-
-        return [_replace(str)];
-    }
 
     /**
      * Набор утилит для работы с раскладкми.
@@ -641,20 +686,7 @@ if (!Object.assign) {
         toLatinKeyboard: toLatinKeyboard,
         getPrefixVariables: getKeyboardsVariables
     };
-})(window);
-;(function (window) {
-    function renderTemplate(template, data) {
-        return template.replace(/{([\w|:]+)}/g, function (match, key) {
 
-            var isHtml = ~key.indexOf('::html');
-            if(isHtml){
-                key = key.split('::')[0];
-                return data[key] || '';
-            }
-            return uiDropDownHtmlEscaping(data[key] || '');
-        })
-    }
-    window.uiRenderTemplate = renderTemplate;
 })(window);
 ;(function (window) {
     function DropDownSuggestionItem(template, data, matchedBy) {
