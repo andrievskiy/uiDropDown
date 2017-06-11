@@ -103,6 +103,54 @@ if (!Object.assign) {
     window.uiDropDownajax = uiDropDownAjax;
 })(window);
 /**
+ * Утилиты для работы с html
+ */
+(function (window) {
+
+    var ESCAPE_CHARS = {
+        '¢': 'cent',
+        '£': 'pound',
+        '¥': 'yen',
+        '€': 'euro',
+        '©': 'copy',
+        '®': 'reg',
+        '<': 'lt',
+        '>': 'gt',
+        '"': 'quot',
+        '&': 'amp',
+        '\'': '#39'
+    }, regex;
+
+    function _makeRegexpString() {
+        var regexString = '[';
+
+        for (var key in ESCAPE_CHARS) {
+            regexString += key;
+        }
+        regexString += ']';
+
+        return regexString;
+    }
+
+    regex = new RegExp(_makeRegexpString(), 'g');
+
+    /**
+     * Производит экранирование html символов
+     * @param str
+     * @returns {*}
+     */
+    function uiDropDownHtmlEscaping(str) {
+        if(typeof str != 'string'){
+            return str;
+        }
+        return str.replace(regex, function (m) {
+            return '&' + ESCAPE_CHARS[m] + ';';
+        });
+    }
+
+    window.uiDropDownHtmlEscaping = uiDropDownHtmlEscaping;
+})(window);
+/**
  * Модуль для работы с DOM
  */
 (function (window) {
@@ -382,54 +430,6 @@ if (!Object.assign) {
 
     window.UiElement = UiElement;
 
-})(window);
-/**
- * Утилиты для работы с html
- */
-(function (window) {
-
-    var ESCAPE_CHARS = {
-        '¢': 'cent',
-        '£': 'pound',
-        '¥': 'yen',
-        '€': 'euro',
-        '©': 'copy',
-        '®': 'reg',
-        '<': 'lt',
-        '>': 'gt',
-        '"': 'quot',
-        '&': 'amp',
-        '\'': '#39'
-    }, regex;
-
-    function _makeRegexpString() {
-        var regexString = '[';
-
-        for (var key in ESCAPE_CHARS) {
-            regexString += key;
-        }
-        regexString += ']';
-
-        return regexString;
-    }
-
-    regex = new RegExp(_makeRegexpString(), 'g');
-
-    /**
-     * Производит экранирование html символов
-     * @param str
-     * @returns {*}
-     */
-    function uiDropDownHtmlEscaping(str) {
-        if(typeof str != 'string'){
-            return str;
-        }
-        return str.replace(regex, function (m) {
-            return '&' + ESCAPE_CHARS[m] + ';';
-        });
-    }
-
-    window.uiDropDownHtmlEscaping = uiDropDownHtmlEscaping;
 })(window);
 /**
  * Константы для работы с различными расладками.
@@ -770,8 +770,6 @@ if (!Object.assign) {
         this.data = data;
         this.matchedBy = matchedBy;
 
-        this.name = uiDropDownHtmlEscaping(this.data.name);
-        this.name = this.name.replace(this.matchedBy, '<span class="ui-drop-down-highlight">' + this.matchedBy + '</span>');
         this.uid = this.data.uid;
         this.avatarUrl = this.data.avatarUrl || this.data.avatar || defaultAvatarUrl || '';
 
@@ -784,11 +782,16 @@ if (!Object.assign) {
     }
     
     _DropDownSuggestionItem.prototype.render = function () {
+        this.highlight();
         var html = uiRenderTemplate(this.template, this);
         this.uiElement.html(html);
         return this.uiElement;
     };
 
+    _DropDownSuggestionItem.prototype.highlight = function () {
+        this.name = uiDropDownHtmlEscaping(this.data.name);
+        this.name = this.name.replace(this.matchedBy, '<span class="ui-drop-down-highlight">' + this.matchedBy + '</span>');
+    };
     window.DropDownSuggestionItem = DropDownSuggestionItem;
 })(window);
 ;(function (window) {
@@ -1455,11 +1458,8 @@ if (!Object.assign) {
             }
             if (response.result.length) {
                 _appendMatchedSuggestionsFromServer(response.result);
-            } else  {
-                if (!self.matchedSuggestions.length){
-                    _showEmptySuggestionMessage();
-                }
-
+            } else if (!self.matchedSuggestions.length) {
+                _showEmptySuggestionMessage();
             }
         }
 
