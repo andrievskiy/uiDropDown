@@ -12,8 +12,10 @@
         '</div>';
 
     var DEFAULT_MULTIPLE_SELECTED_ITEM_TEMPLATE =
-        '<div class="ui-drop-down-selected-item">' +
-        '   <div class="ui-drop-down-selected-name"><span>{name}</span></div>' +
+        '<div class="ui-drop-down-selected-item" data-is-selected-name="true">' +
+        '   <div class="ui-drop-down-selected-name" data-is-selected-name="true">' +
+        '       <span data-is-selected-name="true">{name}</span>' +
+        '   </div>' +
         '   <a class="ui-drop-down-selected-remove-btn" data-user-id="{uid}" data-is-remove-button="true"></a>' +
         '</div>';
 
@@ -158,6 +160,7 @@
             }
             _showSuggestionList();
             search();
+            _scrollSuggestionWrapperTop();
         }
 
 
@@ -444,7 +447,8 @@
 
                 // TODO: Поправить скрол - не искользовать захардкоженное значение смещения
                 // TODO: сролить 'постранично"
-                self._suggestionsWrapper.element.scrollTop += self._scrollDelta;
+
+                _scrollSuggestionWrapperDown();
             }
 
             if (event.keyCode == uiDropDownEventsKeyCodes.ARROW_UP) {
@@ -457,7 +461,7 @@
                 }
                 // TODO: Поправить скрол - не искользовать захардкоженное значение смещения
                 // TODO: сролить 'постранично"
-                self._suggestionsWrapper.element.scrollTop -= self._scrollDelta;
+                _scrollSuggestionWrapperUp();
             }
 
             if (event.keyCode == uiDropDownEventsKeyCodes.ENTER) {
@@ -484,17 +488,13 @@
         function _onClickWrapperHandler(event) {
             var target = event.target;
 
-            if (event.target === this) {
-                _activateInputElement();
+            // Игнорирвоать клики на имени выбранного элемента
+            if(target.getAttribute('data-is-selected-name') === 'true'){
                 return;
             }
 
-            if (event.target == self._dropDownIcon.element) {
-                _activateInputElement();
-                return;
-            }
-
-            if (target.getAttribute('data-is-remove-button') == 'true') {
+            // Клик на кнопке удаления
+            if (target.getAttribute('data-is-remove-button') === 'true') {
                 _removeSelectedSuggestionByElement(target);
                 if (!self.getSelected().length) {
                     _hideSelectedContainer();
@@ -710,6 +710,22 @@
                 return _getContainer(container);
             }
         }
+
+        //  ---------------------------------
+        //  Скролл
+        //  ---------------------------------
+        function _scrollSuggestionWrapperDown() {
+            self._suggestionsWrapper.element.scrollTop += self._scrollDelta;
+        }
+
+        function _scrollSuggestionWrapperUp() {
+            self._suggestionsWrapper.element.scrollTop -= self._scrollDelta;
+        }
+
+        function _scrollSuggestionWrapperTop() {
+            self._suggestionsWrapper.element.scrollTop = 0;
+        }
+
 
         /***********************************************
          * Поиск

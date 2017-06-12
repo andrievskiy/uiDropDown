@@ -434,6 +434,54 @@ if (!Object.assign) {
 
 })(window);
 /**
+ * Утилиты для работы с html
+ */
+(function (window) {
+
+    var ESCAPE_CHARS = {
+        '¢': 'cent',
+        '£': 'pound',
+        '¥': 'yen',
+        '€': 'euro',
+        '©': 'copy',
+        '®': 'reg',
+        '<': 'lt',
+        '>': 'gt',
+        '"': 'quot',
+        '&': 'amp',
+        '\'': '#39'
+    }, regex;
+
+    function _makeRegexpString() {
+        var regexString = '[';
+
+        for (var key in ESCAPE_CHARS) {
+            regexString += key;
+        }
+        regexString += ']';
+
+        return regexString;
+    }
+
+    regex = new RegExp(_makeRegexpString(), 'g');
+
+    /**
+     * Производит экранирование html символов
+     * @param str
+     * @returns {*}
+     */
+    function uiDropDownHtmlEscaping(str) {
+        if(typeof str != 'string'){
+            return str;
+        }
+        return str.replace(regex, function (m) {
+            return '&' + ESCAPE_CHARS[m] + ';';
+        });
+    }
+
+    window.uiDropDownHtmlEscaping = uiDropDownHtmlEscaping;
+})(window);
+/**
  * Константы для работы с различными расладками.
  * Используются в uiDropDownKeyBoardUtil
  */
@@ -732,54 +780,6 @@ if (!Object.assign) {
 
 })(window);
 /**
- * Утилиты для работы с html
- */
-(function (window) {
-
-    var ESCAPE_CHARS = {
-        '¢': 'cent',
-        '£': 'pound',
-        '¥': 'yen',
-        '€': 'euro',
-        '©': 'copy',
-        '®': 'reg',
-        '<': 'lt',
-        '>': 'gt',
-        '"': 'quot',
-        '&': 'amp',
-        '\'': '#39'
-    }, regex;
-
-    function _makeRegexpString() {
-        var regexString = '[';
-
-        for (var key in ESCAPE_CHARS) {
-            regexString += key;
-        }
-        regexString += ']';
-
-        return regexString;
-    }
-
-    regex = new RegExp(_makeRegexpString(), 'g');
-
-    /**
-     * Производит экранирование html символов
-     * @param str
-     * @returns {*}
-     */
-    function uiDropDownHtmlEscaping(str) {
-        if(typeof str != 'string'){
-            return str;
-        }
-        return str.replace(regex, function (m) {
-            return '&' + ESCAPE_CHARS[m] + ';';
-        });
-    }
-
-    window.uiDropDownHtmlEscaping = uiDropDownHtmlEscaping;
-})(window);
-/**
  * Модуль для работы с шаблонами
  */
 ;(function (window) {
@@ -955,8 +955,10 @@ if (!Object.assign) {
         '</div>';
 
     var DEFAULT_MULTIPLE_SELECTED_ITEM_TEMPLATE =
-        '<div class="ui-drop-down-selected-item">' +
-        '   <div class="ui-drop-down-selected-name"><span>{name}</span></div>' +
+        '<div class="ui-drop-down-selected-item" data-is-selected-name="true">' +
+        '   <div class="ui-drop-down-selected-name" data-is-selected-name="true">' +
+        '       <span data-is-selected-name="true">{name}</span>' +
+        '   </div>' +
         '   <a class="ui-drop-down-selected-remove-btn" data-user-id="{uid}" data-is-remove-button="true"></a>' +
         '</div>';
 
@@ -1101,6 +1103,7 @@ if (!Object.assign) {
             }
             _showSuggestionList();
             search();
+            _scrollSuggestionWrapperTop();
         }
 
 
@@ -1387,7 +1390,8 @@ if (!Object.assign) {
 
                 // TODO: Поправить скрол - не искользовать захардкоженное значение смещения
                 // TODO: сролить 'постранично"
-                self._suggestionsWrapper.element.scrollTop += self._scrollDelta;
+
+                _scrollSuggestionWrapperDown();
             }
 
             if (event.keyCode == uiDropDownEventsKeyCodes.ARROW_UP) {
@@ -1400,7 +1404,7 @@ if (!Object.assign) {
                 }
                 // TODO: Поправить скрол - не искользовать захардкоженное значение смещения
                 // TODO: сролить 'постранично"
-                self._suggestionsWrapper.element.scrollTop -= self._scrollDelta;
+                _scrollSuggestionWrapperUp();
             }
 
             if (event.keyCode == uiDropDownEventsKeyCodes.ENTER) {
@@ -1427,17 +1431,13 @@ if (!Object.assign) {
         function _onClickWrapperHandler(event) {
             var target = event.target;
 
-            if (event.target === this) {
-                _activateInputElement();
+            // Игнорирвоать клики на имени выбранного элемента
+            if(target.getAttribute('data-is-selected-name') === 'true'){
                 return;
             }
 
-            if (event.target == self._dropDownIcon.element) {
-                _activateInputElement();
-                return;
-            }
-
-            if (target.getAttribute('data-is-remove-button') == 'true') {
+            // Клик на кнопке удаления
+            if (target.getAttribute('data-is-remove-button') === 'true') {
                 _removeSelectedSuggestionByElement(target);
                 if (!self.getSelected().length) {
                     _hideSelectedContainer();
@@ -1653,6 +1653,22 @@ if (!Object.assign) {
                 return _getContainer(container);
             }
         }
+
+        //  ---------------------------------
+        //  Скролл
+        //  ---------------------------------
+        function _scrollSuggestionWrapperDown() {
+            self._suggestionsWrapper.element.scrollTop += self._scrollDelta;
+        }
+
+        function _scrollSuggestionWrapperUp() {
+            self._suggestionsWrapper.element.scrollTop -= self._scrollDelta;
+        }
+
+        function _scrollSuggestionWrapperTop() {
+            self._suggestionsWrapper.element.scrollTop = 0;
+        }
+
 
         /***********************************************
          * Поиск
