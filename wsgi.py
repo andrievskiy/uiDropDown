@@ -19,4 +19,4 @@ for _ in xrange(100):
 db.session.commit()
 
 if __name__ == '__main__':
-    application.run(threaded=True, host='0.0.0.0', port=5001)
+    application.run()
