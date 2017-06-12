@@ -9,6 +9,7 @@
     var DEFAULT_SUGGESTION_TEMPLATE_WITHOUT_AVATARS =
         '<div class="ui-drop-down-suggestion-item" data-uid="{uid}">' +
         '   <label class="ui-drop-down-suggestion-item-name">{name::html}</label>' +
+        '   <span class="ui-drop-down-suggestion-item-extra">{extra}</span>' +
         '</div>';
 
     var DEFAULT_MULTIPLE_SELECTED_ITEM_TEMPLATE =
