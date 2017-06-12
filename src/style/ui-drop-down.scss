@@ -19,6 +19,8 @@ $color-white: #fff;
 .ui-drop-down-input-hidden{
   padding: 0!important;
   height: 0!important;
+  margin: 0!important;
+  position: absolute;
 }
 .ui-drop-down-readonly-input{
   cursor: default;
