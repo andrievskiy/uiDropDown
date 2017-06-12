@@ -76,7 +76,6 @@
         self._lastVal = null;
         self._serverQuryIsRunning = false;
         self._matchesSuggestionIds = Object.create(null);
-        self._hoveredIdx = 0;
         self._hoveredSuggestionUiElement = null;
 
         function init() {
@@ -92,9 +91,7 @@
             _initBindings();
         }
 
-        // Управление
         function open() {
-            self._hoveredIdx = 0;
             if ((!self.options.multiple && self.options.autocomplete) || !self.getSelected().length) {
                 _hideSelectedContainer();
             }
@@ -103,8 +100,11 @@
         }
 
         function search() {
-            self._hoveredIdx = 0;
-            _lookup();
+            var prefix = self.inputElement.val();
+            _lookup(prefix);
+            if(self.options.serverSide){
+                _serverLookUp(prefix);
+            }
             _renderAllMatchedSuggestions();
             if(!self._serverQuryIsRunning){
                _hoverFirstSuggestion();
@@ -112,7 +112,6 @@
         }
 
         function close() {
-            self._hoveredIdx = 0;
             _hideSuggestionsList();
             if (self.options.multiple && self.getSelected().length) {
                 _hideInputElement();
@@ -592,25 +591,19 @@
         //  ---------------------------------------------
 
         function _lookUpEmptyPrefix() {
-            var counter = 0;
-            var idx = 0;
-            while (counter < self.options.limit && idx < self.suggestions.length) {
-                var item = self.suggestions[idx];
-                if (_isSelected(item)) {
-                    idx++;
+            for(var i=0; i < self.suggestions.length; i++){
+                var item = self.suggestions[i];
+                if(_isSelected(item)){
                     continue;
                 }
                 _addToMatched(item);
-                counter++;
-                idx++;
+                if(self.matchedSuggestions.length >= self.options.limit){
+                    break;
+                }
             }
         }
 
-        function _lookup() {
-            var counter = 0;
-            var idx = 0;
-            var prefix = self.inputElement.val();
-
+        function _lookup(prefix) {
             if (prefix == self._lastVal && prefix !== '') {
                 return;
             }
@@ -625,20 +618,17 @@
             }
 
             console.time('lookUp');
-            while (counter < self.options.limit && idx < self.suggestions.length) {
-                var matchResult = self.matcher(prefix, self.suggestions[idx], self.selectedItems);
+            for(var i=0; i < self.suggestions.length; i++){
+                var matchResult = self.matcher(prefix, self.suggestions[i], self.selectedItems);
                 if (matchResult.matched) {
-                    self.suggestions[idx].mathedBy = matchResult.matchedBy;
-                    _addToMatched(self.suggestions[idx]);
-                    counter++;
+                    self.suggestions[i].mathedBy = matchResult.matchedBy;
+                    _addToMatched(self.suggestions[i]);
                 }
-                idx++;
+                if(self.matchedSuggestions.length >= self.options.limit){
+                    break
+                }
             }
             console.timeEnd('lookUp');
-
-            if (self.options.serverSide) {
-                _serverLookUp(prefix);
-            }
         }
 
 
@@ -648,12 +638,16 @@
 
 
         function _appendMatchedSuggestionsFromServer(suggestions) {
-            suggestions.forEach(function (suggestion) {
-                if (!_isSelected(suggestion) && !_isInMatched(suggestion) && self.matchedSuggestions.length < self.options.limit) {
+            for(var i = 0; i < suggestions.length; i++) {
+                var suggestion = suggestions[i];
+                if(!_isSelected(suggestion) && !_isInMatched(suggestion)){
                     _addToMatched(suggestion);
                     _renderMatchedSuggestion(suggestion);
                 }
-            });
+                if( self.matchedSuggestions.length >= self.options.limit){
+                    break;
+                }
+            }
         }
 
         function _onServerLookUpLoaded(prefix, response) {

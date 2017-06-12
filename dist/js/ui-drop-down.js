@@ -103,6 +103,20 @@ if (!Object.assign) {
     window.uiDropDownajax = uiDropDownAjax;
 })(window);
 /**
+ * Хранилище констант для событий
+ */
+;(function (window) {
+   var EVENTS_KEY_CODES = {
+       ENTER: 13,
+       ARROW_DOWN: 40,
+       ARROW_UP: 38,
+       ESCAPE: 27
+   };
+
+   window.uiDropDownEventsKeyCodes = EVENTS_KEY_CODES;
+
+})(window);
+/**
  * Модуль для работы с DOM
  */
 (function (window) {
@@ -387,20 +401,6 @@ if (!Object.assign) {
 
 })(window);
 /**
- * Хранилище констант для событий
- */
-;(function (window) {
-   var EVENTS_KEY_CODES = {
-       ENTER: 13,
-       ARROW_DOWN: 40,
-       ARROW_UP: 38,
-       ESCAPE: 27
-   };
-
-   window.uiDropDownEventsKeyCodes = EVENTS_KEY_CODES;
-
-})(window);
-/**
  * Утилиты для работы с html
  */
 (function (window) {
@@ -447,33 +447,6 @@ if (!Object.assign) {
     }
 
     window.uiDropDownHtmlEscaping = uiDropDownHtmlEscaping;
-})(window);
-/**
- * Модуль для работы с шаблонами
- */
-;(function (window) {
-
-    /**
-     * Рендеринг шаблонов
-     * @param template {string} - Шаблон для рендеринга
-     *                            Подстановки производяться по швблону {name}
-     *                            При этом при указании {name::html} для данного значения не будет производиться экранирование
-     * @param data {object} - Даные для рендеринга. Поиск даныных для подставновок производится по ключам этого объекта
-     * @returns {string}
-     */
-    function renderTemplate(template, data) {
-        return template.replace(/{([\w|:]+)}/g, function (match, key) {
-
-            var isHtml = ~key.indexOf('::html');
-            if(isHtml){
-                key = key.split('::')[0];
-                return data[key] || '';
-            }
-            return uiDropDownHtmlEscaping(data[key] || '');
-        })
-    }
-
-    window.uiRenderTemplate = renderTemplate;
 })(window);
 /**
  * Константы для работы с различными расладками.
@@ -773,6 +746,33 @@ if (!Object.assign) {
     };
 
 })(window);
+/**
+ * Модуль для работы с шаблонами
+ */
+;(function (window) {
+
+    /**
+     * Рендеринг шаблонов
+     * @param template {string} - Шаблон для рендеринга
+     *                            Подстановки производяться по швблону {name}
+     *                            При этом при указании {name::html} для данного значения не будет производиться экранирование
+     * @param data {object} - Даные для рендеринга. Поиск даныных для подставновок производится по ключам этого объекта
+     * @returns {string}
+     */
+    function renderTemplate(template, data) {
+        return template.replace(/{([\w|:]+)}/g, function (match, key) {
+
+            var isHtml = ~key.indexOf('::html');
+            if(isHtml){
+                key = key.split('::')[0];
+                return data[key] || '';
+            }
+            return uiDropDownHtmlEscaping(data[key] || '');
+        })
+    }
+
+    window.uiRenderTemplate = renderTemplate;
+})(window);
 ;(function (window) {
     function DropDownSuggestionItem(template, data, matchedBy) {
         return new _DropDownSuggestionItem(template, data, matchedBy);
@@ -985,7 +985,6 @@ if (!Object.assign) {
         self._lastVal = null;
         self._serverQuryIsRunning = false;
         self._matchesSuggestionIds = Object.create(null);
-        self._hoveredIdx = 0;
         self._hoveredSuggestionUiElement = null;
 
         function init() {
@@ -1001,9 +1000,7 @@ if (!Object.assign) {
             _initBindings();
         }
 
-        // Управление
         function open() {
-            self._hoveredIdx = 0;
             if ((!self.options.multiple && self.options.autocomplete) || !self.getSelected().length) {
                 _hideSelectedContainer();
             }
@@ -1012,8 +1009,11 @@ if (!Object.assign) {
         }
 
         function search() {
-            self._hoveredIdx = 0;
-            _lookup();
+            var prefix = self.inputElement.val();
+            _lookup(prefix);
+            if(self.options.serverSide){
+                _serverLookUp(prefix);
+            }
             _renderAllMatchedSuggestions();
             if(!self._serverQuryIsRunning){
                _hoverFirstSuggestion();
@@ -1021,7 +1021,6 @@ if (!Object.assign) {
         }
 
         function close() {
-            self._hoveredIdx = 0;
             _hideSuggestionsList();
             if (self.options.multiple && self.getSelected().length) {
                 _hideInputElement();
@@ -1501,25 +1500,19 @@ if (!Object.assign) {
         //  ---------------------------------------------
 
         function _lookUpEmptyPrefix() {
-            var counter = 0;
-            var idx = 0;
-            while (counter < self.options.limit && idx < self.suggestions.length) {
-                var item = self.suggestions[idx];
-                if (_isSelected(item)) {
-                    idx++;
+            for(var i=0; i < self.suggestions.length; i++){
+                var item = self.suggestions[i];
+                if(_isSelected(item)){
                     continue;
                 }
                 _addToMatched(item);
-                counter++;
-                idx++;
+                if(self.matchedSuggestions.length >= self.options.limit){
+                    break;
+                }
             }
         }
 
-        function _lookup() {
-            var counter = 0;
-            var idx = 0;
-            var prefix = self.inputElement.val();
-
+        function _lookup(prefix) {
             if (prefix == self._lastVal && prefix !== '') {
                 return;
             }
@@ -1534,20 +1527,17 @@ if (!Object.assign) {
             }
 
             console.time('lookUp');
-            while (counter < self.options.limit && idx < self.suggestions.length) {
-                var matchResult = self.matcher(prefix, self.suggestions[idx], self.selectedItems);
+            for(var i=0; i < self.suggestions.length; i++){
+                var matchResult = self.matcher(prefix, self.suggestions[i], self.selectedItems);
                 if (matchResult.matched) {
-                    self.suggestions[idx].mathedBy = matchResult.matchedBy;
-                    _addToMatched(self.suggestions[idx]);
-                    counter++;
+                    self.suggestions[i].mathedBy = matchResult.matchedBy;
+                    _addToMatched(self.suggestions[i]);
                 }
-                idx++;
+                if(self.matchedSuggestions.length >= self.options.limit){
+                    break
+                }
             }
             console.timeEnd('lookUp');
-
-            if (self.options.serverSide) {
-                _serverLookUp(prefix);
-            }
         }
 
 
@@ -1557,12 +1547,16 @@ if (!Object.assign) {
 
 
         function _appendMatchedSuggestionsFromServer(suggestions) {
-            suggestions.forEach(function (suggestion) {
-                if (!_isSelected(suggestion) && !_isInMatched(suggestion) && self.matchedSuggestions.length < self.options.limit) {
+            for(var i = 0; i < suggestions.length; i++) {
+                var suggestion = suggestions[i];
+                if(!_isSelected(suggestion) && !_isInMatched(suggestion)){
                     _addToMatched(suggestion);
                     _renderMatchedSuggestion(suggestion);
                 }
-            });
+                if( self.matchedSuggestions.length >= self.options.limit){
+                    break;
+                }
+            }
         }
 
         function _onServerLookUpLoaded(prefix, response) {
