@@ -269,6 +269,39 @@
     };
 
     /**
+     *
+     * @param {String} attrName
+     * @param {String} attrVal
+     */
+    _UiElement.prototype.setAttribute = function (attrName, attrVal) {
+        this.element.setAttribute(attrName, attrVal);
+    };
+
+    /**
+     * Следующий элмент nextSibling
+     * @returns {Node}
+     */
+    _UiElement.prototype.next = function () {
+        return this.element.nextSibling;
+    };
+
+    /**
+     * Предыидцщий элмент previousSibling
+     * @returns {Node}
+     */
+    _UiElement.prototype.prev = function () {
+        return this.element.previousSibling;
+    };
+
+    /**
+     * Фиксирвоанный список потомков елемента. Фиксация на момент вызова.
+     * @returns {[Node]}
+     */
+    _UiElement.prototype.children = function () {
+      return Array.prototype.slice.apply(this.element.children);
+    };
+
+    /**
      * Прокси для проброса style
      */
     Object.defineProperties(_UiElement.prototype, {

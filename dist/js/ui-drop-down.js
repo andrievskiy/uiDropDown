@@ -373,6 +373,39 @@ if (!Object.assign) {
     };
 
     /**
+     *
+     * @param {String} attrName
+     * @param {String} attrVal
+     */
+    _UiElement.prototype.setAttribute = function (attrName, attrVal) {
+        this.element.setAttribute(attrName, attrVal);
+    };
+
+    /**
+     * Следующий элмент nextSibling
+     * @returns {Node}
+     */
+    _UiElement.prototype.next = function () {
+        return this.element.nextSibling;
+    };
+
+    /**
+     * Предыидцщий элмент previousSibling
+     * @returns {Node}
+     */
+    _UiElement.prototype.prev = function () {
+        return this.element.previousSibling;
+    };
+
+    /**
+     * Фиксирвоанный список потомков елемента. Фиксация на момент вызова.
+     * @returns {[Node]}
+     */
+    _UiElement.prototype.children = function () {
+      return Array.prototype.slice.apply(this.element.children);
+    };
+
+    /**
      * Прокси для проброса style
      */
     Object.defineProperties(_UiElement.prototype, {
@@ -950,8 +983,9 @@ if (!Object.assign) {
         serverSideUrl: '/',
         serverSideMethod: 'GET',
         serverSideFindProperty: 'domain',
-        suggestionIdentifierProperty: 'uid',
         serverLimit: 1000,
+
+        suggestionIdentifierProperty: 'uid',
 
         suggestionTemplateWithAvatar: DEFAULT_SUGGESTION_TEMPLATE,
         suggestionTemplateWithoutAvatar: DEFAULT_SUGGESTION_TEMPLATE_WITHOUT_AVATARS,
@@ -961,6 +995,38 @@ if (!Object.assign) {
 
     };
 
+    /**
+     * Виджет для создания dropDown
+     * @param {string} selector - css селектор элемента ввода. Используется querySelector. Т.е. привязка будет по
+     *                            первому найденному элменту
+     * @param {object} options -  Парметры виджета
+     * @param {Array} options.suggestions - Список варинатов(предложений)
+     * @param {Function} [options.matcher = uiDropDownUsersMatcher] - Функция для определения подходит ли эелемент
+     *                                                                под критерии выбора(префикс).
+     * @param {Boolean} [options.multiple = true]  - Задает режим выбора. Множественный выбор или нет. Default = true
+     * @param {Boolean} [options.autocomplete = true]- Использовать ли поиск по подстроке. Default = true
+     * @param {Boolean} [options.showAvatars = true] - Отображать ли автарки в спике
+     * @param {String} options.defaultAvatarUrl - Url аватарки если она отсутствует у пользователя
+     * @param {Number} [options.limit = 10] - Максимальное количество отображаемых элементов в списке
+     * @param {Boolean} [options.autoInit = true] - Проводить ли инициализацию сразу.
+     * @param {Boolean} [options.serverSide = false] - Призводить ли поиск на сервере
+     * @param {String} [options.serverSideUrl = ''] - Url адрес апи для поиска
+     * @param {String} [options.serverSideFindProperty = 'domain'] - Аргумент по котрому будет произведен поиск
+     *                 Т.е это название GET/POST/PUT параметра по которому произойдет запрос, например:
+     *                 http://api.com/fing?<serverSideFindProperty>=<prefix>
+     * @param {Number} [options.serverLimit = 1000] - Лимит для запроса к серверу
+     * @param {String} [options.suggestionIdentifierProperty = 'uid'] - Название аттрибута - уникального идентификатора
+     *                                                                  записи(пользователя).
+     *
+     * @param {String} [options.suggestionTemplateWithAvatar] - Шаблон для элемента списка с аватаром
+     * @param {String} [options.suggestionTemplateWithoutAvatar] - Шаблон для элемента списка без аватара
+     * @param {String} [options.selectedMultipleItemTemplate] - Шаблон для выбранного элемента при множественном выборе
+     * @param {String} [options.selectedSingleItemTemplate] - Шаблон для выбранного элемента при одиночном выборе
+     * @param {String} [options.emptyMessageTemplate] - Шаблон для пустого сообщения
+     *
+     * @constructor
+     *
+     */
     function UiDropDown(selector, options) {
         var self = this;
 
@@ -968,6 +1034,7 @@ if (!Object.assign) {
 
         self.options = Object.assign({}, DEFAULT_OPTIONS, options);
         self.matcher = self.options.matcher || uiDropDownUsersMatcher;
+
         self.suggestions = self.options.suggestions || [];
         self.matchedSuggestions = [];
         self.selectedItems = Object.create(null);
@@ -980,6 +1047,9 @@ if (!Object.assign) {
         self._initialized = false;
         self._initialSelectedItems = null;
 
+        // ------------------------------------
+        // Public methods
+        // ------------------------------------
 
         self.open = open;
         self.close = close;
@@ -990,6 +1060,9 @@ if (!Object.assign) {
         self.setSelected = setSelected;
         self.activate = activate;
 
+        /**
+         *  Производит ининциализацию виджета
+         */
         function init() {
             self._suggestionTemplate = _getSuggestionTemplate();
             self._selectedItemTemplate = _getSelectedItemTemplate();
@@ -1009,10 +1082,17 @@ if (!Object.assign) {
             self._initialized = true;
         }
 
+        /**
+         * Активация виджета: показ списка предложений и активация поля поиска
+         */
         function activate() {
             _activateInputElement();
         }
 
+
+        /**
+         * Открыть список пркдложений. (При этом элемент поиска активирован не будет)
+         */
         function open() {
             if ((!self.options.multiple && self.options.autocomplete) || !self.getSelected().length) {
                 _hideSelectedContainer();
@@ -1021,6 +1101,10 @@ if (!Object.assign) {
             search();
         }
 
+
+        /**
+         * Выполнить поиск по текущему значению элемента поиска
+         */
         function search() {
             var prefix = self.inputElement.val();
             _lookup(prefix);
@@ -1033,6 +1117,9 @@ if (!Object.assign) {
             }
         }
 
+        /**
+         * Закрыть список предложений
+         */
         function close() {
             _hideSuggestionsList();
             if (self.options.multiple && self.getSelected().length) {
@@ -1044,12 +1131,23 @@ if (!Object.assign) {
             }
         }
 
+
+        /**
+         * Получить список выбранных элементов. Важно, что в случае с multiple=false в ответе все равно
+         * Будет список из 1го элемента.
+         * @returns {Array}
+         */
         function getSelected() {
             return Object.keys(self.selectedItems).map(function (key) {
                 return self.selectedItems[key];
             });
         }
 
+        /**
+         * Утановить выбранные элементы. При этом даже если  multiple=false необходимо передавать список из одного
+         * Элемента. Если  multiple=false, а списке больше одного элмента будет выбран последний.
+         * @param {Array} items
+         */
         function setSelected(items) {
             if (self._initialized) {
                 items.forEach(function (item) {
@@ -1061,6 +1159,10 @@ if (!Object.assign) {
 
         }
 
+        /**
+         * Установить список возможных вариантов предложений
+         * @param {Array} suggestions
+         */
         function setSuggestions(suggestions) {
             self.suggestions = suggestions;
         }
@@ -1084,14 +1186,14 @@ if (!Object.assign) {
             self.inputElement = UiElement(selector);
             self.inputElement.addClass('ui-drop-down-input');
             if (!self.options.autocomplete) {
-                self.inputElement.element.setAttribute('readonly', 'true');
+                self.inputElement.setAttribute('readonly', 'true');
             }
         }
 
         function _createDropDownIcon() {
-            var e = UiElement.create('div');
-            e.addClass('ui-widget-drop-down-icon');
-            return e;
+            var element = UiElement.create('div');
+            element.addClass('ui-widget-drop-down-icon');
+            return element;
         }
 
 
@@ -1226,8 +1328,8 @@ if (!Object.assign) {
             self._hoveredSuggestionUiElement = suggestionElement;
         }
 
-        function _selectSuggestionByElement(element) {
-            var suggestionElement = element.element;
+        function _selectSuggestionByElement(uiElement) {
+            var suggestionElement = uiElement.element;
             var suggestion = self.matchedSuggestions.filter(function (s) {
                 return String(s[self.options.suggestionIdentifierProperty]) === String(suggestionElement.getAttribute('data-uid'));
             });
@@ -1238,10 +1340,6 @@ if (!Object.assign) {
             }
         }
 
-        /**
-         * Прозводит позиционирование блока предложений относительно эелемента
-         * В зависимости от его позиционирования(static/relative)
-         */
         function _positionSuggestionList() {
             var inputWrapperCoordinates = self._dropDownInputWrapper.getCoordinates();
 
@@ -1279,7 +1377,7 @@ if (!Object.assign) {
             if (event.keyCode == uiDropDownEventsKeyCodes.ARROW_DOWN) {
                 event.stopPropagation();
                 if (self._hoveredSuggestionUiElement) {
-                    next = self._hoveredSuggestionUiElement.element.nextSibling;
+                    next = self._hoveredSuggestionUiElement.next();
                     if (next) {
                         _hoverSuggestionByElement(next);
                     }
@@ -1289,7 +1387,7 @@ if (!Object.assign) {
             if (event.keyCode == uiDropDownEventsKeyCodes.ARROW_UP) {
                 event.stopPropagation();
                 if (self._hoveredSuggestionUiElement) {
-                    prev = self._hoveredSuggestionUiElement.element.previousSibling;
+                    prev = self._hoveredSuggestionUiElement.prev();
                     if (prev) {
                         _hoverSuggestionByElement(prev);
                     }
@@ -1507,14 +1605,14 @@ if (!Object.assign) {
             Object.keys(self.selectedItems).forEach(function (prop) {
                 delete self.selectedItems[prop];
             });
-            var children = Array.prototype.slice.apply(self._selectedContainer.element.children);
+            var children = self._selectedContainer.children();
             children.forEach(function (child) {
                 child.parentNode.removeChild(child);
             });
         }
 
         function _clearMatchedSuggestionsList() {
-            var children = Array.prototype.slice.apply(self._suggestionsWrapper.element.children);
+            var children = self._suggestionsWrapper.children();
 
             children.forEach(function (childNode) {
                 self._suggestionsWrapper.removeChild(childNode);
@@ -1524,7 +1622,7 @@ if (!Object.assign) {
         function _showEmptySuggestionMessage() {
             var dropDownItem = DropDownSuggestionItem(self.options.emptyMessageTemplate, {name: 'empty'});
             dropDownItem.render();
-            self._suggestionsWrapper.append(dropDownItem.uiElement.element);
+            self._suggestionsWrapper.append(dropDownItem.uiElement);
         }
 
         function _removeSelectedSuggestionByElement(element) {

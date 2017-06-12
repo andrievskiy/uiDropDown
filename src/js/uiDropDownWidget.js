@@ -243,7 +243,7 @@
             self.inputElement = UiElement(selector);
             self.inputElement.addClass('ui-drop-down-input');
             if (!self.options.autocomplete) {
-                self.inputElement.element.setAttribute('readonly', 'true');
+                self.inputElement.setAttribute('readonly', 'true');
             }
         }
 
@@ -385,8 +385,8 @@
             self._hoveredSuggestionUiElement = suggestionElement;
         }
 
-        function _selectSuggestionByElement(element) {
-            var suggestionElement = element.element;
+        function _selectSuggestionByElement(uiElement) {
+            var suggestionElement = uiElement.element;
             var suggestion = self.matchedSuggestions.filter(function (s) {
                 return String(s[self.options.suggestionIdentifierProperty]) === String(suggestionElement.getAttribute('data-uid'));
             });
@@ -434,7 +434,7 @@
             if (event.keyCode == uiDropDownEventsKeyCodes.ARROW_DOWN) {
                 event.stopPropagation();
                 if (self._hoveredSuggestionUiElement) {
-                    next = self._hoveredSuggestionUiElement.element.nextSibling;
+                    next = self._hoveredSuggestionUiElement.next();
                     if (next) {
                         _hoverSuggestionByElement(next);
                     }
@@ -444,7 +444,7 @@
             if (event.keyCode == uiDropDownEventsKeyCodes.ARROW_UP) {
                 event.stopPropagation();
                 if (self._hoveredSuggestionUiElement) {
-                    prev = self._hoveredSuggestionUiElement.element.previousSibling;
+                    prev = self._hoveredSuggestionUiElement.prev();
                     if (prev) {
                         _hoverSuggestionByElement(prev);
                     }
@@ -662,14 +662,14 @@
             Object.keys(self.selectedItems).forEach(function (prop) {
                 delete self.selectedItems[prop];
             });
-            var children = Array.prototype.slice.apply(self._selectedContainer.element.children);
+            var children = self._selectedContainer.children();
             children.forEach(function (child) {
                 child.parentNode.removeChild(child);
             });
         }
 
         function _clearMatchedSuggestionsList() {
-            var children = Array.prototype.slice.apply(self._suggestionsWrapper.element.children);
+            var children = self._suggestionsWrapper.children();
 
             children.forEach(function (childNode) {
                 self._suggestionsWrapper.removeChild(childNode);
@@ -679,7 +679,7 @@
         function _showEmptySuggestionMessage() {
             var dropDownItem = DropDownSuggestionItem(self.options.emptyMessageTemplate, {name: 'empty'});
             dropDownItem.render();
-            self._suggestionsWrapper.append(dropDownItem.uiElement.element);
+            self._suggestionsWrapper.append(dropDownItem.uiElement);
         }
 
         function _removeSelectedSuggestionByElement(element) {
