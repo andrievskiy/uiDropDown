@@ -34,13 +34,15 @@
         showAvatars: true,
         defaultAvatarUrl: null,
         limit: 10,
+        autoInit: true,
 
         serverSide: false,
         serverSideUrl: '/',
         serverSideMethod: 'GET',
         serverSideFindProperty: 'domain',
-        suggestionIdentifierProperty: 'uid',
         serverLimit: 1000,
+
+        suggestionIdentifierProperty: 'uid',
 
         suggestionTemplateWithAvatar: DEFAULT_SUGGESTION_TEMPLATE,
         suggestionTemplateWithoutAvatar: DEFAULT_SUGGESTION_TEMPLATE_WITHOUT_AVATARS,
@@ -50,24 +52,45 @@
 
     };
 
+    /**
+     * Виджет для создания dropDown
+     * @param {string} selector - css селектор элемента ввода. Используется querySelector. Т.е. привязка будет по
+     *                            первому найденному элменту
+     * @param {object} options -  Парметры виджета
+     * @param {Array} options.suggestions - Список варинатов(предложений)
+     * @param {Function} [options.matcher = uiDropDownUsersMatcher] - Функция для определения подходит ли эелемент
+     *                                                                под критерии выбора(префикс).
+     * @param {Boolean} [options.multiple = true]  - Задает режим выбора. Множественный выбор или нет. Default = true
+     * @param {Boolean} [options.autocomplete = true]- Использовать ли поиск по подстроке. Default = true
+     * @param {Boolean} [options.showAvatars = true] - Отображать ли автарки в спике
+     * @param {String} options.defaultAvatarUrl - Url аватарки если она отсутствует у пользователя
+     * @param {Number} [options.limit = 10] - Максимальное количество отображаемых элементов в списке
+     * @param {Boolean} [options.autoInit = true] - Проводить ли инициализацию сразу.
+     * @param {Boolean} [options.serverSide = false] - Призводить ли поиск на сервере
+     * @param {String} [options.serverSideUrl = ''] - Url адрес апи для поиска
+     * @param {String} [options.serverSideFindProperty = 'domain'] - Аргумент по котрому будет произведен поиск
+     *                 Т.е это название GET/POST/PUT параметра по которому произойдет запрос, например:
+     *                 http://api.com/fing?<serverSideFindProperty>=<prefix>
+     * @param {String} [options.suggestionIdentifierProperty = 'uid'] - Название аттрибута - уникального идентификатора
+     *                                                                  записи(пользователя).
+     *
+     * @param {String} [options.suggestionTemplateWithAvatar] - Шаблон для элемента списка с аватаром
+     * @param {String} [options.suggestionTemplateWithoutAvatar] - Шаблон для элемента списка без аватара
+     * @param {String} [options.selectedMultipleItemTemplate] - Шаблон для выбранного элемента при множественном выборе
+     * @param {String} [options.selectedSingleItemTemplate] - Шаблон для выбранного элемента при одиночном выборе
+     * @param {String} [options.emptyMessageTemplate] - Шаблон для пустого сообщения
+     *
+     * @constructor
+     *
+     */
     function UiDropDown(selector, options) {
         var self = this;
 
         options = options || {};
 
-        /**
-         * Возравщает список выбранных элементов
-         * @returns {Array}
-         */
-        self.getSelected = function () {
-            return Object.keys(self.selectedItems).map(function (key) {
-                return self.selectedItems[key];
-            });
-        };
-
-
         self.options = Object.assign({}, DEFAULT_OPTIONS, options);
         self.matcher = self.options.matcher || uiDropDownUsersMatcher;
+
         self.suggestions = self.options.suggestions || [];
         self.matchedSuggestions = [];
         self.selectedItems = Object.create(null);
@@ -77,7 +100,25 @@
         self._serverQuryIsRunning = false;
         self._matchesSuggestionIds = Object.create(null);
         self._hoveredSuggestionUiElement = null;
+        self._initialized = false;
+        self._initialSelectedItems = null;
 
+        // ------------------------------------
+        // Public methods
+        // ------------------------------------
+
+        self.open = open;
+        self.close = close;
+        self.search = search;
+        self.init = init;
+        self.getSelected = getSelected;
+        self.setSuggestions = setSuggestions;
+        self.setSelected = setSelected;
+        self.activate = activate;
+
+        /**
+         *  Производит ининциализацию виджета
+         */
         function init() {
             self._suggestionTemplate = _getSuggestionTemplate();
             self._selectedItemTemplate = _getSelectedItemTemplate();
@@ -89,8 +130,25 @@
             self._dropDownIcon = _createDropDownIcon();
             _appendElementsToDom();
             _initBindings();
+            if (self._initialSelectedItems) {
+                self._initialSelectedItems.forEach(function (item) {
+                    _applySelected(item);
+                });
+            }
+            self._initialized = true;
         }
 
+        /**
+         * Активация виджета: показ списка предложений и активация поля поиска
+         */
+        function activate() {
+            _activateInputElement();
+        }
+
+
+        /**
+         * Открыть список пркдложений. (При этом элемент поиска активирован не будет)
+         */
         function open() {
             if ((!self.options.multiple && self.options.autocomplete) || !self.getSelected().length) {
                 _hideSelectedContainer();
@@ -99,18 +157,25 @@
             search();
         }
 
+
+        /**
+         * Выполнить поиск по текущему значению элемента поиска
+         */
         function search() {
             var prefix = self.inputElement.val();
             _lookup(prefix);
-            if(self.options.serverSide){
+            if (self.options.serverSide) {
                 _serverLookUp(prefix);
             }
             _renderAllMatchedSuggestions();
-            if(!self._serverQuryIsRunning){
-               _hoverFirstSuggestion();
+            if (!self._serverQuryIsRunning) {
+                _hoverFirstSuggestion();
             }
         }
 
+        /**
+         * Закрыть список предложений
+         */
         function close() {
             _hideSuggestionsList();
             if (self.options.multiple && self.getSelected().length) {
@@ -123,8 +188,45 @@
         }
 
 
-        init();
+        /**
+         * Получить список выбранных элементов. Важно, что в случае с multiple=false в ответе все равно
+         * Будет список из 1го элемента.
+         * @returns {Array}
+         */
+        function getSelected() {
+            return Object.keys(self.selectedItems).map(function (key) {
+                return self.selectedItems[key];
+            });
+        }
 
+        /**
+         * Утановить выбранные элементы. При этом даже если  multiple=false необходимо передавать список из одного
+         * Элемента. Если  multiple=false, а списке больше одного элмента будет выбран последний.
+         * @param {Array} items
+         */
+        function setSelected(items) {
+            if (self._initialized) {
+                items.forEach(function (item) {
+                    _applySelected(item);
+                });
+            } else {
+                self._initialSelectedItems = items;
+            }
+
+        }
+
+        /**
+         * Установить список возможных вариантов предложений
+         * @param {Array} suggestions
+         */
+        function setSuggestions(suggestions) {
+            self.suggestions = suggestions;
+        }
+
+
+        if (self.options.autoInit) {
+            init();
+        }
 
         /*************************************************
          * Внутненние методы для работы с DOM.
@@ -196,6 +298,17 @@
             });
         }
 
+        function _applySelected(suggestion) {
+            if (!self.options.multiple) {
+                _clearLastSelected();
+            }
+
+            _addItemToSelected(suggestion);
+            _renderSelectedSuggestion(suggestion);
+            _showSelectedContainer();
+            _hideInputElement();
+        }
+
         //  --------------------------
         //  Управление отображением
         //  ---------------------------
@@ -248,15 +361,15 @@
         // ------------------------------------
 
         function _clearLastHovered() {
-            if(self._hoveredSuggestionUiElement){
+            if (self._hoveredSuggestionUiElement) {
                 self._hoveredSuggestionUiElement.removeClass('ui-drop-down-hovered');
             }
         }
 
         function _hoverFirstSuggestion() {
-             _clearLastHovered();
+            _clearLastHovered();
             var suggestionElement = self._suggestionsWrapper.element.firstChild;
-            if(suggestionElement){
+            if (suggestionElement) {
                 suggestionElement = UiElement(suggestionElement);
                 suggestionElement.addClass('ui-drop-down-hovered');
                 self._hoveredSuggestionUiElement = suggestionElement;
@@ -274,19 +387,15 @@
         function _selectSuggestionByElement(element) {
             var suggestionElement = element.element;
             var suggestion = self.matchedSuggestions.filter(function (s) {
-                 return String(s[self.options.suggestionIdentifierProperty]) === String(suggestionElement.getAttribute('data-uid'));
+                return String(s[self.options.suggestionIdentifierProperty]) === String(suggestionElement.getAttribute('data-uid'));
             });
-            
+
             suggestion = suggestion[0];
-            if(suggestion){
+            if (suggestion) {
                 onSelectSuggestion(suggestion, suggestionElement);
             }
         }
 
-        /**
-         * Прозводит позиционирование блока предложений относительно эелемента
-         * В зависимости от его позиционирования(static/relative)
-         */
         function _positionSuggestionList() {
             var inputWrapperCoordinates = self._dropDownInputWrapper.getCoordinates();
 
@@ -321,33 +430,33 @@
             var next = null;
             var prev = null;
 
-            if(event.keyCode == uiDropDownEventsKeyCodes.ARROW_DOWN){
+            if (event.keyCode == uiDropDownEventsKeyCodes.ARROW_DOWN) {
                 event.stopPropagation();
-                if(self._hoveredSuggestionUiElement){
+                if (self._hoveredSuggestionUiElement) {
                     next = self._hoveredSuggestionUiElement.element.nextSibling;
-                    if(next){
+                    if (next) {
                         _hoverSuggestionByElement(next);
                     }
                 }
             }
 
-            if(event.keyCode == uiDropDownEventsKeyCodes.ARROW_UP){
+            if (event.keyCode == uiDropDownEventsKeyCodes.ARROW_UP) {
                 event.stopPropagation();
-                if(self._hoveredSuggestionUiElement){
+                if (self._hoveredSuggestionUiElement) {
                     prev = self._hoveredSuggestionUiElement.element.previousSibling;
-                    if(prev){
+                    if (prev) {
                         _hoverSuggestionByElement(prev);
                     }
                 }
             }
 
-            if(event.keyCode == uiDropDownEventsKeyCodes.ENTER){
+            if (event.keyCode == uiDropDownEventsKeyCodes.ENTER) {
                 event.stopPropagation();
                 _selectSuggestionByElement(self._hoveredSuggestionUiElement);
 
             }
 
-            if(event.keyCode == uiDropDownEventsKeyCodes.ESCAPE){
+            if (event.keyCode == uiDropDownEventsKeyCodes.ESCAPE) {
                 event.stopPropagation();
                 close();
                 self.inputElement.element.blur();
@@ -575,17 +684,17 @@
         function _removeSelectedSuggestionByElement(element) {
             var uid = element.getAttribute('data-user-id');
             var container = _getContainer(element);
-            if(container){
+            if (container) {
                 container.parentNode.removeChild(container);
             }
             delete self.selectedItems[uid];
 
             function _getContainer(element) {
                 var container = element.parentNode;
-                if(container.getAttribute('data-is-selected-suggestion') === 'true'){
+                if (container.getAttribute('data-is-selected-suggestion') === 'true') {
                     return container;
                 }
-                if(container === document.body){
+                if (container === document.body) {
                     return null;
                 }
                 return _getContainer(container);
@@ -602,13 +711,13 @@
         //  ---------------------------------------------
 
         function _lookUpEmptyPrefix() {
-            for(var i=0; i < self.suggestions.length; i++){
+            for (var i = 0; i < self.suggestions.length; i++) {
                 var item = self.suggestions[i];
-                if(_isSelected(item)){
+                if (_isSelected(item)) {
                     continue;
                 }
                 _addToMatched(item);
-                if(self.matchedSuggestions.length >= self.options.limit){
+                if (self.matchedSuggestions.length >= self.options.limit) {
                     break;
                 }
             }
@@ -629,13 +738,13 @@
             }
 
             console.time('lookUp');
-            for(var i=0; i < self.suggestions.length; i++){
+            for (var i = 0; i < self.suggestions.length; i++) {
                 var matchResult = self.matcher(prefix, self.suggestions[i], self.selectedItems);
                 if (matchResult.matched) {
                     self.suggestions[i].mathedBy = matchResult.matchedBy;
                     _addToMatched(self.suggestions[i]);
                 }
-                if(self.matchedSuggestions.length >= self.options.limit){
+                if (self.matchedSuggestions.length >= self.options.limit) {
                     break
                 }
             }
@@ -649,13 +758,13 @@
 
 
         function _appendMatchedSuggestionsFromServer(suggestions) {
-            for(var i = 0; i < suggestions.length; i++) {
+            for (var i = 0; i < suggestions.length; i++) {
                 var suggestion = suggestions[i];
-                if(!_isSelected(suggestion) && !_isInMatched(suggestion)){
+                if (!_isSelected(suggestion) && !_isInMatched(suggestion)) {
                     _addToMatched(suggestion);
                     _renderMatchedSuggestion(suggestion);
                 }
-                if( self.matchedSuggestions.length >= self.options.limit){
+                if (self.matchedSuggestions.length >= self.options.limit) {
                     break;
                 }
             }
