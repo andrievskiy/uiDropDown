@@ -301,6 +301,14 @@
       return Array.prototype.slice.apply(this.element.children);
     };
 
+    _UiElement.prototype.parent = function () {
+        return new _UiElement(this.element.parentNode);
+    };
+
+    _UiElement.prototype.parentNode = function () {
+        return this.element.parentNode;
+    };
+
     /**
      * Прокси для проброса style
      */

@@ -9,11 +9,14 @@
     var DEFAULT_SUGGESTION_TEMPLATE_WITHOUT_AVATARS =
         '<div class="ui-drop-down-suggestion-item" data-uid="{uid}">' +
         '   <label class="ui-drop-down-suggestion-item-name">{name::html}</label>' +
+        '   <span class="ui-drop-down-suggestion-item-extra">{extra}</span>' +
         '</div>';
 
     var DEFAULT_MULTIPLE_SELECTED_ITEM_TEMPLATE =
-        '<div class="ui-drop-down-selected-item">' +
-        '   <div class="ui-drop-down-selected-name"><span>{name}</span></div>' +
+        '<div class="ui-drop-down-selected-item" data-is-selected-name="true">' +
+        '   <div class="ui-drop-down-selected-name" data-is-selected-name="true">' +
+        '       <span data-is-selected-name="true">{name}</span>' +
+        '   </div>' +
         '   <a class="ui-drop-down-selected-remove-btn" data-user-id="{uid}" data-is-remove-button="true"></a>' +
         '</div>';
 
@@ -26,6 +29,14 @@
     var DEFAULT_EMPTY_MESSAGE =
         '<div class="ui-drop-down-suggestion-item">' +
         '   <p>Пользователь не найден</p>' +
+        '</div>';
+
+    var ADD_NEW_BUTTON_TEMPLATE =
+        '<div  class="ui-drop-down-selected-item-add-new-button">' +
+        '    <div class="ui-drop-down-selected-add-new-button-name">' +
+        '       Добавить' +
+        '    </div>' +
+        '    <a class="ui-drop-down-selected-add-btn"></a>' +
         '</div>';
 
     var DEFAULT_OPTIONS = {
@@ -48,7 +59,8 @@
         suggestionTemplateWithoutAvatar: DEFAULT_SUGGESTION_TEMPLATE_WITHOUT_AVATARS,
         selectedMultipleItemTemplate: DEFAULT_MULTIPLE_SELECTED_ITEM_TEMPLATE,
         selectedSingleItemTemplate: DEFAULT_SINGLE_SELECTED_ITEM_TEMPLATE,
-        emptyMessageTemplate: DEFAULT_EMPTY_MESSAGE
+        emptyMessageTemplate: DEFAULT_EMPTY_MESSAGE,
+        addNewButtonTemplate: ADD_NEW_BUTTON_TEMPLATE
 
     };
 
@@ -104,6 +116,8 @@
         self._initialized = false;
         self._initialSelectedItems = null;
 
+        self._scrollDelta = 55;
+
         // ------------------------------------
         // Public methods
         // ------------------------------------
@@ -151,13 +165,14 @@
          * Открыть список пркдложений. (При этом элемент поиска активирован не будет)
          */
         function open() {
+            _hideAddNewButton();
             if ((!self.options.multiple && self.options.autocomplete) || !self.getSelected().length) {
                 _hideSelectedContainer();
             }
             _showSuggestionList();
             search();
+            _scrollSuggestionWrapperTop();
         }
-
 
         /**
          * Выполнить поиск по текущему значению элемента поиска
@@ -181,11 +196,13 @@
             _hideSuggestionsList();
             if (self.options.multiple && self.getSelected().length) {
                 _hideInputElement();
+                _showAddNewButton();
             }
             if (!self.options.multiple && self.getSelected().length) {
                 _hideInputElement();
                 _showSelectedContainer();
             }
+
         }
 
 
@@ -278,8 +295,20 @@
 
 
         function _createSelectedSuggestionsContainer() {
+            function _createAddNewButton() {
+                var addNewButton = UiElement.create('div');
+                addNewButton.addClass('ui-drop-down-selected-suggestion');
+                addNewButton.html(uiRenderTemplate(self.options.addNewButtonTemplate));
+                self._addNewButton = addNewButton;
+                return addNewButton;
+            }
+
             var element = UiElement.create('div');
             element.addClass('ui-drop-down-selected-container');
+
+            if(self.options.multiple){
+                element.append(_createAddNewButton());
+            }
 
             return element;
         }
@@ -324,12 +353,24 @@
 
         function _hideInputElement() {
             if (self.getSelected().length) {
-                self.inputElement.style.display = 'none';
+                self.inputElement.addClass('ui-drop-down-hidden');
+            }
+        }
+
+        function _hideAddNewButton() {
+            if(self._addNewButton){
+                self._addNewButton.addClass('ui-drop-down-hidden');
+            }
+        }
+
+        function _showAddNewButton() {
+            if(self._addNewButton){
+                self._addNewButton.removeClass('ui-drop-down-hidden')
             }
         }
 
         function _showInputElement() {
-            self.inputElement.style.display = 'block';
+            self.inputElement.removeClass('ui-drop-down-hidden');
             if (!self.options.autocomplete && self.getSelected().length) {
                 self.inputElement.addClass('ui-drop-down-input-hidden');
             } else {
@@ -439,6 +480,11 @@
                         _hoverSuggestionByElement(next);
                     }
                 }
+
+                // TODO: Поправить скрол - не искользовать захардкоженное значение смещения
+                // TODO: сролить 'постранично"
+
+                _scrollSuggestionWrapperDown();
             }
 
             if (event.keyCode == uiDropDownEventsKeyCodes.ARROW_UP) {
@@ -449,6 +495,9 @@
                         _hoverSuggestionByElement(prev);
                     }
                 }
+                // TODO: Поправить скрол - не искользовать захардкоженное значение смещения
+                // TODO: сролить 'постранично"
+                _scrollSuggestionWrapperUp();
             }
 
             if (event.keyCode == uiDropDownEventsKeyCodes.ENTER) {
@@ -474,18 +523,13 @@
 
         function _onClickWrapperHandler(event) {
             var target = event.target;
-
-            if (event.target === this) {
-                _activateInputElement();
+            // Игнорирвоать клики на имени выбранного элемента
+            if(target.getAttribute('data-is-selected-name') === 'true'){
                 return;
             }
 
-            if (event.target == self._dropDownIcon.element) {
-                _activateInputElement();
-                return;
-            }
-
-            if (target.getAttribute('data-is-remove-button') == 'true') {
+            // Клик на кнопке удаления
+            if (target.getAttribute('data-is-remove-button') === 'true') {
                 _removeSelectedSuggestionByElement(target);
                 if (!self.getSelected().length) {
                     _hideSelectedContainer();
@@ -493,7 +537,6 @@
                 }
                 return;
             }
-
             _activateInputElement();
         }
 
@@ -530,6 +573,7 @@
             // Событие не будет послано брузером. Поэтому нужно простваить руками.
             self._suggestionsWrapper.hovered = false;
             _showSelectedContainer();
+            _showAddNewButton();
         }
 
         function onHoverSuggestion(element) {
@@ -655,6 +699,10 @@
                 self._selectedItemTemplate, suggestion, self.options.multiple
             );
             selectedItem.render();
+            if(self.options.multiple){
+                self._selectedContainer.element.insertBefore(selectedItem.uiElement.element, self._addNewButton.element);
+                return;
+            }
             self._selectedContainer.append(selectedItem.uiElement);
         }
 
@@ -701,6 +749,22 @@
                 return _getContainer(container);
             }
         }
+
+        //  ---------------------------------
+        //  Скролл
+        //  ---------------------------------
+        function _scrollSuggestionWrapperDown() {
+            self._suggestionsWrapper.element.scrollTop += self._scrollDelta;
+        }
+
+        function _scrollSuggestionWrapperUp() {
+            self._suggestionsWrapper.element.scrollTop -= self._scrollDelta;
+        }
+
+        function _scrollSuggestionWrapperTop() {
+            self._suggestionsWrapper.element.scrollTop = 0;
+        }
+
 
         /***********************************************
          * Поиск

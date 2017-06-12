@@ -5,66 +5,33 @@
     <title>Title</title>
     <link href='https://fonts.googleapis.com/css?family=Roboto' rel='stylesheet'>
     <link type="text/css" rel="stylesheet" href="dist/css/ui-drop-down.css">
+    <link type="text/css" rel="stylesheet" href="dist/demo/demo.css">
 </head>
 <body>
-<div>
-    <input type="text" id="test" style="position: relative;" placeholder="Введите имя или адрес страницы">
-    <p style="height: 20px">
-    </p>
-    <input type="text" id="test2"  placeholder="Введите имя или адрес страницы">
-    <p></p>
-    <input type="text" id="test3" placeholder="Test">
-    <p></p>
-    <input type="text" id="test4" placeholder="Test2">
+
+<div class="header">
+    <h2>uiDropDown</h2>
 </div>
 
+
+<div class="content">
+    <span class="description">Множественный выбор и поиск на сервере.</span>
+    <input type="text" id="demo-multiple" placeholder="Введите имя друга или адрес страницы">
+
+    <span class="description">Выбор одного и поиск на сервере. Без аватарок. </span>
+    <input type="text" id="demo-single" placeholder="Введите имя друга или адрес страницы">
+
+    <span class="description">Множественный выбор без поиска.</span>
+    <input type="text" id="demo-multiple-no-autocomplete" placeholder="Выберите из списка">
+
+
+    <span class="description">Одичночный выбор без поиска.</span>
+    <input type="text" id="demo-multiple-no-autocomplete-single" placeholder="Выберите из списка">
+</div>
+
+
 <script src="dist/js/ui-drop-down.js"></script>
-<script>
-    var suggestions = [];
-    var suggestions2 = [];
-    for(var i=0; i < 1000; i++){
-        suggestions.push({
-            name: i + 'Зелёный ' + i + 'Жаворонок',
-            uid: '' + i + 2000,
-            avatarUrl: 'https://vk.com/images/deactivated_50.png',
-            extra: 'Extra' + i
-        });
-        suggestions2.push({
-            name: i + 'Test2 ' + i + 'User',
-            uid: '' + i + 2000,
-            avatarUrl: 'https://vk.com/images/deactivated_50.png'
-        })
-    }
+<script src="dist/demo/demo.js"></script>
 
-    var widget1 = new UiDropDown('#test', {
-        suggestions: suggestions,
-        limit: 10,
-        serverSide: true,
-        showAvatars: true,
-        serverSideUrl: 'http://127.0.0.1:5001/find',
-        serverSideFindProperty: 'domain'
-    });
-
-    var widget2 = new UiDropDown('#test2', {
-        suggestions: suggestions2,
-        showAvatars: false,
-        limit: 20,
-        multiple: false
-    });
-
-    var widet3 = new UiDropDown('#test3', {
-        suggestions: suggestions2,
-        limit: 10,
-        autocomplete: false
-    });
-
-    var w4 = new UiDropDown('#test4', {
-        suggestions: suggestions2,
-        limit: 100,
-        autocomplete: false,
-        multiple: false
-    });
-
-</script>
 </body>
 </html>
