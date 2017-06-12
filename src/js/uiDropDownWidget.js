@@ -573,12 +573,23 @@
         }
 
         function _removeSelectedSuggestionByElement(element) {
-            // TODO: Добавить id. Чтобы не зависеть от верстки
             var uid = element.getAttribute('data-user-id');
-            var container = element.parentNode;
-            container = container.parentNode;
+            var container = _getContainer(element);
+            if(container){
+                container.parentNode.removeChild(container);
+            }
             delete self.selectedItems[uid];
-            container.parentNode.removeChild(container);
+
+            function _getContainer(element) {
+                var container = element.parentNode;
+                if(container.getAttribute('data-is-selected-suggestion') === 'true'){
+                    return container;
+                }
+                if(container === document.body){
+                    return null;
+                }
+                return _getContainer(container);
+            }
         }
 
         /***********************************************

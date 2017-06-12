@@ -103,20 +103,6 @@ if (!Object.assign) {
     window.uiDropDownajax = uiDropDownAjax;
 })(window);
 /**
- * Хранилище констант для событий
- */
-;(function (window) {
-   var EVENTS_KEY_CODES = {
-       ENTER: 13,
-       ARROW_DOWN: 40,
-       ARROW_UP: 38,
-       ESCAPE: 27
-   };
-
-   window.uiDropDownEventsKeyCodes = EVENTS_KEY_CODES;
-
-})(window);
-/**
  * Модуль для работы с DOM
  */
 (function (window) {
@@ -401,52 +387,18 @@ if (!Object.assign) {
 
 })(window);
 /**
- * Утилиты для работы с html
+ * Хранилище констант для событий
  */
-(function (window) {
+;(function (window) {
+   var EVENTS_KEY_CODES = {
+       ENTER: 13,
+       ARROW_DOWN: 40,
+       ARROW_UP: 38,
+       ESCAPE: 27
+   };
 
-    var ESCAPE_CHARS = {
-        '¢': 'cent',
-        '£': 'pound',
-        '¥': 'yen',
-        '€': 'euro',
-        '©': 'copy',
-        '®': 'reg',
-        '<': 'lt',
-        '>': 'gt',
-        '"': 'quot',
-        '&': 'amp',
-        '\'': '#39'
-    }, regex;
+   window.uiDropDownEventsKeyCodes = EVENTS_KEY_CODES;
 
-    function _makeRegexpString() {
-        var regexString = '[';
-
-        for (var key in ESCAPE_CHARS) {
-            regexString += key;
-        }
-        regexString += ']';
-
-        return regexString;
-    }
-
-    regex = new RegExp(_makeRegexpString(), 'g');
-
-    /**
-     * Производит экранирование html символов
-     * @param str
-     * @returns {*}
-     */
-    function uiDropDownHtmlEscaping(str) {
-        if(typeof str != 'string'){
-            return str;
-        }
-        return str.replace(regex, function (m) {
-            return '&' + ESCAPE_CHARS[m] + ';';
-        });
-    }
-
-    window.uiDropDownHtmlEscaping = uiDropDownHtmlEscaping;
 })(window);
 /**
  * Константы для работы с различными расладками.
@@ -747,6 +699,54 @@ if (!Object.assign) {
 
 })(window);
 /**
+ * Утилиты для работы с html
+ */
+(function (window) {
+
+    var ESCAPE_CHARS = {
+        '¢': 'cent',
+        '£': 'pound',
+        '¥': 'yen',
+        '€': 'euro',
+        '©': 'copy',
+        '®': 'reg',
+        '<': 'lt',
+        '>': 'gt',
+        '"': 'quot',
+        '&': 'amp',
+        '\'': '#39'
+    }, regex;
+
+    function _makeRegexpString() {
+        var regexString = '[';
+
+        for (var key in ESCAPE_CHARS) {
+            regexString += key;
+        }
+        regexString += ']';
+
+        return regexString;
+    }
+
+    regex = new RegExp(_makeRegexpString(), 'g');
+
+    /**
+     * Производит экранирование html символов
+     * @param str
+     * @returns {*}
+     */
+    function uiDropDownHtmlEscaping(str) {
+        if(typeof str != 'string'){
+            return str;
+        }
+        return str.replace(regex, function (m) {
+            return '&' + ESCAPE_CHARS[m] + ';';
+        });
+    }
+
+    window.uiDropDownHtmlEscaping = uiDropDownHtmlEscaping;
+})(window);
+/**
  * Модуль для работы с шаблонами
  */
 ;(function (window) {
@@ -826,6 +826,7 @@ if (!Object.assign) {
         this.uiElement = UiElement.create('div');
         var containerCls = multiple ? 'ui-drop-down-selected-suggestion': 'ui-drop-down-single-selected-suggestion';
         this.uiElement.addClass(containerCls);
+        this.uiElement.element.setAttribute('data-is-selected-suggestion', 'true');
 
         this.template = template || dropDownItemDefaultTemplate;
         this.data = data;
@@ -1482,12 +1483,23 @@ if (!Object.assign) {
         }
 
         function _removeSelectedSuggestionByElement(element) {
-            // TODO: Добавить id. Чтобы не зависеть от верстки
             var uid = element.getAttribute('data-user-id');
-            var container = element.parentNode;
-            container = container.parentNode;
+            var container = _getContainer(element);
+            if(container){
+                container.parentNode.removeChild(container);
+            }
             delete self.selectedItems[uid];
-            container.parentNode.removeChild(container);
+
+            function _getContainer(element) {
+                var container = element.parentNode;
+                if(container.getAttribute('data-is-selected-suggestion') === 'true'){
+                    return container;
+                }
+                if(container === document.body){
+                    return null;
+                }
+                return _getContainer(container);
+            }
         }
 
         /***********************************************
