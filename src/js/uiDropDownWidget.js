@@ -71,6 +71,7 @@
      * @param {String} [options.serverSideFindProperty = 'domain'] - Аргумент по котрому будет произведен поиск
      *                 Т.е это название GET/POST/PUT параметра по которому произойдет запрос, например:
      *                 http://api.com/fing?<serverSideFindProperty>=<prefix>
+     * @param {Number} [options.serverLimit = 1000] - Лимит для запроса к серверу
      * @param {String} [options.suggestionIdentifierProperty = 'uid'] - Название аттрибута - уникального идентификатора
      *                                                                  записи(пользователя).
      *
@@ -247,9 +248,9 @@
         }
 
         function _createDropDownIcon() {
-            var e = UiElement.create('div');
-            e.addClass('ui-widget-drop-down-icon');
-            return e;
+            var element = UiElement.create('div');
+            element.addClass('ui-widget-drop-down-icon');
+            return element;
         }
 
 
