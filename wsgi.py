@@ -1,6 +1,6 @@
 import os
 import sys
-
+virtenv = os.path.join(os.environ.get('OPENSHIFT_PYTHON_DIR','.'), 'virtenv')
 from ui_api.models.user import User
 
 reload(sys)
@@ -19,4 +19,4 @@ for _ in xrange(100):
 db.session.commit()
 
 if __name__ == '__main__':
-    application.run()
+    application.run(host='0.0.0.0', threaded=True)
