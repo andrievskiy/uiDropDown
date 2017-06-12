@@ -8,9 +8,12 @@
         this.uiElement = UiElement.create('div');
         this.uiElement.addClass('ui-drop-down-item-container');
 
+
         this.template = template;
         this.data = data;
         this.matchedBy = matchedBy;
+
+        this.uiElement.element.setAttribute('data-uid', this.data.uid);
 
         this.uid = this.data.uid;
         this.avatarUrl = this.data.avatarUrl || this.data.avatar || defaultAvatarUrl || '';

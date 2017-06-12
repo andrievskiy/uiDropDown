@@ -71,9 +71,9 @@
   cursor: pointer;
   padding: 3px; }
 
-.ui-drop-down-item-container.ui-drop-down-hovered, .ui-drop-down-item-container:hover {
+.ui-drop-down-item-container.ui-drop-down-hovered {
   background: #f0f2f5; }
-  .ui-drop-down-item-container.ui-drop-down-hovered .ui-drop-down-highlight, .ui-drop-down-item-container:hover .ui-drop-down-highlight {
+  .ui-drop-down-item-container.ui-drop-down-hovered .ui-drop-down-highlight {
     background: #cfdae6; }
 
 .ui-drop-down-item-container:first-child {

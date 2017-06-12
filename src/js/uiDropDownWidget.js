@@ -1,13 +1,13 @@
 ;(function (window) {
     var DEFAULT_SUGGESTION_TEMPLATE =
-        '<div class="ui-drop-down-suggestion-item" data-user-id="{uid}">' +
+        '<div class="ui-drop-down-suggestion-item" data-uid="{uid}">' +
         '   <img class="ui-drop-down-suggestion-item-avatar" src="{avatarUrl}">' +
         '   <label class="ui-drop-down-suggestion-item-name">{name::html}</label>' +
         '   <span class="ui-drop-down-suggestion-item-extra">{extra}</span>' +
         '</div>';
 
     var DEFAULT_SUGGESTION_TEMPLATE_WITHOUT_AVATARS =
-        '<div class="ui-drop-down-suggestion-item" data-user-id="{uid}">' +
+        '<div class="ui-drop-down-suggestion-item" data-uid="{uid}">' +
         '   <label class="ui-drop-down-suggestion-item-name">{name::html}</label>' +
         '</div>';
 
@@ -72,6 +72,13 @@
         self.matchedSuggestions = [];
         self.selectedItems = Object.create(null);
 
+        self._cache = Object.create(null);
+        self._lastVal = null;
+        self._serverQuryIsRunning = false;
+        self._matchesSuggestionIds = Object.create(null);
+        self._hoveredIdx = 0;
+        self._hoveredSuggestionUiElement = null;
+
         function init() {
             self._suggestionTemplate = _getSuggestionTemplate();
             self._selectedItemTemplate = _getSelectedItemTemplate();
@@ -86,8 +93,6 @@
         }
 
         // Управление
-
-
         function open() {
             self._hoveredIdx = 0;
             if ((!self.options.multiple && self.options.autocomplete) || !self.getSelected().length) {
@@ -98,13 +103,16 @@
         }
 
         function search() {
-            self._hoveredIdx = -1;
+            self._hoveredIdx = 0;
             _lookup();
             _renderAllMatchedSuggestions();
+            if(!self._serverQuryIsRunning){
+               _hoverFirstSuggestion();
+            }
         }
 
         function close() {
-            self._hoveredIdx = -1;
+            self._hoveredIdx = 0;
             _hideSuggestionsList();
             if (self.options.multiple && self.getSelected().length) {
                 _hideInputElement();
@@ -115,12 +123,6 @@
             }
         }
 
-
-        self._cache = {};
-        self._lastVal = null;
-        self._serverQuryIsRunning = false;
-        self._matchesSuggestionIds = Object.create(null);
-        self._hoveredIdx = -1;
 
         init();
 
@@ -243,32 +245,42 @@
         }
 
         // ------------------------------------
-        // Управление
+        // Управление - Выделеение/выбор
         // ------------------------------------
 
-        function _clearAllHovered() {
-            var suggestionElements = Array.prototype.slice.apply(self._suggestionsWrapper.element.children);
-            suggestionElements.forEach(function (suggestionElement) {
-                suggestionElement = UiElement(suggestionElement);
-                suggestionElement.removeClass('ui-drop-down-hovered');
-            })
-        }
-
-        function _hoveSuggestionByIdx(idx) {
-            _clearAllHovered();
-            var suggestionElements = Array.prototype.slice.apply(self._suggestionsWrapper.element.children);
-            var suggestion = suggestionElements[idx];
-            if(suggestion){
-                suggestion = UiElement(suggestion);
-                suggestion.addClass('ui-drop-down-hovered');
-                self._hoveredSuggestion = suggestion;
+        function _clearLastHovered() {
+            if(self._hoveredSuggestionUiElement){
+                self._hoveredSuggestionUiElement.removeClass('ui-drop-down-hovered');
             }
         }
 
-        function _selectSuggestionByIdx(idx) {
-            var suggestion = self.matchedSuggestions[idx];
+        function _hoverFirstSuggestion() {
+             _clearLastHovered();
+            var suggestionElement = self._suggestionsWrapper.element.firstChild;
+            if(suggestionElement){
+                suggestionElement = UiElement(suggestionElement);
+                suggestionElement.addClass('ui-drop-down-hovered');
+                self._hoveredSuggestionUiElement = suggestionElement;
+
+            }
+        }
+
+        function _hoverSuggestionByElement(element) {
+            var suggestionElement = UiElement(element);
+            _clearLastHovered();
+            suggestionElement.addClass('ui-drop-down-hovered');
+            self._hoveredSuggestionUiElement = suggestionElement;
+        }
+
+        function _selectSuggestionByElement(element) {
+            var suggestionElement = element.element;
+            var suggestion = self.matchedSuggestions.filter(function (s) {
+                 return String(s[self.options.suggestionIdentifierProperty]) === String(suggestionElement.getAttribute('data-uid'));
+            });
+            
+            suggestion = suggestion[0];
             if(suggestion){
-                onSelectSuggestion(suggestion, self._hoveredSuggestion.element);
+                onSelectSuggestion(suggestion, suggestionElement);
             }
         }
 
@@ -302,30 +314,44 @@
 
             self._suggestionsWrapper.on('mouseenter', onHoverSuggestionsWrapperHandler);
             self._suggestionsWrapper.on('mouseleave', onMouseLeaveSuggestionsWrapperHandler);
-            self._dropDownInputWrapper.on('keyup', _onKeyDownWrapperHandler, true);
+            self._dropDownInputWrapper.on('keyup', _onKeyUpWrapperHandler, true);
         }
 
 
-        function _onKeyDownWrapperHandler(event) {
-            console.log(event);
-            if(event.keyCode == 40 || event.key == 'ArrowDown'){
-                self._hoveredIdx = Math.min(self._hoveredIdx + 1,  self.matchedSuggestions.length);
-                _hoveSuggestionByIdx(self._hoveredIdx);
+        function _onKeyUpWrapperHandler(event) {
+            var next = null;
+            var prev = null;
+
+            if(event.keyCode == uiDropDownEventsKeyCodes.ARROW_DOWN){
                 event.stopPropagation();
+                if(self._hoveredSuggestionUiElement){
+                    next = self._hoveredSuggestionUiElement.element.nextSibling;
+                    if(next){
+                        _hoverSuggestionByElement(next);
+                    }
+                }
             }
 
-            if(event.key == 'ArrowUp'){
-                self._hoveredIdx = Math.max(self._hoveredIdx - 1, 0);
-                _hoveSuggestionByIdx(self._hoveredIdx);
+            if(event.keyCode == uiDropDownEventsKeyCodes.ARROW_UP){
                 event.stopPropagation();
+                if(self._hoveredSuggestionUiElement){
+                    prev = self._hoveredSuggestionUiElement.element.previousSibling;
+                    if(prev){
+                        _hoverSuggestionByElement(prev);
+                    }
+                }
             }
 
-            if(event.keyCode == 13){
-                _selectSuggestionByIdx(self._hoveredIdx);
+            if(event.keyCode == uiDropDownEventsKeyCodes.ENTER){
+                event.stopPropagation();
+                _selectSuggestionByElement(self._hoveredSuggestionUiElement);
+
             }
 
-            if(event.key == 'Escape'){
+            if(event.keyCode == uiDropDownEventsKeyCodes.ESCAPE){
+                event.stopPropagation();
                 close();
+                self.inputElement.element.blur();
             }
         }
 
@@ -395,6 +421,10 @@
             // Событие не будет послано брузером. Поэтому нужно простваить руками.
             self._suggestionsWrapper.hovered = false;
             _showSelectedContainer();
+        }
+
+        function onHoverSuggestion(element) {
+            _hoverSuggestionByElement(element)
         }
 
         /*************************************************
@@ -502,6 +532,10 @@
 
             dropDownSuggestionItem.uiElement.on('click', function () {
                 onSelectSuggestion(suggestion, this);
+            });
+
+            dropDownSuggestionItem.uiElement.on('mouseenter', function () {
+                onHoverSuggestion(this);
             });
 
             self._suggestionsWrapper.append(dropDownSuggestionItem.uiElement);
@@ -632,6 +666,8 @@
             } else if (!self.matchedSuggestions.length) {
                 _showEmptySuggestionMessage();
             }
+
+            _hoverFirstSuggestion();
         }
 
         function _serverLookUp(prefix) {
