@@ -118,7 +118,7 @@
   cursor: default;
   margin: 2px; }
 
-.ui-drop-down-selected-item {
+.ui-drop-down-selected-item, .ui-drop-down-selected-item-add-new-button {
   display: inline-block;
   background: #6285af;
   color: #fff;
@@ -126,7 +126,7 @@
   border-radius: 3px;
   max-width: 100%; }
 
-.ui-drop-down-selected-name {
+.ui-drop-down-selected-name, .ui-drop-down-selected-add-new-button-name {
   display: inline-block;
   max-width: 300px;
   white-space: nowrap;
@@ -186,8 +186,37 @@
 .ui-drop-down-selected-single-remove-btn:hover {
   opacity: 1; }
 
-body {
-  padding-left: 99px; }
+.ui-drop-down-selected-item-add-new-button {
+  color: #55677d;
+  background: #dae2ea; }
+
+.ui-drop-down-selected-add-new-button-name {
+  cursor: pointer; }
+
+.ui-drop-down-selected-add-btn {
+  display: inline-block;
+  width: 18px;
+  position: relative;
+  cursor: pointer; }
+
+.ui-drop-down-selected-add-btn:before {
+  content: '+';
+  font-size: 23px;
+  display: inline-block;
+  position: absolute;
+  top: -20.5px;
+  left: 4px;
+  opacity: 0.5; }
+
+.ui-drop-down-selected-add-btn:hover:before {
+  opacity: 1; }
+
+.ui-drop-down-hidden {
+  display: none;
+  padding: 0 !important;
+  height: 0 !important;
+  margin: 0 !important;
+  width: 0 !important; }
 
 .ui-drop-down-input-hidden {
   padding: 0 !important;
