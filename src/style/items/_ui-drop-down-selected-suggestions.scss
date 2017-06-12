@@ -86,3 +86,34 @@
 .ui-drop-down-selected-single-remove-btn:hover{
   opacity: 1;
 }
+
+// New button
+.ui-drop-down-selected-item-add-new-button{
+  @extend .ui-drop-down-selected-item;
+  color: #55677d;
+  background: #dae2ea;
+}
+.ui-drop-down-selected-add-new-button-name{
+  @extend .ui-drop-down-selected-name;
+  cursor: pointer;
+}
+
+.ui-drop-down-selected-add-btn {
+  display: inline-block;
+  width: 18px;
+  position: relative;
+  cursor: pointer;
+}
+
+.ui-drop-down-selected-add-btn:before {
+  content: '+';
+  font-size: 23px;
+  display: inline-block;
+  position: absolute;
+  top: -20.5px;
+  left: 4px;
+  opacity: 0.5;
+}
+.ui-drop-down-selected-add-btn:hover:before{
+  opacity: 1;
+}

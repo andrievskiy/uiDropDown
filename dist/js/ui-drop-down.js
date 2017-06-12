@@ -405,6 +405,14 @@ if (!Object.assign) {
       return Array.prototype.slice.apply(this.element.children);
     };
 
+    _UiElement.prototype.parent = function () {
+        return new _UiElement(this.element.parentNode);
+    };
+
+    _UiElement.prototype.parentNode = function () {
+        return this.element.parentNode;
+    };
+
     /**
      * Прокси для проброса style
      */
@@ -480,6 +488,33 @@ if (!Object.assign) {
     }
 
     window.uiDropDownHtmlEscaping = uiDropDownHtmlEscaping;
+})(window);
+/**
+ * Модуль для работы с шаблонами
+ */
+;(function (window) {
+
+    /**
+     * Рендеринг шаблонов
+     * @param template {string} - Шаблон для рендеринга
+     *                            Подстановки производяться по швблону {name}
+     *                            При этом при указании {name::html} для данного значения не будет производиться экранирование
+     * @param data {object} - Даные для рендеринга. Поиск даныных для подставновок производится по ключам этого объекта
+     * @returns {string}
+     */
+    function renderTemplate(template, data) {
+        return template.replace(/{([\w|:]+)}/g, function (match, key) {
+
+            var isHtml = ~key.indexOf('::html');
+            if(isHtml){
+                key = key.split('::')[0];
+                return data[key] || '';
+            }
+            return uiDropDownHtmlEscaping(data[key] || '');
+        })
+    }
+
+    window.uiRenderTemplate = renderTemplate;
 })(window);
 /**
  * Константы для работы с различными расладками.
@@ -779,33 +814,6 @@ if (!Object.assign) {
     };
 
 })(window);
-/**
- * Модуль для работы с шаблонами
- */
-;(function (window) {
-
-    /**
-     * Рендеринг шаблонов
-     * @param template {string} - Шаблон для рендеринга
-     *                            Подстановки производяться по швблону {name}
-     *                            При этом при указании {name::html} для данного значения не будет производиться экранирование
-     * @param data {object} - Даные для рендеринга. Поиск даныных для подставновок производится по ключам этого объекта
-     * @returns {string}
-     */
-    function renderTemplate(template, data) {
-        return template.replace(/{([\w|:]+)}/g, function (match, key) {
-
-            var isHtml = ~key.indexOf('::html');
-            if(isHtml){
-                key = key.split('::')[0];
-                return data[key] || '';
-            }
-            return uiDropDownHtmlEscaping(data[key] || '');
-        })
-    }
-
-    window.uiRenderTemplate = renderTemplate;
-})(window);
 ;(function (window) {
     function DropDownSuggestionItem(template, data, matchedBy) {
         return new _DropDownSuggestionItem(template, data, matchedBy);
@@ -973,6 +981,14 @@ if (!Object.assign) {
         '   <p>Пользователь не найден</p>' +
         '</div>';
 
+    var ADD_NEW_BUTTON_TEMPLATE =
+        '<div  class="ui-drop-down-selected-item-add-new-button">' +
+        '    <div class="ui-drop-down-selected-add-new-button-name">' +
+        '       Добавить' +
+        '    </div>' +
+        '    <a class="ui-drop-down-selected-add-btn"></a>' +
+        '</div>';
+
     var DEFAULT_OPTIONS = {
         multiple: true,
         autocomplete: true,
@@ -993,7 +1009,8 @@ if (!Object.assign) {
         suggestionTemplateWithoutAvatar: DEFAULT_SUGGESTION_TEMPLATE_WITHOUT_AVATARS,
         selectedMultipleItemTemplate: DEFAULT_MULTIPLE_SELECTED_ITEM_TEMPLATE,
         selectedSingleItemTemplate: DEFAULT_SINGLE_SELECTED_ITEM_TEMPLATE,
-        emptyMessageTemplate: DEFAULT_EMPTY_MESSAGE
+        emptyMessageTemplate: DEFAULT_EMPTY_MESSAGE,
+        addNewButtonTemplate: ADD_NEW_BUTTON_TEMPLATE
 
     };
 
@@ -1098,6 +1115,7 @@ if (!Object.assign) {
          * Открыть список пркдложений. (При этом элемент поиска активирован не будет)
          */
         function open() {
+            _hideAddNewButton();
             if ((!self.options.multiple && self.options.autocomplete) || !self.getSelected().length) {
                 _hideSelectedContainer();
             }
@@ -1105,7 +1123,6 @@ if (!Object.assign) {
             search();
             _scrollSuggestionWrapperTop();
         }
-
 
         /**
          * Выполнить поиск по текущему значению элемента поиска
@@ -1129,11 +1146,13 @@ if (!Object.assign) {
             _hideSuggestionsList();
             if (self.options.multiple && self.getSelected().length) {
                 _hideInputElement();
+                _showAddNewButton();
             }
             if (!self.options.multiple && self.getSelected().length) {
                 _hideInputElement();
                 _showSelectedContainer();
             }
+
         }
 
 
@@ -1226,8 +1245,20 @@ if (!Object.assign) {
 
 
         function _createSelectedSuggestionsContainer() {
+            function _createAddNewButton() {
+                var addNewButton = UiElement.create('div');
+                addNewButton.addClass('ui-drop-down-selected-suggestion');
+                addNewButton.html(uiRenderTemplate(self.options.addNewButtonTemplate));
+                self._addNewButton = addNewButton;
+                return addNewButton;
+            }
+
             var element = UiElement.create('div');
             element.addClass('ui-drop-down-selected-container');
+
+            if(self.options.multiple){
+                element.append(_createAddNewButton());
+            }
 
             return element;
         }
@@ -1272,12 +1303,25 @@ if (!Object.assign) {
 
         function _hideInputElement() {
             if (self.getSelected().length) {
-                self.inputElement.style.display = 'none';
+                self.inputElement.addClass('ui-drop-down-hidden');
+                // self.inputElement.style.display = 'none';
+            }
+        }
+
+        function _hideAddNewButton() {
+            if(self._addNewButton){
+                self._addNewButton.addClass('ui-drop-down-hidden');
+            }
+        }
+
+        function _showAddNewButton() {
+            if(self._addNewButton){
+                self._addNewButton.removeClass('ui-drop-down-hidden')
             }
         }
 
         function _showInputElement() {
-            self.inputElement.style.display = 'block';
+            self.inputElement.removeClass('ui-drop-down-hidden');
             if (!self.options.autocomplete && self.getSelected().length) {
                 self.inputElement.addClass('ui-drop-down-input-hidden');
             } else {
@@ -1430,7 +1474,6 @@ if (!Object.assign) {
 
         function _onClickWrapperHandler(event) {
             var target = event.target;
-
             // Игнорирвоать клики на имени выбранного элемента
             if(target.getAttribute('data-is-selected-name') === 'true'){
                 return;
@@ -1445,7 +1488,6 @@ if (!Object.assign) {
                 }
                 return;
             }
-
             _activateInputElement();
         }
 
@@ -1482,6 +1524,7 @@ if (!Object.assign) {
             // Событие не будет послано брузером. Поэтому нужно простваить руками.
             self._suggestionsWrapper.hovered = false;
             _showSelectedContainer();
+            _showAddNewButton();
         }
 
         function onHoverSuggestion(element) {
@@ -1607,6 +1650,10 @@ if (!Object.assign) {
                 self._selectedItemTemplate, suggestion, self.options.multiple
             );
             selectedItem.render();
+            if(self.options.multiple){
+                self._selectedContainer.element.insertBefore(selectedItem.uiElement.element, self._addNewButton.element);
+                return;
+            }
             self._selectedContainer.append(selectedItem.uiElement);
         }
 
