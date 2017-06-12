@@ -19,11 +19,6 @@
   }
 }
 
-.ui-drop-down-item-container:hover{
-  @extend .ui-drop-down-item-container.ui-drop-down-hovered;
-}
-
-
 .ui-drop-down-item-container:first-child{
   border-top: none;
 }

@@ -103,54 +103,6 @@ if (!Object.assign) {
     window.uiDropDownajax = uiDropDownAjax;
 })(window);
 /**
- * Утилиты для работы с html
- */
-(function (window) {
-
-    var ESCAPE_CHARS = {
-        '¢': 'cent',
-        '£': 'pound',
-        '¥': 'yen',
-        '€': 'euro',
-        '©': 'copy',
-        '®': 'reg',
-        '<': 'lt',
-        '>': 'gt',
-        '"': 'quot',
-        '&': 'amp',
-        '\'': '#39'
-    }, regex;
-
-    function _makeRegexpString() {
-        var regexString = '[';
-
-        for (var key in ESCAPE_CHARS) {
-            regexString += key;
-        }
-        regexString += ']';
-
-        return regexString;
-    }
-
-    regex = new RegExp(_makeRegexpString(), 'g');
-
-    /**
-     * Производит экранирование html символов
-     * @param str
-     * @returns {*}
-     */
-    function uiDropDownHtmlEscaping(str) {
-        if(typeof str != 'string'){
-            return str;
-        }
-        return str.replace(regex, function (m) {
-            return '&' + ESCAPE_CHARS[m] + ';';
-        });
-    }
-
-    window.uiDropDownHtmlEscaping = uiDropDownHtmlEscaping;
-})(window);
-/**
  * Модуль для работы с DOM
  */
 (function (window) {
@@ -162,6 +114,9 @@ if (!Object.assign) {
      * @constructor
      */
     function UiElement(selectorOrElement) {
+        if(selectorOrElement instanceof _UiElement){
+            return selectorOrElement;
+        }
         return new _UiElement(selectorOrElement);
     }
 
@@ -430,6 +385,95 @@ if (!Object.assign) {
 
     window.UiElement = UiElement;
 
+})(window);
+/**
+ * Хранилище констант для событий
+ */
+;(function (window) {
+   var EVENTS_KEY_CODES = {
+       ENTER: 13,
+       ARROW_DOWN: 40,
+       ARROW_UP: 38,
+       ESCAPE: 27
+   };
+
+   window.uiDropDownEventsKeyCodes = EVENTS_KEY_CODES;
+
+})(window);
+/**
+ * Утилиты для работы с html
+ */
+(function (window) {
+
+    var ESCAPE_CHARS = {
+        '¢': 'cent',
+        '£': 'pound',
+        '¥': 'yen',
+        '€': 'euro',
+        '©': 'copy',
+        '®': 'reg',
+        '<': 'lt',
+        '>': 'gt',
+        '"': 'quot',
+        '&': 'amp',
+        '\'': '#39'
+    }, regex;
+
+    function _makeRegexpString() {
+        var regexString = '[';
+
+        for (var key in ESCAPE_CHARS) {
+            regexString += key;
+        }
+        regexString += ']';
+
+        return regexString;
+    }
+
+    regex = new RegExp(_makeRegexpString(), 'g');
+
+    /**
+     * Производит экранирование html символов
+     * @param str
+     * @returns {*}
+     */
+    function uiDropDownHtmlEscaping(str) {
+        if(typeof str != 'string'){
+            return str;
+        }
+        return str.replace(regex, function (m) {
+            return '&' + ESCAPE_CHARS[m] + ';';
+        });
+    }
+
+    window.uiDropDownHtmlEscaping = uiDropDownHtmlEscaping;
+})(window);
+/**
+ * Модуль для работы с шаблонами
+ */
+;(function (window) {
+
+    /**
+     * Рендеринг шаблонов
+     * @param template {string} - Шаблон для рендеринга
+     *                            Подстановки производяться по швблону {name}
+     *                            При этом при указании {name::html} для данного значения не будет производиться экранирование
+     * @param data {object} - Даные для рендеринга. Поиск даныных для подставновок производится по ключам этого объекта
+     * @returns {string}
+     */
+    function renderTemplate(template, data) {
+        return template.replace(/{([\w|:]+)}/g, function (match, key) {
+
+            var isHtml = ~key.indexOf('::html');
+            if(isHtml){
+                key = key.split('::')[0];
+                return data[key] || '';
+            }
+            return uiDropDownHtmlEscaping(data[key] || '');
+        })
+    }
+
+    window.uiRenderTemplate = renderTemplate;
 })(window);
 /**
  * Константы для работы с различными расладками.
@@ -729,33 +773,6 @@ if (!Object.assign) {
     };
 
 })(window);
-/**
- * Модуль для работы с шаблонами
- */
-;(function (window) {
-
-    /**
-     * Рендеринг шаблонов
-     * @param template {string} - Шаблон для рендеринга
-     *                            Подстановки производяться по швблону {name}
-     *                            При этом при указании {name::html} для данного значения не будет производиться экранирование
-     * @param data {object} - Даные для рендеринга. Поиск даныных для подставновок производится по ключам этого объекта
-     * @returns {string}
-     */
-    function renderTemplate(template, data) {
-        return template.replace(/{([\w|:]+)}/g, function (match, key) {
-
-            var isHtml = ~key.indexOf('::html');
-            if(isHtml){
-                key = key.split('::')[0];
-                return data[key] || '';
-            }
-            return uiDropDownHtmlEscaping(data[key] || '');
-        })
-    }
-
-    window.uiRenderTemplate = renderTemplate;
-})(window);
 ;(function (window) {
     function DropDownSuggestionItem(template, data, matchedBy) {
         return new _DropDownSuggestionItem(template, data, matchedBy);
@@ -766,9 +783,12 @@ if (!Object.assign) {
         this.uiElement = UiElement.create('div');
         this.uiElement.addClass('ui-drop-down-item-container');
 
+
         this.template = template;
         this.data = data;
         this.matchedBy = matchedBy;
+
+        this.uiElement.element.setAttribute('data-uid', this.data.uid);
 
         this.uid = this.data.uid;
         this.avatarUrl = this.data.avatarUrl || this.data.avatar || defaultAvatarUrl || '';
@@ -889,14 +909,14 @@ if (!Object.assign) {
 })(window);
 ;(function (window) {
     var DEFAULT_SUGGESTION_TEMPLATE =
-        '<div class="ui-drop-down-suggestion-item" data-user-id="{uid}">' +
+        '<div class="ui-drop-down-suggestion-item" data-uid="{uid}">' +
         '   <img class="ui-drop-down-suggestion-item-avatar" src="{avatarUrl}">' +
         '   <label class="ui-drop-down-suggestion-item-name">{name::html}</label>' +
         '   <span class="ui-drop-down-suggestion-item-extra">{extra}</span>' +
         '</div>';
 
     var DEFAULT_SUGGESTION_TEMPLATE_WITHOUT_AVATARS =
-        '<div class="ui-drop-down-suggestion-item" data-user-id="{uid}">' +
+        '<div class="ui-drop-down-suggestion-item" data-uid="{uid}">' +
         '   <label class="ui-drop-down-suggestion-item-name">{name::html}</label>' +
         '</div>';
 
@@ -961,6 +981,13 @@ if (!Object.assign) {
         self.matchedSuggestions = [];
         self.selectedItems = Object.create(null);
 
+        self._cache = Object.create(null);
+        self._lastVal = null;
+        self._serverQuryIsRunning = false;
+        self._matchesSuggestionIds = Object.create(null);
+        self._hoveredIdx = 0;
+        self._hoveredSuggestionUiElement = null;
+
         function init() {
             self._suggestionTemplate = _getSuggestionTemplate();
             self._selectedItemTemplate = _getSelectedItemTemplate();
@@ -974,8 +1001,9 @@ if (!Object.assign) {
             _initBindings();
         }
 
-
+        // Управление
         function open() {
+            self._hoveredIdx = 0;
             if ((!self.options.multiple && self.options.autocomplete) || !self.getSelected().length) {
                 _hideSelectedContainer();
             }
@@ -984,11 +1012,16 @@ if (!Object.assign) {
         }
 
         function search() {
+            self._hoveredIdx = 0;
             _lookup();
             _renderAllMatchedSuggestions();
+            if(!self._serverQuryIsRunning){
+               _hoverFirstSuggestion();
+            }
         }
 
         function close() {
+            self._hoveredIdx = 0;
             _hideSuggestionsList();
             if (self.options.multiple && self.getSelected().length) {
                 _hideInputElement();
@@ -999,10 +1032,6 @@ if (!Object.assign) {
             }
         }
 
-        self._cache = {};
-        self._lastVal = null;
-        self._serverQuryIsRunning = false;
-        self._matchesSuggestionIds = Object.create(null);
 
         init();
 
@@ -1124,6 +1153,45 @@ if (!Object.assign) {
             _focusInputElement();
         }
 
+        // ------------------------------------
+        // Управление - Выделеение/выбор
+        // ------------------------------------
+
+        function _clearLastHovered() {
+            if(self._hoveredSuggestionUiElement){
+                self._hoveredSuggestionUiElement.removeClass('ui-drop-down-hovered');
+            }
+        }
+
+        function _hoverFirstSuggestion() {
+             _clearLastHovered();
+            var suggestionElement = self._suggestionsWrapper.element.firstChild;
+            if(suggestionElement){
+                suggestionElement = UiElement(suggestionElement);
+                suggestionElement.addClass('ui-drop-down-hovered');
+                self._hoveredSuggestionUiElement = suggestionElement;
+
+            }
+        }
+
+        function _hoverSuggestionByElement(element) {
+            var suggestionElement = UiElement(element);
+            _clearLastHovered();
+            suggestionElement.addClass('ui-drop-down-hovered');
+            self._hoveredSuggestionUiElement = suggestionElement;
+        }
+
+        function _selectSuggestionByElement(element) {
+            var suggestionElement = element.element;
+            var suggestion = self.matchedSuggestions.filter(function (s) {
+                 return String(s[self.options.suggestionIdentifierProperty]) === String(suggestionElement.getAttribute('data-uid'));
+            });
+            
+            suggestion = suggestion[0];
+            if(suggestion){
+                onSelectSuggestion(suggestion, suggestionElement);
+            }
+        }
 
         /**
          * Прозводит позиционирование блока предложений относительно эелемента
@@ -1143,7 +1211,7 @@ if (!Object.assign) {
 
 
         /*************************************************
-         * Обработка событий
+         * Обработка событий. Events
          ************************************************/
 
         function _initBindings() {
@@ -1155,8 +1223,46 @@ if (!Object.assign) {
 
             self._suggestionsWrapper.on('mouseenter', onHoverSuggestionsWrapperHandler);
             self._suggestionsWrapper.on('mouseleave', onMouseLeaveSuggestionsWrapperHandler);
+            self._dropDownInputWrapper.on('keyup', _onKeyUpWrapperHandler, true);
         }
 
+
+        function _onKeyUpWrapperHandler(event) {
+            var next = null;
+            var prev = null;
+
+            if(event.keyCode == uiDropDownEventsKeyCodes.ARROW_DOWN){
+                event.stopPropagation();
+                if(self._hoveredSuggestionUiElement){
+                    next = self._hoveredSuggestionUiElement.element.nextSibling;
+                    if(next){
+                        _hoverSuggestionByElement(next);
+                    }
+                }
+            }
+
+            if(event.keyCode == uiDropDownEventsKeyCodes.ARROW_UP){
+                event.stopPropagation();
+                if(self._hoveredSuggestionUiElement){
+                    prev = self._hoveredSuggestionUiElement.element.previousSibling;
+                    if(prev){
+                        _hoverSuggestionByElement(prev);
+                    }
+                }
+            }
+
+            if(event.keyCode == uiDropDownEventsKeyCodes.ENTER){
+                event.stopPropagation();
+                _selectSuggestionByElement(self._hoveredSuggestionUiElement);
+
+            }
+
+            if(event.keyCode == uiDropDownEventsKeyCodes.ESCAPE){
+                event.stopPropagation();
+                close();
+                self.inputElement.element.blur();
+            }
+        }
 
         function _onFocusInputHandler() {
             open();
@@ -1224,6 +1330,10 @@ if (!Object.assign) {
             // Событие не будет послано брузером. Поэтому нужно простваить руками.
             self._suggestionsWrapper.hovered = false;
             _showSelectedContainer();
+        }
+
+        function onHoverSuggestion(element) {
+            _hoverSuggestionByElement(element)
         }
 
         /*************************************************
@@ -1331,6 +1441,10 @@ if (!Object.assign) {
 
             dropDownSuggestionItem.uiElement.on('click', function () {
                 onSelectSuggestion(suggestion, this);
+            });
+
+            dropDownSuggestionItem.uiElement.on('mouseenter', function () {
+                onHoverSuggestion(this);
             });
 
             self._suggestionsWrapper.append(dropDownSuggestionItem.uiElement);
@@ -1461,6 +1575,8 @@ if (!Object.assign) {
             } else if (!self.matchedSuggestions.length) {
                 _showEmptySuggestionMessage();
             }
+
+            _hoverFirstSuggestion();
         }
 
         function _serverLookUp(prefix) {

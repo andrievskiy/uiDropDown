@@ -10,6 +10,9 @@
      * @constructor
      */
     function UiElement(selectorOrElement) {
+        if(selectorOrElement instanceof _UiElement){
+            return selectorOrElement;
+        }
         return new _UiElement(selectorOrElement);
     }
 
