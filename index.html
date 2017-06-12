@@ -9,7 +9,6 @@
 <body>
 <div>
     <input type="text" id="test" style="position: relative;" placeholder="Введите имя или адрес страницы">
-    <a onclick="showSelected()">Show Selected</a>
     <p style="height: 20px">
     </p>
     <input type="text" id="test2"  placeholder="Введите имя или адрес страницы">
@@ -39,7 +38,7 @@
 
     var widget1 = new UiDropDown('#test', {
         suggestions: suggestions,
-        limit: 20,
+        limit: 10,
         serverSide: true,
         showAvatars: true,
         serverSideUrl: 'http://127.0.0.1:5001/find',
@@ -59,17 +58,13 @@
         autocomplete: false
     });
 
-    var widet4 = new UiDropDown('#test4', {
+    var w4 = new UiDropDown('#test4', {
         suggestions: suggestions2,
         limit: 100,
         autocomplete: false,
         multiple: false
     });
 
-    function showSelected(){
-        console.log(widget1.getSelected());
-        console.log(widget2.getSelected());
-    }
 </script>
 </body>
 </html>

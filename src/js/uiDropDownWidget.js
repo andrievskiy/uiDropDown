@@ -34,13 +34,15 @@
         showAvatars: true,
         defaultAvatarUrl: null,
         limit: 10,
+        autoInit: true,
 
         serverSide: false,
         serverSideUrl: '/',
         serverSideMethod: 'GET',
         serverSideFindProperty: 'domain',
-        suggestionIdentifierProperty: 'uid',
         serverLimit: 1000,
+
+        suggestionIdentifierProperty: 'uid',
 
         suggestionTemplateWithAvatar: DEFAULT_SUGGESTION_TEMPLATE,
         suggestionTemplateWithoutAvatar: DEFAULT_SUGGESTION_TEMPLATE_WITHOUT_AVATARS,
@@ -50,24 +52,46 @@
 
     };
 
+    /**
+     * Виджет для создания dropDown
+     * @param {string} selector - css селектор элемента ввода. Используется querySelector. Т.е. привязка будет по
+     *                            первому найденному элменту
+     * @param {object} options -  Парметры виджета
+     * @param {Array} options.suggestions - Список варинатов(предложений)
+     * @param {Function} [options.matcher = uiDropDownUsersMatcher] - Функция для определения подходит ли эелемент
+     *                                                                под критерии выбора(префикс).
+     * @param {Boolean} [options.multiple = true]  - Задает режим выбора. Множественный выбор или нет. Default = true
+     * @param {Boolean} [options.autocomplete = true]- Использовать ли поиск по подстроке. Default = true
+     * @param {Boolean} [options.showAvatars = true] - Отображать ли автарки в спике
+     * @param {String} options.defaultAvatarUrl - Url аватарки если она отсутствует у пользователя
+     * @param {Number} [options.limit = 10] - Максимальное количество отображаемых элементов в списке
+     * @param {Boolean} [options.autoInit = true] - Проводить ли инициализацию сразу.
+     * @param {Boolean} [options.serverSide = false] - Призводить ли поиск на сервере
+     * @param {String} [options.serverSideUrl = ''] - Url адрес апи для поиска
+     * @param {String} [options.serverSideFindProperty = 'domain'] - Аргумент по котрому будет произведен поиск
+     *                 Т.е это название GET/POST/PUT параметра по которому произойдет запрос, например:
+     *                 http://api.com/fing?<serverSideFindProperty>=<prefix>
+     * @param {Number} [options.serverLimit = 1000] - Лимит для запроса к серверу
+     * @param {String} [options.suggestionIdentifierProperty = 'uid'] - Название аттрибута - уникального идентификатора
+     *                                                                  записи(пользователя).
+     *
+     * @param {String} [options.suggestionTemplateWithAvatar] - Шаблон для элемента списка с аватаром
+     * @param {String} [options.suggestionTemplateWithoutAvatar] - Шаблон для элемента списка без аватара
+     * @param {String} [options.selectedMultipleItemTemplate] - Шаблон для выбранного элемента при множественном выборе
+     * @param {String} [options.selectedSingleItemTemplate] - Шаблон для выбранного элемента при одиночном выборе
+     * @param {String} [options.emptyMessageTemplate] - Шаблон для пустого сообщения
+     *
+     * @constructor
+     *
+     */
     function UiDropDown(selector, options) {
         var self = this;
 
         options = options || {};
 
-        /**
-         * Возравщает список выбранных элементов
-         * @returns {Array}
-         */
-        self.getSelected = function () {
-            return Object.keys(self.selectedItems).map(function (key) {
-                return self.selectedItems[key];
-            });
-        };
-
-
         self.options = Object.assign({}, DEFAULT_OPTIONS, options);
         self.matcher = self.options.matcher || uiDropDownUsersMatcher;
+
         self.suggestions = self.options.suggestions || [];
         self.matchedSuggestions = [];
         self.selectedItems = Object.create(null);
@@ -76,9 +100,26 @@
         self._lastVal = null;
         self._serverQuryIsRunning = false;
         self._matchesSuggestionIds = Object.create(null);
-        self._hoveredIdx = 0;
         self._hoveredSuggestionUiElement = null;
+        self._initialized = false;
+        self._initialSelectedItems = null;
 
+        // ------------------------------------
+        // Public methods
+        // ------------------------------------
+
+        self.open = open;
+        self.close = close;
+        self.search = search;
+        self.init = init;
+        self.getSelected = getSelected;
+        self.setSuggestions = setSuggestions;
+        self.setSelected = setSelected;
+        self.activate = activate;
+
+        /**
+         *  Производит ининциализацию виджета
+         */
         function init() {
             self._suggestionTemplate = _getSuggestionTemplate();
             self._selectedItemTemplate = _getSelectedItemTemplate();
@@ -90,11 +131,26 @@
             self._dropDownIcon = _createDropDownIcon();
             _appendElementsToDom();
             _initBindings();
+            if (self._initialSelectedItems) {
+                self._initialSelectedItems.forEach(function (item) {
+                    _applySelected(item);
+                });
+            }
+            self._initialized = true;
         }
 
-        // Управление
+        /**
+         * Активация виджета: показ списка предложений и активация поля поиска
+         */
+        function activate() {
+            _activateInputElement();
+        }
+
+
+        /**
+         * Открыть список пркдложений. (При этом элемент поиска активирован не будет)
+         */
         function open() {
-            self._hoveredIdx = 0;
             if ((!self.options.multiple && self.options.autocomplete) || !self.getSelected().length) {
                 _hideSelectedContainer();
             }
@@ -102,17 +158,26 @@
             search();
         }
 
+
+        /**
+         * Выполнить поиск по текущему значению элемента поиска
+         */
         function search() {
-            self._hoveredIdx = 0;
-            _lookup();
+            var prefix = self.inputElement.val();
+            _lookup(prefix);
+            if (self.options.serverSide) {
+                _serverLookUp(prefix);
+            }
             _renderAllMatchedSuggestions();
-            if(!self._serverQuryIsRunning){
-               _hoverFirstSuggestion();
+            if (!self._serverQuryIsRunning) {
+                _hoverFirstSuggestion();
             }
         }
 
+        /**
+         * Закрыть список предложений
+         */
         function close() {
-            self._hoveredIdx = 0;
             _hideSuggestionsList();
             if (self.options.multiple && self.getSelected().length) {
                 _hideInputElement();
@@ -124,8 +189,45 @@
         }
 
 
-        init();
+        /**
+         * Получить список выбранных элементов. Важно, что в случае с multiple=false в ответе все равно
+         * Будет список из 1го элемента.
+         * @returns {Array}
+         */
+        function getSelected() {
+            return Object.keys(self.selectedItems).map(function (key) {
+                return self.selectedItems[key];
+            });
+        }
 
+        /**
+         * Утановить выбранные элементы. При этом даже если  multiple=false необходимо передавать список из одного
+         * Элемента. Если  multiple=false, а списке больше одного элмента будет выбран последний.
+         * @param {Array} items
+         */
+        function setSelected(items) {
+            if (self._initialized) {
+                items.forEach(function (item) {
+                    _applySelected(item);
+                });
+            } else {
+                self._initialSelectedItems = items;
+            }
+
+        }
+
+        /**
+         * Установить список возможных вариантов предложений
+         * @param {Array} suggestions
+         */
+        function setSuggestions(suggestions) {
+            self.suggestions = suggestions;
+        }
+
+
+        if (self.options.autoInit) {
+            init();
+        }
 
         /*************************************************
          * Внутненние методы для работы с DOM.
@@ -141,14 +243,14 @@
             self.inputElement = UiElement(selector);
             self.inputElement.addClass('ui-drop-down-input');
             if (!self.options.autocomplete) {
-                self.inputElement.element.setAttribute('readonly', 'true');
+                self.inputElement.setAttribute('readonly', 'true');
             }
         }
 
         function _createDropDownIcon() {
-            var e = UiElement.create('div');
-            e.addClass('ui-widget-drop-down-icon');
-            return e;
+            var element = UiElement.create('div');
+            element.addClass('ui-widget-drop-down-icon');
+            return element;
         }
 
 
@@ -195,6 +297,17 @@
             self.inputElement.css({
                 width: originInputElementW - self._dropDownIcon.offsetWidth() - 15 + 'px'
             });
+        }
+
+        function _applySelected(suggestion) {
+            if (!self.options.multiple) {
+                _clearLastSelected();
+            }
+
+            _addItemToSelected(suggestion);
+            _renderSelectedSuggestion(suggestion);
+            _showSelectedContainer();
+            _hideInputElement();
         }
 
         //  --------------------------
@@ -249,15 +362,15 @@
         // ------------------------------------
 
         function _clearLastHovered() {
-            if(self._hoveredSuggestionUiElement){
+            if (self._hoveredSuggestionUiElement) {
                 self._hoveredSuggestionUiElement.removeClass('ui-drop-down-hovered');
             }
         }
 
         function _hoverFirstSuggestion() {
-             _clearLastHovered();
+            _clearLastHovered();
             var suggestionElement = self._suggestionsWrapper.element.firstChild;
-            if(suggestionElement){
+            if (suggestionElement) {
                 suggestionElement = UiElement(suggestionElement);
                 suggestionElement.addClass('ui-drop-down-hovered');
                 self._hoveredSuggestionUiElement = suggestionElement;
@@ -272,22 +385,18 @@
             self._hoveredSuggestionUiElement = suggestionElement;
         }
 
-        function _selectSuggestionByElement(element) {
-            var suggestionElement = element.element;
+        function _selectSuggestionByElement(uiElement) {
+            var suggestionElement = uiElement.element;
             var suggestion = self.matchedSuggestions.filter(function (s) {
-                 return String(s[self.options.suggestionIdentifierProperty]) === String(suggestionElement.getAttribute('data-uid'));
+                return String(s[self.options.suggestionIdentifierProperty]) === String(suggestionElement.getAttribute('data-uid'));
             });
-            
+
             suggestion = suggestion[0];
-            if(suggestion){
+            if (suggestion) {
                 onSelectSuggestion(suggestion, suggestionElement);
             }
         }
 
-        /**
-         * Прозводит позиционирование блока предложений относительно эелемента
-         * В зависимости от его позиционирования(static/relative)
-         */
         function _positionSuggestionList() {
             var inputWrapperCoordinates = self._dropDownInputWrapper.getCoordinates();
 
@@ -322,33 +431,33 @@
             var next = null;
             var prev = null;
 
-            if(event.keyCode == uiDropDownEventsKeyCodes.ARROW_DOWN){
+            if (event.keyCode == uiDropDownEventsKeyCodes.ARROW_DOWN) {
                 event.stopPropagation();
-                if(self._hoveredSuggestionUiElement){
-                    next = self._hoveredSuggestionUiElement.element.nextSibling;
-                    if(next){
+                if (self._hoveredSuggestionUiElement) {
+                    next = self._hoveredSuggestionUiElement.next();
+                    if (next) {
                         _hoverSuggestionByElement(next);
                     }
                 }
             }
 
-            if(event.keyCode == uiDropDownEventsKeyCodes.ARROW_UP){
+            if (event.keyCode == uiDropDownEventsKeyCodes.ARROW_UP) {
                 event.stopPropagation();
-                if(self._hoveredSuggestionUiElement){
-                    prev = self._hoveredSuggestionUiElement.element.previousSibling;
-                    if(prev){
+                if (self._hoveredSuggestionUiElement) {
+                    prev = self._hoveredSuggestionUiElement.prev();
+                    if (prev) {
                         _hoverSuggestionByElement(prev);
                     }
                 }
             }
 
-            if(event.keyCode == uiDropDownEventsKeyCodes.ENTER){
+            if (event.keyCode == uiDropDownEventsKeyCodes.ENTER) {
                 event.stopPropagation();
                 _selectSuggestionByElement(self._hoveredSuggestionUiElement);
 
             }
 
-            if(event.keyCode == uiDropDownEventsKeyCodes.ESCAPE){
+            if (event.keyCode == uiDropDownEventsKeyCodes.ESCAPE) {
                 event.stopPropagation();
                 close();
                 self.inputElement.element.blur();
@@ -553,14 +662,14 @@
             Object.keys(self.selectedItems).forEach(function (prop) {
                 delete self.selectedItems[prop];
             });
-            var children = Array.prototype.slice.apply(self._selectedContainer.element.children);
+            var children = self._selectedContainer.children();
             children.forEach(function (child) {
                 child.parentNode.removeChild(child);
             });
         }
 
         function _clearMatchedSuggestionsList() {
-            var children = Array.prototype.slice.apply(self._suggestionsWrapper.element.children);
+            var children = self._suggestionsWrapper.children();
 
             children.forEach(function (childNode) {
                 self._suggestionsWrapper.removeChild(childNode);
@@ -570,16 +679,27 @@
         function _showEmptySuggestionMessage() {
             var dropDownItem = DropDownSuggestionItem(self.options.emptyMessageTemplate, {name: 'empty'});
             dropDownItem.render();
-            self._suggestionsWrapper.append(dropDownItem.uiElement.element);
+            self._suggestionsWrapper.append(dropDownItem.uiElement);
         }
 
         function _removeSelectedSuggestionByElement(element) {
-            // TODO: Добавить id. Чтобы не зависеть от верстки
             var uid = element.getAttribute('data-user-id');
-            var container = element.parentNode;
-            container = container.parentNode;
+            var container = _getContainer(element);
+            if (container) {
+                container.parentNode.removeChild(container);
+            }
             delete self.selectedItems[uid];
-            container.parentNode.removeChild(container);
+
+            function _getContainer(element) {
+                var container = element.parentNode;
+                if (container.getAttribute('data-is-selected-suggestion') === 'true') {
+                    return container;
+                }
+                if (container === document.body) {
+                    return null;
+                }
+                return _getContainer(container);
+            }
         }
 
         /***********************************************
@@ -592,25 +712,19 @@
         //  ---------------------------------------------
 
         function _lookUpEmptyPrefix() {
-            var counter = 0;
-            var idx = 0;
-            while (counter < self.options.limit && idx < self.suggestions.length) {
-                var item = self.suggestions[idx];
+            for (var i = 0; i < self.suggestions.length; i++) {
+                var item = self.suggestions[i];
                 if (_isSelected(item)) {
-                    idx++;
                     continue;
                 }
                 _addToMatched(item);
-                counter++;
-                idx++;
+                if (self.matchedSuggestions.length >= self.options.limit) {
+                    break;
+                }
             }
         }
 
-        function _lookup() {
-            var counter = 0;
-            var idx = 0;
-            var prefix = self.inputElement.val();
-
+        function _lookup(prefix) {
             if (prefix == self._lastVal && prefix !== '') {
                 return;
             }
@@ -625,20 +739,17 @@
             }
 
             console.time('lookUp');
-            while (counter < self.options.limit && idx < self.suggestions.length) {
-                var matchResult = self.matcher(prefix, self.suggestions[idx], self.selectedItems);
+            for (var i = 0; i < self.suggestions.length; i++) {
+                var matchResult = self.matcher(prefix, self.suggestions[i], self.selectedItems);
                 if (matchResult.matched) {
-                    self.suggestions[idx].mathedBy = matchResult.matchedBy;
-                    _addToMatched(self.suggestions[idx]);
-                    counter++;
+                    self.suggestions[i].mathedBy = matchResult.matchedBy;
+                    _addToMatched(self.suggestions[i]);
                 }
-                idx++;
+                if (self.matchedSuggestions.length >= self.options.limit) {
+                    break
+                }
             }
             console.timeEnd('lookUp');
-
-            if (self.options.serverSide) {
-                _serverLookUp(prefix);
-            }
         }
 
 
@@ -648,12 +759,16 @@
 
 
         function _appendMatchedSuggestionsFromServer(suggestions) {
-            suggestions.forEach(function (suggestion) {
-                if (!_isSelected(suggestion) && !_isInMatched(suggestion) && self.matchedSuggestions.length < self.options.limit) {
+            for (var i = 0; i < suggestions.length; i++) {
+                var suggestion = suggestions[i];
+                if (!_isSelected(suggestion) && !_isInMatched(suggestion)) {
                     _addToMatched(suggestion);
                     _renderMatchedSuggestion(suggestion);
                 }
-            });
+                if (self.matchedSuggestions.length >= self.options.limit) {
+                    break;
+                }
+            }
         }
 
         function _onServerLookUpLoaded(prefix, response) {

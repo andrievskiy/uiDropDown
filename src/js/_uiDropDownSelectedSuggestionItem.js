@@ -10,6 +10,7 @@
         this.uiElement = UiElement.create('div');
         var containerCls = multiple ? 'ui-drop-down-selected-suggestion': 'ui-drop-down-single-selected-suggestion';
         this.uiElement.addClass(containerCls);
+        this.uiElement.element.setAttribute('data-is-selected-suggestion', 'true');
 
         this.template = template || dropDownItemDefaultTemplate;
         this.data = data;
