@@ -104,6 +104,8 @@
         self._initialized = false;
         self._initialSelectedItems = null;
 
+        self._scrollDelta = 55;
+
         // ------------------------------------
         // Public methods
         // ------------------------------------
@@ -439,6 +441,10 @@
                         _hoverSuggestionByElement(next);
                     }
                 }
+
+                // TODO: Поправить скрол - не искользовать захардкоженное значение смещения
+                // TODO: сролить 'постранично"
+                self._suggestionsWrapper.element.scrollTop += self._scrollDelta;
             }
 
             if (event.keyCode == uiDropDownEventsKeyCodes.ARROW_UP) {
@@ -449,6 +455,9 @@
                         _hoverSuggestionByElement(prev);
                     }
                 }
+                // TODO: Поправить скрол - не искользовать захардкоженное значение смещения
+                // TODO: сролить 'постранично"
+                self._suggestionsWrapper.element.scrollTop -= self._scrollDelta;
             }
 
             if (event.keyCode == uiDropDownEventsKeyCodes.ENTER) {
