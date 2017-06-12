@@ -428,6 +428,20 @@ if (!Object.assign) {
 
 })(window);
 /**
+ * Хранилище констант для событий
+ */
+;(function (window) {
+   var EVENTS_KEY_CODES = {
+       ENTER: 13,
+       ARROW_DOWN: 40,
+       ARROW_UP: 38,
+       ESCAPE: 27
+   };
+
+   window.uiDropDownEventsKeyCodes = EVENTS_KEY_CODES;
+
+})(window);
+/**
  * Утилиты для работы с html
  */
 (function (window) {
@@ -474,20 +488,6 @@ if (!Object.assign) {
     }
 
     window.uiDropDownHtmlEscaping = uiDropDownHtmlEscaping;
-})(window);
-/**
- * Хранилище констант для событий
- */
-;(function (window) {
-   var EVENTS_KEY_CODES = {
-       ENTER: 13,
-       ARROW_DOWN: 40,
-       ARROW_UP: 38,
-       ESCAPE: 27
-   };
-
-   window.uiDropDownEventsKeyCodes = EVENTS_KEY_CODES;
-
 })(window);
 /**
  * Константы для работы с различными расладками.
