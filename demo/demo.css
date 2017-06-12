@@ -1,0 +1,46 @@
+body {
+    font-family: 'Roboto', serif;
+    font-size: 12px;
+    padding: 0;
+    margin: 0;
+    background: #edeef0;
+}
+
+.header {
+    background: #507299;
+    height: 40px;
+    padding: 10px;
+    margin-bottom: 5px;
+}
+
+h2 {
+    color: #fff;
+    margin: 5px 0 0;
+    padding: 0;
+}
+
+.content {
+    width: 25%;
+    margin: 0 auto;
+}
+
+.description {
+    font-size: 14px;
+    color: #999;
+    margin-bottom: 5px;
+    margin-top: 10px;
+    display: inline-block;
+}
+
+.controls{
+    width: 25%;
+    margin: 0 auto;
+}
+
+.control-link{
+    display: inline-block;
+    cursor: pointer;
+    margin-right: 10px;
+    color: #507299;
+    text-transform: uppercase;
+}

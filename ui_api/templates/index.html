@@ -5,71 +5,37 @@
     <title>Title</title>
     <link href='https://fonts.googleapis.com/css?family=Roboto' rel='stylesheet'>
     <link type="text/css" rel="stylesheet" href="css/ui-drop-down.css">
+    <link type="text/css" rel="stylesheet" href="demo/demo.css">
 </head>
 <body>
-<div>
-    <input type="text" id="test" style="position: relative;" placeholder="Введите имя или адрес страницы">
 
-    <a onclick="showSelected()">Show Selected</a>
-    <p style="height: 20px">
-    </p>
-    <input type="text" id="test2"  placeholder="Введите имя или адрес страницы">
-    <p></p>
-    <input type="text" id="test3" placeholder="Test">
-    <p></p>
-    <input type="text" id="test4" placeholder="Test2">
+<div class="header">
+    <h2>uiDropDown</h2>
 </div>
 
+<div class="controls">
+    <a class="control-link" onclick="activateWidget()">Activate</a>
+    <a class="control-link" onclick="closeWidget()">Close</a>
+</div>
+
+<div class="content">
+    <span class="description">Множественный выбор и поиск на сервере.</span>
+    <input type="text" id="demo-multiple" placeholder="Введите имя друга или адрес страницы">
+
+    <span class="description">Выбор одного и поиск на сервере. Без аватарок. </span>
+    <input type="text" id="demo-single" placeholder="Введите имя друга или адрес страницы">
+
+    <span class="description">Множественный выбор без поиска.</span>
+    <input type="text" id="demo-multiple-no-autocomplete" placeholder="Выберите из списка">
+
+
+    <span class="description">Одичночный выбор без поиска.</span>
+    <input type="text" id="demo-multiple-no-autocomplete-single" placeholder="Выберите из списка">
+</div>
+
+
 <script src="js/ui-drop-down.js"></script>
-<script>
-    var suggestions = [];
-    var suggestions2 = [];
-    for(var i=0; i < 300; i++){
-        suggestions.push({
-            name: i + 'Тестовый ' + i + 'Пользователь',
-            uid: '' + i + 2000,
-            avatarUrl: 'https://vk.com/images/deactivated_50.png',
-            extra: 'Extra' + i
-        });
-        suggestions2.push({
-            name: i + 'Test2 ' + i + 'User',
-            uid: '' + i + 2000,
-            avatarUrl: 'https://vk.com/images/deactivated_50.png'
-        })
-    }
+<script src="demo/demo.js"></script>
 
-    var widget1 = new UiDropDown('#test', {
-        suggestions: suggestions,
-        limit: 10,
-        serverSide: true,
-        serverSideUrl: 'http://172.27.0.41:5001/find',
-        serverSideFindProperty: 'domain'
-    });
-
-    var widget2 = new UiDropDown('#test2', {
-        suggestions: suggestions2,
-        limit: 10,
-        multiple: false,
-        showAvatars: false
-    });
-
-    var widet3 = new UiDropDown('#test3', {
-        suggestions: suggestions2,
-        limit: 10,
-        autocomplete: false
-    });
-
-    var widet4 = new UiDropDown('#test4', {
-        suggestions: suggestions2,
-        limit: 10,
-        autocomplete: false,
-        multiple: false
-    });
-
-    function showSelected(){
-        console.log(widget1.getSelected());
-        console.log(widget2.getSelected());
-    }
-</script>
 </body>
 </html>

@@ -428,20 +428,6 @@ if (!Object.assign) {
 
 })(window);
 /**
- * Хранилище констант для событий
- */
-;(function (window) {
-   var EVENTS_KEY_CODES = {
-       ENTER: 13,
-       ARROW_DOWN: 40,
-       ARROW_UP: 38,
-       ESCAPE: 27
-   };
-
-   window.uiDropDownEventsKeyCodes = EVENTS_KEY_CODES;
-
-})(window);
-/**
  * Утилиты для работы с html
  */
 (function (window) {
@@ -490,31 +476,18 @@ if (!Object.assign) {
     window.uiDropDownHtmlEscaping = uiDropDownHtmlEscaping;
 })(window);
 /**
- * Модуль для работы с шаблонами
+ * Хранилище констант для событий
  */
 ;(function (window) {
+   var EVENTS_KEY_CODES = {
+       ENTER: 13,
+       ARROW_DOWN: 40,
+       ARROW_UP: 38,
+       ESCAPE: 27
+   };
 
-    /**
-     * Рендеринг шаблонов
-     * @param template {string} - Шаблон для рендеринга
-     *                            Подстановки производяться по швблону {name}
-     *                            При этом при указании {name::html} для данного значения не будет производиться экранирование
-     * @param data {object} - Даные для рендеринга. Поиск даныных для подставновок производится по ключам этого объекта
-     * @returns {string}
-     */
-    function renderTemplate(template, data) {
-        return template.replace(/{([\w|:]+)}/g, function (match, key) {
+   window.uiDropDownEventsKeyCodes = EVENTS_KEY_CODES;
 
-            var isHtml = ~key.indexOf('::html');
-            if(isHtml){
-                key = key.split('::')[0];
-                return data[key] || '';
-            }
-            return uiDropDownHtmlEscaping(data[key] || '');
-        })
-    }
-
-    window.uiRenderTemplate = renderTemplate;
 })(window);
 /**
  * Константы для работы с различными расладками.
@@ -814,6 +787,33 @@ if (!Object.assign) {
     };
 
 })(window);
+/**
+ * Модуль для работы с шаблонами
+ */
+;(function (window) {
+
+    /**
+     * Рендеринг шаблонов
+     * @param template {string} - Шаблон для рендеринга
+     *                            Подстановки производяться по швблону {name}
+     *                            При этом при указании {name::html} для данного значения не будет производиться экранирование
+     * @param data {object} - Даные для рендеринга. Поиск даныных для подставновок производится по ключам этого объекта
+     * @returns {string}
+     */
+    function renderTemplate(template, data) {
+        return template.replace(/{([\w|:]+)}/g, function (match, key) {
+
+            var isHtml = ~key.indexOf('::html');
+            if(isHtml){
+                key = key.split('::')[0];
+                return data[key] || '';
+            }
+            return uiDropDownHtmlEscaping(data[key] || '');
+        })
+    }
+
+    window.uiRenderTemplate = renderTemplate;
+})(window);
 ;(function (window) {
     function DropDownSuggestionItem(template, data, matchedBy) {
         return new _DropDownSuggestionItem(template, data, matchedBy);
@@ -960,6 +960,7 @@ if (!Object.assign) {
     var DEFAULT_SUGGESTION_TEMPLATE_WITHOUT_AVATARS =
         '<div class="ui-drop-down-suggestion-item" data-uid="{uid}">' +
         '   <label class="ui-drop-down-suggestion-item-name">{name::html}</label>' +
+        '   <span class="ui-drop-down-suggestion-item-extra">{extra}</span>' +
         '</div>';
 
     var DEFAULT_MULTIPLE_SELECTED_ITEM_TEMPLATE =
@@ -1304,7 +1305,6 @@ if (!Object.assign) {
         function _hideInputElement() {
             if (self.getSelected().length) {
                 self.inputElement.addClass('ui-drop-down-hidden');
-                // self.inputElement.style.display = 'none';
             }
         }
 
