@@ -1416,6 +1416,8 @@ if (!Object.assign) {
             self._suggestionsWrapper.on('mouseenter', onHoverSuggestionsWrapperHandler);
             self._suggestionsWrapper.on('mouseleave', onMouseLeaveSuggestionsWrapperHandler);
             self._dropDownInputWrapper.on('keyup', _onKeyUpWrapperHandler, true);
+
+            window.addEventListener('resize', _positionSuggestionList);
         }
 
 
